@@ -1,6 +1,9 @@
+%\documentclass[11pt]{article}
 \documentclass[preprintnumbers,prd,superscriptaddress,notitlepage,nofootinbib] {revtex4-1}
+
 \usepackage{geometry, amsmath, amsthm, latexsym, amssymb, graphicx}
 \geometry{margin=1in, headsep=0.25in}
+%\usepackage{sectsty}
 \usepackage{titlesec}
 \usepackage[usenames, dvipsnames]{color}
 \parindent 0in
@@ -17,10 +20,9 @@
 \newcommand{\aap}{{\em Astron. Astrophys. }}
 %\newcommand{\prd}{{\em Phys. Rev.}}
 %\newcommand{\aj}{AJ }
-
 %others
 \newcommand{\lya}{Lyman-$\alpha$}
-
+  
 
 \begin{document}
 
@@ -47,10 +49,19 @@ simulations, need to use smart parameteriation.
 
 \maketitle
 
-\section{Introduction}
+\input{Introduction}
 
-Degeneracies in the context of 3D flux power spectrum were first discussed 
-in \cite{McDonald2003}.
+\input{Overview}
+
+\input{Linear}
+
+\input{Simulations}
+
+\input{Density}
+
+\input{Lya}
+
+\input{Discussion}
 
 \section*{Acknowledgements}
 AFR acknowledges support by an STFC Ernest Rutherford Fellowship, grant reference ST/N003853/1.

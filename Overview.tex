@@ -18,6 +18,7 @@ power spectrum.
   of a particular cosmological model.
 \end{itemize}
 
+
 \subsection{Measuring the \lya\ correlations}
 
 Skip over continuuming fitting, instrumental details, and so on.
@@ -30,26 +31,43 @@ When measuring the 3D power, we will also need to define transverse
 wavenumbers, and in this case the natural choice is to use units of 
 inverse angles \cite{Font-Ribera2018}.
 
+\begin{figure}[h]
+ \begin{center}
+  \includegraphics[scale=0.6]{Figures/WaltherP1D}
+ \end{center}
+ \caption{Compilation of $P_{1D}(z,\kpar)$ from \cite{Walther2018}. 
+  \AFR{This is actually from Walther et al. 2017, to be updated.}
+ }
+ \label{fig:dataP1D}
+\end{figure}
+
 Beyond BAO analyses \cite{Bautista2017,duMasdesBourboux2017}, the only 
 public results on the clustering of the \lya\ forest are measurements of 
 the 1D power spectrum \cite{Croft1998,McDonald2000,McDonald2006} or 
-more recently \cite{Viel2013,Palanque-Delabrouille2013,Irsic2017,Walthers2018}.
+more recently \cite{Viel2013,Palanque-Delabrouille2013,Irsic2017,Walther2018}.
 These are usually presented as band powers measured in different redshift
 bins, spanning the redshift $1.8 < z < 5.4$, and covering a broad range of 
 scales $0.001 \ikms < \kpar < 0.1 \ikms$. 
+A compilation of recent measurements is shown in Figure \ref{fig:dataP1D}.
+
 
 \subsection{Infering the linear power spectrum}
 
-Recently some studies have merged the last two steps, but we will argue that
-this is not a good idea. 
+This step is the main one discussed in this paper.
 
-Discuss here how does the measurement look like (redshift bins, k-range, 
-typically in units of km/s...).
+\AFR{Add here a discussion on the main difficulties in building an emulator,
+include discussion on hydro simulations, box size, resolution, the nuisance
+of modelling thermal history, mean flux, but also rescaling of optical depth.}
 
-Discuss here the main difficulties in the emulator, including thermal history, 
-mean flux, but also rescaling of optical depth. 
+Add a first, brid
+
+\subsection{Cosmological constraints}
 
 Discuss how the flux power mostly measures amplitude and slope around k=1, and 
 it is only in combination with CMB that one can break degeneracies and 
 constraint multiple cosmological parameters, including neutrino mass. 
+
+\AFR{Mention that some studies have merged the last two steps
+\cite{Palanque-Delabrouille2015,Yeche2017}, and argue why we think this 
+might not be a good idea.}
 

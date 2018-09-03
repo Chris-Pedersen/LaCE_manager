@@ -28,6 +28,19 @@ values of $A_\tau$.
 We can label the different power spectra by their associated value of $A_\tau$,
 or we can label them by their resulting value of the mean flux $\bar F$. 
 
+\cite{Lukic2015} showed that the rescaling might introduce biases in the 
+1D power spectrum for values of $A_\tau$ very different than one. 
+However, their test compared two simulations with different thermal history
+and different pressure, so it is difficult to tell whether the bias came 
+from the rescaling or from the different IGM physics.
+
+\AFR{It would be great to repeat this exercise in two simulations that 
+have very similar thermal history but different mean flux, I will ask 
+Jose Onorbe for help (he is visiting UCL soon). 
+It is also possible that the test is clearer if we look at the 3D power,
+where pressure only affects the high-k limit, and the scale independent
+linera bias.}
+
 
 \subsection{Rescaling of the temperature}
 
@@ -90,6 +103,12 @@ effectively lowering the value of $k_F$ in the simulation by hand.
 Of course, it would not be possible to reduce the smoothing, and to do that 
 one would need to run a simulation with an earlier redshift of reionization.
 
+\AFR{We could also ask Jose Onorbe for help to setup this type of test. 
+We would also need to discuss the best way to measure $k_F$ in the snapshots:
+fit a Gaussian kernel in the power spectrum of $F_{\rm real}$, where no 
+redshift-space distortions have been included? I believe that is what is 
+used in all papers by Hennawi / Lukic / Onorbe.}
+
 
 \subsection{Labelling the snapshots}
 
@@ -111,5 +130,12 @@ In section \ref{sec:dens} we will check whether this is still true at the
 level of the non-linear power spectrum, and in section \ref{sec:lya} we 
 will look at this degeneracy in the \lya\ power spectrum. 
 
-
-Similarly, 
+\AFR{How do we measure the linear power in the snapshot? 
+I could see three options (in order of my preference): 
+predict it using the power measured in the initial conditions, and the relative
+growth as computed from CAMB/CLASS;
+measure the density power in the snapshot, and fit the growth factor from 
+the low-k part;
+run a very cheap simulation without hydro and a very low value of $A_s$, to 
+compute the actual linear power in the simulation (that might sadly differ 
+from the predicted by CAMB/CLASS because of issues in the linear growht).}

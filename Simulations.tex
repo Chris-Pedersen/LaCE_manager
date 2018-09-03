@@ -10,3 +10,106 @@ Discuss also here the optical depth rescaling, different transfer functions
 paper).
 
 
+\subsection{Rescaling of the optical depth}
+
+From each simulation we will get a set of snapshots, outputs at different 
+redshifts. 
+
+From each snapshot, we will extract \lya\ skewers, and use these to compute 
+their power spectra. 
+We will repeat this exercise for different rescalings of the optical depth, 
+i.e., we will multiply the optical depth in all cells by a constant factor
+in the range $0.8 < A_\tau < 1.2$ (approximately), and for each value of 
+$A_\tau$ we will compute the transmitted flux fraction $F$, its mean value
+(mean flux), and the power spectra of their fluctuations $\delta_F$. 
+
+Therefore, from each snapshot we will get a set of power spectra for different
+values of $A_\tau$.
+We can label the different power spectra by their associated value of $A_\tau$,
+or we can label them by their resulting value of the mean flux $\bar F$. 
+
+
+\subsection{Rescaling of the temperature}
+
+The Temperature-Density Relation (TDR) in the \lya\ forest can be reasonably
+well described by a power law, 
+\begin{equation}
+ T(\rho) = T_0 \left(\frac{\rho}{\rho_0}\right)^{\gamma-1} ~,
+\end{equation}
+with a typical values for $\gamma$ between 1 and 1.6. 
+If we use $\rho_0 = \bar \rho$, $T_0$ varies between 10,000 and 20,000K
+\cite{Lukic2015}.
+
+We can change the thermal history of the simulations by running the same box
+with different \textit{TREECOOL} files, that contain the redshift evolution
+of different heating and ionizing rates.
+
+For each snapshot, we can fit their values of $T_0$ and $\gamma$, and use 
+these to label the snapshot, instead of using the name of the TREECOOL, 
+or the parameters that we have used to modify a given file 
+(MP-Gadget can implement the recipes in \cite{Bolton2008} to modify TRECOOL
+files by setting the parameters \textit{HeatAmplitude} and \textit{HealSlope}).
+
+Just like we did with the optical depth, we can rescale the temperatures in 
+post-processing. 
+We could do this at two different levels:
+\begin{itemize}
+ \item Thermal broadening: when extracting the skewers from the boxes, 
+  the last step is to compute the redshift-space-distorted optical depth. 
+  To do that, the temperature at each cell is used to decide the local 
+  smoothing that we need to apply, what is known as the thermal broadening. 
+  It is trivial to take the same optical depth skewer, and convolve it for
+  different temperature rescalings.
+ \item Recombination rates: the temperature also sets the recombination rate,
+  $\alpha(T) \sim T^{-0.7}$. 
+  It would also be possible to change the recombination rate at each cell, 
+  propagate this into a change in the neutral fraction (proportional to the 
+  recombination rate), and finally to the optical depth (proportional to the 
+  neutral fraction). 
+\end{itemize}
+
+Note that, even though this would capture most of the effects of having a 
+different temperature, we would miss the effect that different temperature
+have in the pressure smoothing.
+However, we will include a parameter to study the dependence on the pressure
+smoothing, the filtering length $k_F$, and this should be able to capture
+the differences.
+
+
+\subsection{Adding pressure smoothing}
+
+The small scale structure is suppressed on very small scales because of the
+pressure in the gas. 
+As described in \cite{Hui1997,Gnedin1998}, the smoothing can be described
+by a characteristic scale, $k_F)(z)$, the \textit{filtering scale}, that is
+an integral version of the Jeans length that depends also on the temperature
+in the past.
+
+It would be interesting to see if we can add smoothing in postprocessing, 
+effectively lowering the value of $k_F$ in the simulation by hand. 
+Of course, it would not be possible to reduce the smoothing, and to do that 
+one would need to run a simulation with an earlier redshift of reionization.
+
+
+\subsection{Labelling the snapshots}
+
+In the linear regime, and for a single specie, the growth of structure is 
+scale independent, and it can be described by the growth factor $D(z)$.
+%\begin{equation}
+% \Plin(z,k) = \frac{D^2(z)}{D^2(z_0)} ~ \Plin(z_0,k) ~.
+%\end{equation}
+
+If the \lya\ power spectra depended only on the linear power spectrum, this 
+would suggest that there would be a complete degeneracy between changing 
+the overall amplitude of the linear power spectrum and changing the redshift
+at which we ouput the snapshot. 
+Therefore, we could use the amplitude of the linear power at a given snapshot
+to label it, and use the different snapshots of the same simulation to study 
+models with different amplitudes of the linear power. 
+
+In section \ref{sec:dens} we will check whether this is still true at the 
+level of the non-linear power spectrum, and in section \ref{sec:lya} we 
+will look at this degeneracy in the \lya\ power spectrum. 
+
+
+Similarly, 

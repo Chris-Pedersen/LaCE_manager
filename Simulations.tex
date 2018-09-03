@@ -139,3 +139,17 @@ the low-k part;
 run a very cheap simulation without hydro and a very low value of $A_s$, to 
 compute the actual linear power in the simulation (that might sadly differ 
 from the predicted by CAMB/CLASS because of issues in the linear growht).}
+
+To sum up, each snapshot will be used to generate multiple simulated 
+fields, and we can label each of them by their values of: 
+mean flux (1 parameter) $\bar F$,
+linear power (3 parameters) $\Plin$,
+TDR (2 parameters) $T_0$ and $\gamma$, 
+filtering scale $k_F$.
+
+Redshift will NOT be a label describing the simulated field, and neither
+will be the TREECOOL file or the redshift of reionization.
+Since we will define the linear power in units of $\kms$, we will not 
+need to include the Hubble parameter at the box as a label.
+We will not care about any other cosmological parameter in the box
+either.

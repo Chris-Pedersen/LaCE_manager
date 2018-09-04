@@ -176,7 +176,7 @@ the user to provide for each cosmologicla model:
   For simplicity, we will restrict ourselves to models with a linear power 
   spectra that can be factorized ,in the range of redshift and scales 
   described above, in a power spectrum at a central redshift, 
-  $\Plin(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
+  $P_L(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
  \item Logarithmic growth rate, $f(z)$, that could be computed directly
   from the evolution of $D(z)$.
  \item Hubble parameter as a function of redshift, $H(z)$, over the same 
@@ -240,7 +240,7 @@ possible setting.
 \begin{itemize}
  \item We will choose a fiducial cosmological model, based on a recent 
   Planck+BAO analysis, and use it to compute a fiducial linear power spectrum,
-  $\Plin^0(z,k)$, a fiducial Hubble expansion, $H^0(z)$, a fiducial growth 
+  $P_L^0(z,k)$, a fiducial Hubble expansion, $H^0(z)$, a fiducial growth 
   rate $f^0(z)$...
  \item We will compress the difference between the input power spectrum, 
   and the fiducial power spectrum, into a handful of parameters. 
@@ -258,10 +258,13 @@ possible setting.
   We will approximate that the growth rate at $z_\star$ is enough to compute 
   the linear power at any redshift within the range:
   \begin{equation}
-   \Plin(z_\star+\Delta z,k) = \Plin(z_\star,k) \left[ 1 
+   P_L(z_\star+\Delta z,k) = P_L(z_\star,k) \left[ 1 
       - 2 \frac{f(z_\star)}{(1+z_\star)} \right] ~. 
   \end{equation} 
   \AFR{I haven't cross-checked the equation above, but you got the idea.}
+  \AFR{I'm not sure this is the best idea, probably better to use the 
+   redshift evolution of the fiducial cosmology, and only a small correction
+   using $R_f$.}
 \end{itemize}
 
 If we could observe the \lya\ power spectrum in comoving coordinates, that 

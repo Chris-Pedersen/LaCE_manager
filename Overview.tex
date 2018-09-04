@@ -32,7 +32,8 @@ This will not be the main focus of this paper.
  \caption{Compilation of $P_{1D}(z,\kpar)$ measurements, including those from
   \cite{Viel2013} (orange), \cite{Irsic2017} (red), 
   \cite{Palanque-Delabrouille2013} (green) and \cite{Walther2018a} (blue). 
-  This figure was stolen from \cite{Walther2018b}.
+  \AFR{This figure was stolen from \cite{Walther2018b}, it would be better to 
+  add one that goes to lower values of $\kpar$ covered by SDSS/BOSS.}
  }
  \label{fig:dataP1D}
 \end{figure}
@@ -144,4 +145,33 @@ following reasons:
   extended models (curved universe, non-$\Lambda$, different $N_{\rm eff}$...)
   if these were not in the original emulator.
 \end{itemize}
+
+
+\section{Using the emulator}
+
+In order to properly discuss ourchoice of parameterization and simulation
+setup, it is important to describe how we intend the end product,
+the \textit{emulator}, to be used in a cosmological analysis.
+
+
+\subsection{User interface of an emulator}
+
+The aim of the project is to provide a public likelihood package that others
+can use to include \lya\ results in their cosmological parameter constraints.
+The end-user does not need to know about the internal details, about the 
+suite of simulations or the nuisance parameters.
+They do not need to know either whether internally we are describing the 
+power in units of $\kms$, $\Mpc$ or $\hMpc$. 
+
+There are different possible interfaces that we could setup, and probably 
+we will want to provide more than one with different levels of complexity.
+But we will start discussing a particular interface, where we will ask 
+the user to provide:
+\begin{itemize}
+ \item A
+ \item B
+\end{itemize}
+
+
+
 

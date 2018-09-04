@@ -1,0 +1,214 @@
+
+\newcommand{\frachalf}{\frac{1}{2}}
+\newcommand{\dzbar}{\delta_{\bar{z}}}
+\newcommand{\fNL}{f_{\rm NL}}
+\newcommand{\kNL}{k_{\rm NL}}
+\newcommand{\FoM}{{\rm FoM}}
+\newcommand{\cm}{\ \text{cm}}
+\newcommand{\pc}{\ \text{pc}}
+\newcommand{\Mpc}{\ \text{Mpc}}
+\newcommand{\Gpc}{\ \text{Gpc}}
+\newcommand{\kpc}{\ \text{kpc}}
+\newcommand{\Gyr}{\ \text{Gyr}}
+\newcommand{\hkpc}{\ h^{-1}\text{kpc}}
+\newcommand{\hMpc}{\ h^{-1}\text{Mpc}}
+\newcommand{\hMpcc}{\ h^{-3}\text{Mpc}^3}
+\newcommand{\hGpc}{\ h^{-1}\text{Gpc}}
+\newcommand{\hGpcc}{\ h^{-3}\text{Gpc}^3}
+\newcommand{\ihMpc}{\ h\text{Mpc}^{-1}}
+\newcommand{\iMpc}{\ \text{Mpc}^{-1}}
+\newcommand{\Ms}{\ M_\odot}
+\newcommand{\hMs}{\ h^{-1} M_\odot}
+\newcommand{\eh}[1]{\exp{\left[#1\right]}}
+\newcommand{\tim}[1]{\times 10^{#1}}%times 10 
+\newcommand{\unit}[1]{\ \text{#1}}
+\newcommand{\tb}[1]{\textcolor{blue}{#1}}
+\newcommand{\tr}[1]{\textcolor{red}{#1}}
+\newcommand{\tsc}[1]{#1}
+\newcommand{\derd}{\,\mathrm{d}} % upright d for derivatives and integrals
+\newcommand{\ddir}{\delta^\text{(D)}}
+\newcommand{\dkron}{\delta^\text{(K)}}
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\la}{\left\langle}
+\newcommand{\ra}{\right\rangle}
+\newcommand{\derivd}{\text{d}}
+\renewcommand{\vec}{\bm}
+\newcommand{\FT}[1]{{\rm FT}\left[#1\right]}
+\newcommand{\twopicub}{\left(2\pi\right)^3}
+\newcommand{\intvkop}{\int\frac{\derivd^3k}{\twopicub}}
+\newcommand{\intvx}{\int \derivd^3x~}
+\newcommand{\dqc}{\frac{\derivd^3q}{(2\pi)^3}}
+\newcommand{\intvqop}{\int \dqc}
+\newcommand{\dkpc}{\frac{\derivd^3k'}{(2\pi)^3}}
+\newcommand{\dqcp}{\frac{\derivd^3q'}{(2\pi)^3}}
+\newcommand{\dqcpp}{\frac{\derivd^3q''}{(2\pi)^3}}
+\newcommand{\cyc}{\, \text{cyc.}}
+\newcommand{\Dz}{\Delta z}
+\newcommand{\Dv}{\Delta v}
+\newcommand{\Dx}{\Delta x}
+\newcommand{\Deta}{\Delta \eta}
+\newcommand{\Dtheta}{\Delta \theta}
+\newcommand{\bz}{\bar{z}}
+\newcommand{\kms}{{\rm km~s^{-1}}}
+\newcommand{\ikms}{{\rm s~km^{-1}}}
+\newcommand{\kmsMpc}{\nicefrac[\rm]{km}{s\,Mpc}}
+\newcommand{\summnu}{\Sigma m_\nu}
+\newcommand{\Nnueff}{N_{\nu,{\rm eff}}}
+\newcommand{\kmaxeff}{k_{\rm max,eff}}
+\newcommand{\kmax}{{k_{\rm max}}}
+\newcommand{\kmin}{{k_{\rm min}}}
+\newcommand{\kNyq}{{k_{\rm Nyq}}}
+\newcommand{\neff}{{n_{\rm eff}}}
+\newcommand{\sL}{\mathcal{L}}
+\newcommand{\sN}{\mathcal{N}}
+\newcommand{\sH}{\mathcal{H}}
+\newcommand{\sD}{\mathcal{D}}
+\newcommand{\gmunu}{{g_{\mu \nu}}}
+\newcommand{\keV}{{\rm keV}}
+\newcommand{\GeV}{{\rm GeV}}
+\newcommand{\erg}{\, {\rm erg}}
+\newcommand{\gram}{\, {\rm g}}
+\newcommand{\kelvin}{\, {\rm K}}
+\newcommand{\deltahat}{\hat{\delta}}
+
+%bias parameters
+\newcommand{\bdelta}{b_\delta}
+\newcommand{\bdtwo}{b_{\delta^2}}
+\newcommand{\bstwo}{b_{s^2}}
+%renormalized fields
+\newcommand{\msdtwo}{\left[\delta^2\right]}
+\newcommand{\msstwo}{\left[s^2\right]}
+%bold faced vectors
+\newcommand{\vtheta}{\mathbf{\theta}}
+\newcommand{\vDtheta}{\mathbf{\Delta \theta}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\vnabla}{\mathbf{\nabla}}
+\newcommand{\veta}{\mathbf{\eta}}
+\newcommand{\vk}{\mathbf{k}}
+\newcommand{\vq}{\mathbf{q}}
+\newcommand{\vt}{\mathbf{t}}
+\newcommand{\vb}{\mathbf{b}}
+\newcommand{\vx}{\mathbf{x}}
+\newcommand{\vc}{\mathbf{c}}
+\newcommand{\vone}{\mathbf{1}}
+\newcommand{\vmu}{\mathbf{\mu}}
+\newcommand{\vzeta}{\mathbf{\zeta}}
+\newcommand{\vn}{\mathbf{n}}
+\newcommand{\vgamma}{\mathbf{\gamma}}
+\newcommand{\vpi}{\mathbf{\pi}}
+\newcommand{\vrho}{\mathbf{\rho}}
+\newcommand{\vphi}{\mathbf{\phi}}
+\newcommand{\vchi}{\mathbf{\chi}}
+\newcommand{\vomega}{\mathbf{\omega}}
+\newcommand{\vu}{\mathbf{u}}
+\newcommand{\vj}{\mathbf{j}}
+\newcommand{\vg}{\mathbf{g}}
+\newcommand{\vm}{\mathbf{m}}
+\newcommand{\vd}{\mathbf{d}}
+\newcommand{\vdelta}{\mathbf{\delta}}
+\newcommand{\vy}{\mathbf{y}}
+\newcommand{\vf}{\mathbf{f}}
+\newcommand{\vp}{\mathbf{p}}
+\newcommand{\vep}{\mathbf{\epsilon}}
+\newcommand{\vo}{\mathbf{o}}
+\newcommand{\vs}{\mathbf{s}}
+\newcommand{\vsh}{\hat{\mathbf{s}}}
+\newcommand{\vS}{\mathbf{S}}
+\newcommand{\vC}{\mathbf{C}}
+\newcommand{\vXi}{\mathbf{\Xi}}
+\newcommand{\vQ}{\mathbf{Q}}
+\newcommand{\vDelta}{\mathbf{\Delta}}
+\newcommand{\vP}{\mathbf{P}}
+\newcommand{\vN}{\mathbf{N}}
+\newcommand{\vA}{\mathbf{A}}
+\newcommand{\vM}{\mathbf{M}}
+\newcommand{\vK}{\mathbf{K}}
+\newcommand{\vB}{\mathbf{B}}
+\newcommand{\vU}{\mathbf{U}}
+\newcommand{\vT}{\mathbf{T}}
+\newcommand{\vF}{\mathbf{F}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\vR}{\mathbf{R}}
+\newcommand{\Tr}{\mathrm{Tr}}
+\newcommand{\lnL}{{\mathcal{L}}}
+\newcommand{\vxperp}{\mathbf{x_\perp}}
+\newcommand{\vkperp}{\mathbf{k_\perp}}
+\newcommand{\kperp}{k_\perp}
+\newcommand{\vrperp}{\mathbf{r_\perp}}
+\newcommand{\vpar}{v_\parallel}
+\newcommand{\rpar}{r_\parallel}
+\newcommand{\kpar}{k_\parallel}
+\newcommand{\tk}{\tilde{k}}
+\newcommand{\tmu}{\tilde{\mu}}
+\newcommand{\PtD}{P_{\rm 3D}}
+\newcommand{\PtDp}{P_{\rm 3D^\prime}}
+\newcommand{\vPsi}{\mathbf{\Psi}}
+\newcommand{\vUpsilon}{\mathbf{\Upsilon}}
+\newcommand{\vV}{\mathbf{V}}
+\newcommand{\vW}{\mathbf{W}}
+\newcommand{\vrhat}{\mathbf{\hat{r}}}
+\newcommand{\vxhat}{\mathbf{\hat{x}}}
+\newcommand{\vzhat}{\mathbf{\hat{z}}}
+\newcommand{\vz}{\mathbf{z}}
+\newcommand{\vpsi}{\mathbf{\psi}}
+\newcommand{\vupsilon}{\mathbf{\upsilon}}
+\newcommand{\bn}{\bar{n}}
+\newcommand{\rhobar}{\bar{\rho}}
+\newcommand{\vI}{\mathbf{I}}
+\newcommand{\vH}{\mathbf{H}}
+\newcommand{\vl}{\mathbf{l}}
+\newcommand{\vL}{\mathbf{L}}
+\newcommand{\vG}{\mathbf{G}}
+\newcommand{\vD}{\mathbf{D}}
+\newcommand{\vE}{\mathbf{E}}
+
+%LyaF
+%removed \ after several here - makes space before period - 
+%add by hand when needed
+\newcommand{\lya}{Ly$\alpha$}
+\newcommand{\lyb}{Ly$\beta$}
+\newcommand{\lyaf}{Ly$\alpha$ forest}
+\newcommand{\vdf}{{\mathbf \delta_f}}
+\newcommand{\vdF}{{\mathbf \delta_F}}
+\newcommand{\lr}{\lambda_{{\rm rest}}}
+\newcommand{\PF}{$P_F^{\rm 1D}(k_\parallel,z)$}
+\newcommand{\bF}{\bar{F}}
+\newcommand{\bC}{\bar{C}}
+\newcommand{\bT}{\bar{T}}
+\newcommand{\bS}{\bar{S}}
+
+%journals
+\newcommand{\mnras}{{\em Mon. Not. Roy. Astron. Soc. }}
+\newcommand{\apjl}{{\em Astrophys. J. Let. }}
+\newcommand{\apjs}{ApJS}
+\newcommand{\jcap}{JCAP}
+\newcommand{\physrep}{{\em Phys. Rept. }}
+\newcommand{\aap}{{\em Astron. Astrophys. }}
+\newcommand{\aj}{AJ }
+\newcommand{\pasp}{PASP}
+\newcommand{\pasj}{PASJ}
+\newcommand{\uros}{Uro\v{s}}
+\newcommand{\anze}{An\v{z}e}
+
+\def\prd{{\em Phys. Rev. }{\bf D }}
+\def\pr{{Phys.\ Rev.\ }}
+\def\astropart{{Astro-particle Phys.~}}
+\def\rvmp{{Rev.\ Mod.\ Phys.\ }}
+
+\def\pvm#1{[PM: {\it #1}] }
+\def\pvmhid#1{}
+\def\af#1{[AF: {\it #1}] }
+\def\afhid#1{}
+\def\as#1{[AS: {\it #1}] }
+\def\ashid#1{}
+\def\hs#1{[HS: {\it #1}] }
+%vb conflicts with \vb = \mathbf{b} used elsewhere
+\def\vbh#1{[VB: {\it#1}] }
+\def\cs#1{[CS: {\it#1}] }
+\def\sb#1{[SB: {\it #1}] }
+\def\zs#1{[ZS: {\it #1}] }
+\def\zv#1{[ZV: {\it #1}] }
+\def\uscomment#1{[US: {\it #1}] }
+\def\referee#1{[REFEREE: {\it#1}] }
+

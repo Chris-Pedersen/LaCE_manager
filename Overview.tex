@@ -252,19 +252,16 @@ possible setting.
   We will fit these parameters using the linear power at a central redshfit,
   $z_\star=3$, but since we have decided to use only models where the 
   linear power spectrum can be factorized, this should not have an impact.
- \item We will compute the ratio of the input growth rate with that in the 
-  fiducial cosmology, $R_f = f(z_\star)/f^0(z_\star)$, evaluated at 
-  $z_\star=3$. 
-  We will approximate that the growth rate at $z_\star$ is enough to compute 
-  the linear power at any redshift within the range:
-  \begin{equation}
-   P_L(z_\star+\Delta z,k) = P_L(z_\star,k) \left[ 1 
-      - 2 \frac{f(z_\star)}{(1+z_\star)} \right] ~. 
+ \item We will compute the different of the input growth rate with that in 
+  the fiducial cosmology, $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
+  evaluated at $z_\star=3$. 
+  We will approximate that the different growth rate at $z_\star$ is 
+  enough to compute the difference in linear growth at any redshift 
+  (within the range):
+  \begin{equation}\label{eq:growth}
+   \frac{D(z)}{D^0(z)} = 1 + \Delta f_\star ~ \frac{\Delta z}{1 + z_\star} ~.
   \end{equation} 
   \AFR{I haven't cross-checked the equation above, but you got the idea.}
-  \AFR{I'm not sure this is the best idea, probably better to use the 
-   redshift evolution of the fiducial cosmology, and only a small correction
-   using $R_f$.}
 \end{itemize}
 
 If we could observe the \lya\ power spectrum in comoving coordinates, that 
@@ -274,7 +271,41 @@ and angles, and a more natural choice is to use velocity units ($\kms$) for
 the clustering measurements. 
 Indeed, all recent measurements of the 1D \lya\ power reported their results
 in units of $\kms$, and we will assume the same in this discussion.
+\AFR{Add here a discussion on units and Hubble expansion.}
 
+\subsubsection{Equation above}
 
+\AFR{I write below the equations deriving equation \ref{eq:growth} above.}
+
+For the input cosmology, we define:
+\begin{equation}
+ P(z,k) = P_\star(k) \left[ \frac{D(z)}{D_\star} \right]^2 ~,
+\end{equation}
+where $D(z)$ is the growth factor and $_\star$ means that the quantity is 
+evaluated at $z_\star=3$. 
+
+The evolution of the growth factor is quite similar to Einstein-de Sitter 
+(EdS), i.e., $D(z) \propto a(z)$, and we define the deviation from that growth 
+as follows:
+\begin{equation}
+ \frac{D(z)}{D_\star} = \frac{a(z)}{a_\star} ~ \eta(z) ~,
+\end{equation}
+with $\eta_\star=1$ by definition and $\eta(z)=1$ in an EdS universe.
+
+We can then do a Taylor expansion of $\eta(z)$ around $z_\star$:
+\begin{align}
+ \eta(z_\star+\Delta z) 
+  & = 1 + \frac{\partial \eta}{\partial z} 
+      \Bigr\rvert_{z_\star} \Delta z                    \nonumber \\
+  & = 1 - a_\star^2~\frac{\partial \eta}{\partial a} 
+      \Bigr\rvert_{z_\star} \Delta z                    \nonumber \\
+  & = 1 + \left( 1 - f_\star \right) \frac{\Delta z}{1+z_\star} ~,
+\end{align}
+where we have used 
+\begin{equation}
+ \frac{\partial \eta}{\partial a} \Bigr\rvert_{z_\star} 
+  = \frac{a_\star}{D_\star} \frac{\partial D}{\partial a} \Bigr\rvert_{z_\star}
+  = \frac{1}{a_\star} \left( f_\star - 1 \right) ~.
+\end{equation}
 
 

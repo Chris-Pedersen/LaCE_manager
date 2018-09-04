@@ -154,7 +154,7 @@ setup, it is important to describe how we intend the end product,
 the \textit{emulator}, to be used in a cosmological analysis.
 
 
-\subsection{User interface of an emulator}
+\subsection{User interface}
 
 The aim of the project is to provide a public likelihood package that others
 can use to include \lya\ results in their cosmological parameter constraints.
@@ -166,12 +166,59 @@ power in units of $\kms$, $\Mpc$ or $\hMpc$.
 There are different possible interfaces that we could setup, and probably 
 we will want to provide more than one with different levels of complexity.
 But we will start discussing a particular interface, where we will ask 
-the user to provide:
+the user to provide for each cosmologicla model:
 \begin{itemize}
- \item A
- \item B
+ \item Linear matter power (baryons+CDM), as a function of redshift and 
+  wavenumber, in units of $\iMpc$. 
+  The redshift range should cover at least $2 < z < 5$, and the wavenumber
+  range should cover at least $0.01 \iMpc < k < 10 \iMpc$. 
+  For simplicity, we will restrict ourselves to models with a linear power 
+  spectra that can be factorized ,in the range of redshift and scales 
+  described above, in a power spectrum at a central redshift, 
+  $\Plin(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
+ \item Logarithmic growth rate, $f(z)$, that could be computed directly
+  from the evolution of $D(z)$.
+ \item Hubble parameter as a function of redshift, $H(z)$, over the same 
+  redshift range.
 \end{itemize}
 
+The user will also specify:
+\begin{itemize}
+ \item Data products to use: 
+  SDSS-I from \cite{McDonald2006}, 
+  BOSS from \cite{Palanque-Delabrouille2013},
+  HIRES/UVES from \cite{Viel2013},
+  XQSO-100 from \cite{Irsic2017}, 
+  HIRES/UVES from \cite{Walther2018a}. 
+  We should also allow the user to specify what redshifts to use from each
+  dataset, since they are independent, and probably also allow the user 
+  to specify the scales to be used in the fit for each dataset.
+ \item Extra analysis settings, like whether to allow for running in the 
+  linear power, non-EdS linear growth...
+ \item \AFR{It is not clear to me whether at this point the user would also
+  be able to set other settings of the likelihood or not, like the way we 
+  treat contamination by DLAs or metals, resolution or noise corrections, 
+  or the parameterization of the temperature-density relation in the 
+  simulations.}
+ \item \AFR{I guess the user should also be able to specify the priors for
+  the parameters that we want to marginalize over. 
+  We could even provide the optino to use published temperature / mean flux
+  results as a prior on thermal history and mean flux, although this should 
+  be an option that would be switched off by default...}
+\end{itemize}
 
-
+The output from the emulator will be:
+\begin{itemize}
+ \item A value of (log-)likelihood for each dataset, possibly a value for 
+  each redshift bin. 
+  Most users will only care about this.
+ \item For the foresters, we would also output the best-fit theoretical 
+  prediction for each dataset, for that particular cosmological model.
+  We would also provide the values of the nuisance parameters that correspond
+  to the best fit model (mean flux, temperature-density relation, metal or DLA
+  contamination...).
+ \item We could also provide a random sample of theory lines that are above a 
+  likelihood threshold for that particular model, exploring different 
+  thermal histories and other nuisance parameters.
+\end{itemize}
 

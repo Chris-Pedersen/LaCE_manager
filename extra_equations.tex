@@ -1,0 +1,46 @@
+\section{Derivation of equations in the main text} \label{app:eq}
+
+I write below the equations deriving equation \ref{eq:growth}.
+
+For the input cosmology, we define:
+\begin{equation}
+ P(z,k) = P_\star(k) \left[ \frac{D(z)}{D_\star} \right]^2 ~,
+\end{equation}
+where $D(z)$ is the growth factor and $_\star$ means that the quantity is 
+evaluated at $z_\star=3$. 
+
+The evolution of the growth factor is quite similar to Einstein-de Sitter 
+(EdS), i.e., $D(z) \propto a(z)$, and we define the deviation from that growth 
+as follows:
+\begin{equation}
+ \frac{D(z)}{D_\star} = \frac{a(z)}{a_\star} ~ \eta(z) ~,
+\end{equation}
+with $\eta_\star=1$ by definition and $\eta(z)=1$ in an EdS universe.
+
+We can then do a Taylor expansion of $\eta(z)$ around $z_\star$:
+\begin{align}
+ \eta(z_\star+\Delta z) 
+  & = 1 + \frac{\partial \eta}{\partial z} 
+      \Bigr\rvert_{z_\star} \Delta z                    \nonumber \\
+  & = 1 - a_\star^2~\frac{\partial \eta}{\partial a} 
+      \Bigr\rvert_{z_\star} \Delta z                    \nonumber \\
+  & = 1 + \left( 1 - f_\star \right) \frac{\Delta z}{1+z_\star} ~,
+\end{align}
+where we have used 
+\begin{equation}
+ \frac{\partial \eta}{\partial a} \Bigr\rvert_{z_\star} 
+  = \frac{a_\star}{D_\star} \frac{\partial D}{\partial a} \Bigr\rvert_{z_\star}
+  = \frac{1}{a_\star} \left( f_\star - 1 \right) ~.
+\end{equation}
+
+\begin{figure}[h]
+ \begin{center}
+  \includegraphics{fz_omega_m}
+ \end{center}
+ \caption{Logarithmic growth rate, $f(z)$, for different cosmologies.
+  Solid lines show the ratio with respect to fiducial ($\Omega_m=0.3$), 
+  and dashed lines the value at $z_\star=3$, assumed to be constant in this 
+  paper.}
+ \label{fig:fz_Om}
+\end{figure}
+

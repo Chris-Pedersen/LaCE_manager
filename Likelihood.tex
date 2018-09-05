@@ -87,7 +87,6 @@ Under the hood, we will use more effective (and cryptic) parameters in our
 \textit{emulator}, understood as the package that will use black magic 
 (or white magic) and a suite of hydrodynamical simulations to make 
 predictions for the flux power spectrum.
-
 There are many, many possibilities here, but we will start by discussing a 
 possible setting. 
 
@@ -111,17 +110,17 @@ We will compress the difference between the input power spectrum, $P_L(k)$,
 and the fiducial power spectrum, $P^0_L(k)$, into a handful of parameters. 
 We start by fitting the fiducial power with a smooth function, 
 $P^0_{nw}(k)$, using the \textit{no-wiggle} model from \cite{Eisenstein1998}.
-We define the oscillatory component of the fiducial power, $P^0_w(k)$, as the 
-ratio of these two powers:
+We define the oscillatory (or \textit{wiggle}) component of the 
+fiducial power, $W^0(k)$, as the ratio of these two powers:
 \begin{equation}
- P^0_w(k) = \frac{P^0_L(k)}{P^0_{nw}(k)} ~.
+ W^0(k) = \frac{P^0_L(k)}{P^0_{nw}(k)} ~.
 \end{equation} 
 
 We will assume that the oscillatory component of the input model can be 
 described with the oscillations in the fiducial model, shifted by the ratio 
 of their sound horizons at the drag epoch ($r_d$):
 \begin{equation}
- P_w(k) \sim P^0_w(\beta k)  
+ W(k) \sim W^0(\beta k)  
 \qquad  
  \beta = \frac{r_d}{r^0_d} ~.
 \end{equation}
@@ -139,24 +138,22 @@ discussion we will assume that we use three parameters: an amplitude,
 a slope, and a running of the slope, evaluated around $k_p = 1 \iMpc$. 
 
 To summarize, we will describe the input linear power at $z_\star$ as:
-\begin{equation}
- P_L(k) = B(k) ~ P_{nw}^0(k) ~ P_w^0(\beta k) ~.
+\begin{equation} \label{eq:Pk_param}
+ P_L(k) = B(k) ~ P_{nw}^0(k) ~ W^0(\beta k) ~.
 \end{equation}
 
 \subsubsection{Linear growth}
 
-We will compute the difference of the input logarithmic growth rate 
-  with that in the fiducial cosmology, 
-  $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
-  evaluated at $z_\star=3$. 
-  We will approximate that the different growth rate at $z_\star$ is 
-  enough to compute the difference in linear growth at any redshift 
-  (within the range):
-  \begin{equation}\label{eq:growth}
-   \frac{D(z)}{D^0(z)} = 1 + \Delta f_\star ~ \frac{\Delta z}{1 + z_\star} ~.
-  \end{equation} 
-  Note that in LCDM models, and at $2 < z < 5$, the differences in growth 
-  rate are typically less than 1\%, as shown in Figure \ref{fig:fz_Om}.
+We will compute the difference of the input logarithmic growth rate with that 
+in the fiducial cosmology, $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
+evaluated at $z_\star=3$. 
+We will approximate that the different growth rate at $z_\star$ is enough 
+to compute the difference in linear growth at any redshift (within the range):
+\begin{equation}\label{eq:growth}
+ \frac{D(z)}{D^0(z)} = 1 + \Delta f_\star ~ \frac{\Delta z}{1 + z_\star} ~.
+\end{equation} 
+Note that in LCDM models, and at $2 < z < 5$, the differences in growth rate 
+are typically less than 1\%, as shown in Figure \ref{fig:fz_Om}.
 
 \subsubsection{Hubble expansion}
 
@@ -169,10 +166,14 @@ Indeed, all recent measurements of the 1D \lya\ power reported their results
 in units of $\kms$, and we will assume the same in this discussion.
 
 In general, we would need to use $H(z)$ from each model to compare 
-measurements in $\kms$ with model preditions in $\Mpc$. 
+measurements in $\kms$ with model preditions in $\Mpc$:
+\begin{equation}
+ q = \frac{1+z}{H(z)} ~ k = a_v k~,
+\end{equation}
+where we use $q$ to refer to wavenumbers in velocity units, and we have 
+defined $a_v$ as the transformation from $\kms$ to $\Mpc$.
 This would force us to add in the emulator some sort of Hubble 
 parameter, either at $z=0$ ($h$) or at $z_\star=3$. 
-
 However, as suggested by \cite{McDonald2005a}, it is possible to avoid this
 burden if we describe our model (the linear power spectrum) already in 
 units of $\kms$.
@@ -186,5 +187,48 @@ constraints, we do not need to worry about these differences.
 For the rest of this discussion, we will assume that this is true, and we 
 will come back to this in section \ref{sec:lya}.
 
-\AFR{How do we do this?}
+How does this affect the discussion above?
 
+Let us use $\tilde P(q)$ to refer to power spectra in units of velocity:
+\begin{equation}
+ \tilde P(q) = a_v^3 ~ P(k= q / a_v) ~.
+\end{equation}
+
+We can then redo the whole discussion above, but using power spectra in 
+velocity units:
+\begin{align} 
+ \tilde P^0_L(q) & = (a^0_v)^3 ~ P^0_L(q / a^0_v)         \nonumber \\
+   & = (a^0_v)^3 ~ P^0_{nw}(q / a^0_v) ~ W^0(q / a^0_v)      \nonumber \\
+   & = \tilde P^0_{nw}(q) ~ \tilde W^0(q)  ~,
+\end{align}
+where we have also defined $\tilde W^0(q) = W^0(q / a^0_v0$.
+
+We can now define a term for the ratio of the smooth power, in velocity
+units:
+\begin{align}
+ \tilde B(q) & = \frac{\tilde P_{nw}(q)}{\tilde P^0_{nw}(q)}    \nonumber \\
+  & = \left(\frac{a_v}{a_v^0}\right)^3 
+      \frac{P_{nw}(q / a_v)}{P^0_{nw}(q / a_v^0)} ~,
+\end{align}
+and we can finally write 
+\begin{align}
+ \tilde P_L(q) & = \tilde P_{nw}(q) ~ W(q / a_v)                \nonumber \\
+  & = \tilde B(q) ~ \tilde P^0_{nw}(q) ~ \tilde W^0(\alpha q) ~,
+\end{align}
+where we have defined $\alpha$ as the ratio of sound horizons in units of 
+velocity: 
+\begin{equation}
+ \alpha = \beta \frac{a_v^0}{a_v} = \frac{r_d ~ H_\star}{r_d^0 ~ H^0_\star}~.
+\end{equation}
+
+The input parameters of the emulator will then be:
+\begin{itemize}
+ \item Ratio of sound horizons in units of $\kms$, $\alpha$, where the 
+conversion from $\Mpc$ to $\kms$ is computed at $z_\star=3$. 
+This is the inverse of the usual definition of BAO $\alpha_\parallel$.
+ \item Approximately 3 parameters describing the ratio of the smooth
+  linear power at $z_\star=3$, in units of $\kms$.
+ \item Difference of growth rates at $z_\star=3$, $\Delta f_\star$. 
+\end{itemize}
+
+No cosmological parameter will ever enter the emulator.

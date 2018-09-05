@@ -4,6 +4,9 @@ In order to properly discuss our choice of parameterization and simulation
 setup, it is important to describe how we intend the end product,
 the \textit{likelihood code}, to be used in a cosmological analysis.
 
+Note that during this discussion we have ignored the differences between 
+baryons and CDM, and always work with their weighted-averaged power. 
+
 
 \subsection{User interface}
 
@@ -88,22 +91,61 @@ predictions for the flux power spectrum.
 There are many, many possibilities here, but we will start by discussing a 
 possible setting. 
 
-\begin{itemize}
- \item We will choose a fiducial cosmological model, based on a recent 
-  Planck+BAO analysis, and use it to compute a fiducial linear power spectrum,
-  $P_L^0(z,k)$, a fiducial Hubble expansion, $H^0(z)$, a fiducial growth 
-  rate $f^0(z)$...
- \item We will compress the difference between the input power spectrum, 
-  and the fiducial power spectrum, into a handful of parameters. 
-  Probably this would include the sound horizon at the drag epoch, setting 
-  the scale of the Baryon Acoustic Oscillations (BAO), $r_d$, and 3 extra 
-  parameters describing the smooth differences in the broadband, $B(k)$.
-  We would ignore differences between baryons and CDM, and always work with 
-  their weighted-averaged power. 
-  We will fit these parameters using the linear power at a central redshfit,
-  $z_\star=3$, but since we have decided to use only models where the 
-  linear power spectrum can be factorized, this should not have an impact.
- \item We will compute the difference of the input logarithmic growth rate 
+\subsubsection{Fiducial cosmological model}
+ 
+We will choose a fiducial cosmological model, based on a recent Planck+BAO 
+analysis, and use it to compute a fiducial linear power spectrum, $P_L^0(z,k)$, 
+a fiducial Hubble expansion, $H^0(z)$, a fiducial growth rate $f^0(z)$...
+All quantities with a superscript $^0$ will refer to the fiducial model.
+
+\subsubsection{Linear power shape}
+
+Since we have decided to use only models where the linear power spectrum 
+can be factorized, we will describe its shape at the central redshift only, 
+$z_\star=3$. 
+In general we will use the subscript $_\star$ to refer to quantities that 
+have been evaluated at $z_\star$, but in this sub-section we will ignore 
+the redshift and assume that all power spectra are evaluated at $z_\star$.
+
+We will compress the difference between the input power spectrum, $P_L(k)$, 
+and the fiducial power spectrum, $P^0_L(k)$, into a handful of parameters. 
+We start by fitting the fiducial power with a smooth function, 
+$P^0_{nw}(k)$, using the \textit{no-wiggle} model from \cite{Eisenstein1998}.
+We define the oscillatory component of the fiducial power, $P^0_w(k)$, as the 
+ratio of these two powers:
+\begin{equation}
+ P^0_w(k) = \frac{P^0_L(k)}{P^0_{nw}(k)} ~.
+\end{equation} 
+
+We will assume that the oscillatory component of the input model can be 
+described with the oscillations in the fiducial model, shifted by the ratio 
+of their sound horizons at the drag epoch ($r_d$):
+\begin{equation}
+ P_w(k) \sim P^0_w(\beta k)  
+\qquad  
+ \beta = \frac{r_d}{r^0_d} ~.
+\end{equation}
+We have decided to use $\beta$ and not $\alpha$, more common in BAO analyses,
+because the latter includes a ratio of transformations from observable to 
+commoving coordinates, and we do not need this at this point. 
+
+Finally, we will model the differences in the smooth component with a smooth,
+parameterized function:
+\begin{equation}
+ B(k) = \frac{P_{nw}(k)}{P_{nw}^0(k)} ~.
+\end{equation}
+There are different parameterizations possible, but for the rest of this 
+discussion we will assume that we use three parameters: an amplitude, 
+a slope, and a running of the slope, evaluated around $k_p = 1 \iMpc$. 
+
+To summarize, we will describe the input linear power at $z_\star$ as:
+\begin{equation}
+ P_L(k) = B(k) ~ P_{nw}^0(k) ~ P_w^0(\beta k) ~.
+\end{equation}
+
+\subsubsection{Linear growth}
+
+We will compute the difference of the input logarithmic growth rate 
   with that in the fiducial cosmology, 
   $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
   evaluated at $z_\star=3$. 
@@ -115,7 +157,8 @@ possible setting.
   \end{equation} 
   Note that in LCDM models, and at $2 < z < 5$, the differences in growth 
   rate are typically less than 1\%, as shown in Figure \ref{fig:fz_Om}.
-\end{itemize}
+
+\subsubsection{Hubble expansion}
 
 If we could observe the \lya\ power spectrum in comoving coordinates, that 
 would be enough. 
@@ -140,7 +183,8 @@ effects (different reionization history, different thermal history, different
 mean flux...). 
 And since we plan to marginalize over these to get the final cosmological 
 constraints, we do not need to worry about these differences. 
-For now we will assume that this is true, but we will come back to this 
-issue in section \ref{sec:lya}.
+For the rest of this discussion, we will assume that this is true, and we 
+will come back to this in section \ref{sec:lya}.
 
+\AFR{How do we do this?}
 

@@ -1,0 +1,146 @@
+\section{Public likelihood code} \label{sec:like}
+
+In order to properly discuss our choice of parameterization and simulation
+setup, it is important to describe how we intend the end product,
+the \textit{likelihood code}, to be used in a cosmological analysis.
+
+
+\subsection{User interface}
+
+The aim of the project is to provide a public likelihood package that others
+can use to include \lya\ results in their cosmological parameter constraints.
+The end-user does not need to know about the internal details, about the 
+suite of simulations, the nuisance parameters or the interpolation scheme 
+used in the emulator.
+They do not need to know either whether internally we are describing the 
+power in units of $\kms$, $\Mpc$ or $\hMpc$. 
+
+There are different possible interfaces that we could setup, and probably 
+we will want to provide more than one with different levels of complexity.
+But we will start discussing a particular interface, where we will ask 
+the user to provide for each cosmologicla model:
+\begin{itemize}
+ \item Linear matter power (baryons+CDM), as a function of redshift and 
+  wavenumber, in units of $\iMpc$. 
+  The redshift range should cover at least $2 < z < 5$, and the wavenumber
+  range should cover at least $0.01 \iMpc < k < 10 \iMpc$. 
+  For simplicity, we will restrict ourselves to models with a linear power 
+  spectra that can be factorized ,in the range of redshift and scales 
+  described above, in a power spectrum at a central redshift, 
+  $P_L(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
+ \item Logarithmic growth rate, $f(z)$, that could be computed directly
+  from the evolution of $D(z)$.
+ \item Hubble parameter as a function of redshift, $H(z)$, over the same 
+  redshift range.
+ \item If we want the likelihood code to be able to fit 3D clustering as well,
+  we would need as an input the angular diameter distance, $D_A(z)$, 
+  over the full redshift range.
+\end{itemize}
+
+The user will also specify:
+\begin{itemize}
+ \item Data products to use: 
+  SDSS-I from \cite{McDonald2006}, 
+  BOSS from \cite{Palanque-Delabrouille2013},
+  HIRES/UVES from \cite{Viel2013},
+  XQSO-100 from \cite{Irsic2017}, 
+  HIRES/UVES from \cite{Walther2018a}. 
+  We should also allow the user to specify what redshifts to use from each
+  dataset, since they are independent, and probably also allow the user 
+  to specify the scales to be used in the fit for each dataset.
+ \item Extra analysis settings, like whether to allow for running in the 
+  linear power, non-EdS linear growth...
+ \item \AFR{It is not clear to me whether at this point the user would also
+  be able to set other settings of the likelihood or not, like the way we 
+  treat contamination by DLAs or metals, resolution or noise corrections, 
+  or the parameterization of the temperature-density relation in the 
+  simulations.}
+ \item \AFR{I guess the user should also be able to specify priors for
+  the parameters that we want to marginalize over. 
+  We could even provide the option to use published temperature / mean flux
+  results as a prior on thermal history and mean flux, although this should 
+  be an option that would be switched off by default...}
+\end{itemize}
+
+The output from the \textit{likelihood code} will be:
+\begin{itemize}
+ \item A value of (log-)likelihood for each dataset, possibly a value for 
+  each redshift bin. 
+  Most users will only care about this.
+ \item For the experts, we would also output the best-fit theoretical 
+  prediction for each dataset, for that particular cosmological model.
+  We would also provide the values of the nuisance parameters that correspond
+  to the best fit model (mean flux, temperature-density relation, metal or DLA
+  contamination...).
+ \item We could also provide a random sample of theory lines that are above a 
+  likelihood threshold for that particular model, exploring different 
+  thermal histories and other nuisance parameters.
+\end{itemize}
+
+
+\subsection{From cosmological model to emulator input}
+
+Under the hood, we will use more effective (and cryptic) parameters in our 
+\textit{emulator}, understood as the package that will use black magic 
+(or white magic) and a suite of hydrodynamical simulations to make 
+predictions for the flux power spectrum.
+
+There are many, many possibilities here, but we will start by discussing a 
+possible setting. 
+
+\begin{itemize}
+ \item We will choose a fiducial cosmological model, based on a recent 
+  Planck+BAO analysis, and use it to compute a fiducial linear power spectrum,
+  $P_L^0(z,k)$, a fiducial Hubble expansion, $H^0(z)$, a fiducial growth 
+  rate $f^0(z)$...
+ \item We will compress the difference between the input power spectrum, 
+  and the fiducial power spectrum, into a handful of parameters. 
+  Probably this would include the sound horizon at the drag epoch, setting 
+  the scale of the Baryon Acoustic Oscillations (BAO), $r_d$, and 3 extra 
+  parameters describing the smooth differences in the broadband, $B(k)$.
+  We would ignore differences between baryons and CDM, and always work with 
+  their weighted-averaged power. 
+  We will fit these parameters using the linear power at a central redshfit,
+  $z_\star=3$, but since we have decided to use only models where the 
+  linear power spectrum can be factorized, this should not have an impact.
+ \item We will compute the difference of the input logarithmic growth rate 
+  with that in the fiducial cosmology, 
+  $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
+  evaluated at $z_\star=3$. 
+  We will approximate that the different growth rate at $z_\star$ is 
+  enough to compute the difference in linear growth at any redshift 
+  (within the range):
+  \begin{equation}\label{eq:growth}
+   \frac{D(z)}{D^0(z)} = 1 + \Delta f_\star ~ \frac{\Delta z}{1 + z_\star} ~.
+  \end{equation} 
+  Note that in LCDM models, and at $2 < z < 5$, the differences in growth 
+  rate are typically less than 1\%, as shown in Figure \ref{fig:fz_Om}.
+\end{itemize}
+
+If we could observe the \lya\ power spectrum in comoving coordinates, that 
+would be enough. 
+However, we observe the power spectrum in observing coordinates, wavelengths
+and angles, and a more natural choice is to use velocity units ($\kms$) for 
+the clustering measurements. 
+Indeed, all recent measurements of the 1D \lya\ power reported their results
+in units of $\kms$, and we will assume the same in this discussion.
+
+In general, we would need to use $H(z)$ from each model to compare 
+measurements in $\kms$ with model preditions in $\Mpc$. 
+This would force us to add in the emulator some sort of Hubble 
+parameter, either at $z=0$ ($h$) or at $z_\star=3$. 
+
+However, as suggested by \cite{McDonald2005a}, it is possible to avoid this
+burden if we describe our model (the linear power spectrum) already in 
+units of $\kms$.
+We claim that two models with different expansion histories $H(z)$, but the
+same linear power in units of $\kms$, will have very similar \lya\ power
+spectra, with small remaining differences being caused by astrophysical 
+effects (different reionization history, different thermal history, different
+mean flux...). 
+And since we plan to marginalize over these to get the final cosmological 
+constraints, we do not need to worry about these differences. 
+For now we will assume that this is true, but we will come back to this 
+issue in section \ref{sec:lya}.
+
+

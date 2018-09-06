@@ -109,7 +109,19 @@ all at the same time.}
   nuissance parameters, which users doesn't need to understand except
   for valid ranges. You can add a small wrapper that does this
   marginalisation internally for those who don't care.}
-
+\pvm{In principle I more or less agree with \anze\ about the nuisance 
+parameters, the core level of the code should be written treating all 
+parameters symmetrically and this should be kept accessible... although,
+if you were, e.g., importance sampling a Planck chain you would effectively
+return to needing the code to marginalize over nuisance parameters. On the 
+other hand, I remember long ago in Alexey Makarov days we ended up retreating
+from this idea because the generic MCMC was painfully slowed by marginalization
+over these nuisances when we knew how to make it fast internally... Ugh - 
+I'm going to try not to read anything but emulator section since I think this
+discussion of final public likelihood code is getting way ahead of yourself... 
+\smiley\
+I'd focus on ``what do I need to do to get an emulator capable of any kind of
+fit to a LyaF data set?" ...  }
 
 \subsection{From cosmological model to likelihood parameters}
 

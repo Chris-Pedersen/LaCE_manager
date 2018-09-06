@@ -42,28 +42,34 @@ the user to provide for each cosmologicla model:
 
 The user will also specify:
 \begin{itemize}
- \item Data products to use: 
-  SDSS-I from \cite{McDonald2006}, 
+ \item Data products to use:
+  SDSS-I from \cite{McDonald2006},
   BOSS from \cite{Palanque-Delabrouille2013},
   HIRES/UVES from \cite{Viel2013},
-  XQSO-100 from \cite{Irsic2017}, 
-  HIRES/UVES from \cite{Walther2018a}. 
+  XQSO-100 from \cite{Irsic2017},
+  HIRES/UVES from \cite{Walther2018a}.
   We should also allow the user to specify what redshifts to use from each
-  dataset, since they are independent, and probably also allow the user 
+  dataset, since they are independent, and probably also allow the user
   to specify the scales to be used in the fit for each dataset.
- \item Extra analysis settings, like whether to allow for running in the 
-  linear power, non-EdS linear growth...
- \item \AFR{It is not clear to me whether at this point the user would also
-  be able to set other settings of the likelihood or not, like the way we 
-  treat contamination by DLAs or metals, resolution or noise corrections, 
-  or the parameterization of the temperature-density relation in the 
-  simulations.}
- \item \AFR{I guess the user should also be able to specify priors for
-  the parameters that we want to marginalize over. 
-  We could even provide the option to use published temperature / mean flux
-  results as a prior on thermal history and mean flux, although this should 
-  be an option that would be switched off by default...}
+ \item Extra analysis settings, like whether to allow for running in the
+  linear power, differences in the linear growth, or differences in the BAO
+  wiggles.
 \end{itemize}
+
+\AFR{It is not clear to me whether at this point the user would also be able
+to set other settings of the likelihood or not, like the way we treat
+contamination by DLAs or metals, resolution or noise corrections, or the
+parameterization of the temperature-density relation in the simulations.}
+
+\AFR{I believe the answer is that each of these analysis choices would be
+a different likelihood object, and then the user can decided whether to
+use the likelihood object where the DLA marginalization used the formula
+from \cite{McDonald2005b} or whether to use the one that used the formula
+from \cite{Rogers2018a}.
+Similarly, every time we want to use a different prior for the nuisance
+parameters (say we want to include measurements of mean flux or temperature)
+we would need to recompute the marginalization, and provide a new likelihood
+look-up table.}
 
 The output from the \textit{likelihood code} will be:
 \begin{itemize}

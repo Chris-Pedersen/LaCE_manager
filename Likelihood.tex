@@ -86,6 +86,14 @@ The output from the \textit{likelihood code} will be:
   thermal histories and other nuisance parameters.
 \end{itemize}
 
+\AFR{Actually, I don't think at this point you can get any of the above.
+The user of the final likelihood code will only get a total value for the
+likelihood for the total dataset.
+Even though one would compute the un-marginalized likelihood for each redshift
+and each dataset separately, at the step of marginalizing over nuisance 
+parameters (see section \ref{sec:emu}) you would need to include them 
+all at the same time.}
+
 
 \subsection{From cosmological model to likelihood parameters}
 

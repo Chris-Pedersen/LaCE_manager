@@ -78,12 +78,24 @@ We could do this at two different levels:
   It would also be possible to change the recombination rate at each cell, 
   propagate this into a change in the neutral fraction (proportional to the 
   recombination rate), and finally to the optical depth (proportional to the 
-  neutral fraction). 
+  neutral fraction).
+ \pvm{Note that these two are both essentially instantaneous, i.e., I don't 
+think there is any physical possibility of them not using the same 
+temperatures... (so I wouldn't mess with it, except maybe in some pedagogical
+example)}
 \end{itemize}
 
 Note that, even though this would capture most of the effects of having a 
 different temperature, we would miss the effect that different temperature
 have in the pressure smoothing.
+\pvm{Which is of course not really the same temperature (unlike above), i.e., 
+the functional derivative of $P(z)$ with respect to $T(z')$ through the effect
+of pressure is zero at $z=z'$, while it is a delta function through thermal 
+broadening and recombination rate... I know you know this, this is just a 
+different way to say it... if all pressure came from temperature in observable
+range I'd say this is a little bit of a nitpicky distinction, but the 
+contribution from pressure at early times sort of fundamentally decouples the
+two uses of temperature...  }
 However, we will include a parameter to study the dependence on the pressure
 smoothing, the filtering length $k_F$, and this should be able to capture
 the differences.

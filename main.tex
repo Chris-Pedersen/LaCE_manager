@@ -5,27 +5,11 @@
 \geometry{margin=1in, headsep=0.25in}
 \usepackage[usenames, dvipsnames]{color}
 
-%comments by co-authors
+% define units, short-names...
+\input{mydefinitions}
+%comments by co-authors (I like better these than those in mydefinitions)
 \newcommand{\AFR}[1]{{\color{red}AFR: #1}}
 
-%journals
-\newcommand{\mnras}{{\em Mon. Not. Roy. Astron. Soc. }}
-%\newcommand{\apj}{{\em Astrophys. Jour. }}
-%\newcommand{\apjl}{{\em Astrophys. J. Let. }}
-\newcommand{\apjs}{ApJS}
-\newcommand{\jcap}{JCAP}
-%\newcommand{\physrep}{{\em Phys. Rept. }}
-\newcommand{\aap}{{\em Astron. Astrophys. }}
-%\newcommand{\prd}{{\em Phys. Rev.}}
-%\newcommand{\aj}{AJ }
-
-%others
-\newcommand{\lya}{Ly-$\alpha$}
-\newcommand{\kms}{{\rm km~s^{-1}}}  
-\newcommand{\ikms}{{\rm s~km^{-1}}}
-\newcommand{\iMpc}{{\rm Mpc^{-1}}}
-\newcommand{\kpar}{k_\parallel}
-\newcommand{\Plin}{P_{\rm lin}}
 
 \begin{document}
 
@@ -46,10 +30,10 @@ Berkeley, CA 94720, USA}
 \date{\today}
 
 \begin{abstract}
-Discuss unique role of \lya\ forest power spectrum, running and neutrino mass.
-Discuss the need of emulators and expensive hydrodynamical simulations, and
-the critical choice of likelihood parameterization.
-Mention BOSS, eBOSS, DESI and high-resolution spectra.
+This is an internal document aimed at clarifying the work-flow related to constructing emulators for the 
+\lya\ power spectrum, using hydrodynamical simulations.
+It could be used for an eventual publication, but for now the main goal is to make sure we are all on the
+same page, and help build the science case for the 11th DiRAC Call.
 \end{abstract}
 
 \maketitle
@@ -58,15 +42,17 @@ Mention BOSS, eBOSS, DESI and high-resolution spectra.
 
 \input{Overview}
 
-\input{Linear}
+\input{Likelihood}
+
+\input{Emulator}
 
 \input{Simulations}
 
-\input{Density}
+%\input{Density}
 
-\input{Lya}
+%\input{Lya}
 
-\input{Discussion}
+%\input{Discussion}
 
 \section*{Acknowledgements}
 AFR acknowledges support by an STFC Ernest Rutherford Fellowship, grant reference ST/N003853/1.
@@ -77,7 +63,8 @@ Initiative.
 \bibliography{main}
 \bibliographystyle{JHEP}
 
-%\appendix
+\appendix
 
+\input{extra_equations}
 
 \end{document}

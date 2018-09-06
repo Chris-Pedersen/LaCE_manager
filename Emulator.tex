@@ -1,0 +1,56 @@
+\section{The emulator} \label{sec:emu}
+
+For a given combination of linear power parameters $\theta$, i.e., for
+each point in the lookup table, we want to compute the integral in
+equation \ref{eq:marg}.
+To do this, we need to specify priors $\Pi(\phi)$, but more importantly
+we need to compute the likelihood $L(\vd | \theta, \phi)$.
+
+We need, therefore, to make predictions for the 1D flux power spectrum
+at a certain set of points, $P_{1D}(z,q)$, in velocity units, given a model
+defined by ($\theta$,$\phi$).
+We discuss the (nuisance) astrophysical parameters $\phi$ in more detail
+later on, but for now we will assume that there are only two parameters:
+an overall normalization of the logarithm of the mean flux $\ln{\bar F_0}$,
+multiplying some fiducial redshift evolution, and an overall normalization
+of the filtering length $k_{F 0}$ (associated to the smoothing of the gas),
+also multiplying a fiducial redshift evolution. 
+
+
+\subsection{Emulating a particular redshift}
+
+For each redshfit $z_i$, we compute the corresponding value of the mean flux
+($\bar F_i$) and filtering length ($k_{Fi}$).
+
+Using the linear power parameters ($\theta$), and the fiducial
+power spectrum (in velocity units), we are able to compute the expected
+linear power for this particular model, in velocity units, at this redshift,
+$\tilde P_i(q)$.
+
+\AFR{This is one of the pieces that is still not crystal clear in my head.
+Would we just take $\tilde P_L(z_\star,q)$, the linear power in velocity
+units at the central redshift, and rescale it using the discussion around
+equation \ref{eq:growth}?
+If we did that, we would be missing the fact that the transformation between
+comoving and velocity separations $a_v$ changes with redshift.
+I guess one could use the fiducial model to compute this difference?
+The alternative would be to have a 6th cosmological parameter describing
+the difference in the change in the Hubble expansion around $z_\star$?}
+
+At this point, we can completely forget about the redshift $z_i$.
+
+Instead, we will go to our simulation database, and ask:
+is there any simulated flux power spectra that was computed from a snapshot
+with similar linear power (in velocity units) $\tilde P_i(q)$, similar
+mean flux $\bar F_i$ and similar filtering length $k_{Fi}$?
+
+If we had an extremely large number of simulations, we could just setup a
+metric to find the closest snapshot, and directly read the flux power
+from the snapshot.
+Since we will have a sparse sampling of the parameter space, we will need
+to do some interpolation between them.
+This interpolation is precisely the role of the \textit{emulator}.
+
+Note that the internal metric used for the interpolation does not need to 
+use the same parameters $\theta$ describing the linear power.
+

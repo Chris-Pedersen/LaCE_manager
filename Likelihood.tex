@@ -1,0 +1,261 @@
+\section{Public likelihood code} \label{sec:like}
+
+In order to properly discuss our choice of parameterization and simulation
+setup, it is important to describe how we intend the end product,
+the \textit{likelihood code}, to be used in a cosmological analysis.
+
+Note that during this discussion we have ignored the differences between 
+baryons and CDM, and always work with their weighted-averaged power. 
+
+
+\subsection{User interface}
+
+The aim of the project is to provide a public likelihood package that others
+can use to include \lya\ results in their cosmological parameter constraints.
+The end-user does not need to know about the internal details, about the 
+suite of simulations, the nuisance parameters or the interpolation scheme 
+used in the emulator.
+They do not need to know either whether internally we are describing the 
+power in units of $\kms$, $\Mpc$ or $\hMpc$. 
+
+There are different possible interfaces that we could setup, and probably 
+we will want to provide more than one with different levels of complexity.
+But we will start discussing a particular interface, where we will ask 
+the user to provide for each cosmologicla model:
+\begin{itemize}
+ \item Linear matter power (baryons+CDM), as a function of redshift and 
+  wavenumber, in units of $\iMpc$. 
+  The redshift range should cover at least $2 < z < 5$, and the wavenumber
+  range should cover at least $0.01 \iMpc < k < 10 \iMpc$. 
+  For simplicity, we will restrict ourselves to models with a linear power 
+  spectra that can be factorized ,in the range of redshift and scales 
+  described above, in a power spectrum at a central redshift, 
+  $P_L(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
+ \item Logarithmic growth rate, $f(z)$, that could be computed directly
+  from the evolution of $D(z)$.
+ \item Hubble parameter as a function of redshift, $H(z)$, over the same 
+  redshift range.
+ \item If we want the likelihood code to be able to fit 3D clustering as well,
+  we would need as an input the angular diameter distance, $D_A(z)$, 
+  over the full redshift range.
+\end{itemize}
+
+The user will also specify:
+\begin{itemize}
+ \item Data products to use:
+  SDSS-I from \cite{McDonald2006},
+  BOSS from \cite{Palanque-Delabrouille2013},
+  HIRES/UVES from \cite{Viel2013},
+  XQSO-100 from \cite{Irsic2017},
+  HIRES/UVES from \cite{Walther2018a}.
+  We should also allow the user to specify what redshifts to use from each
+  dataset, since they are independent, and probably also allow the user
+  to specify the scales to be used in the fit for each dataset.
+ \item Extra analysis settings, like whether to allow for running in the
+  linear power, differences in the linear growth, or differences in the BAO
+  wiggles.
+\end{itemize}
+
+\AFR{It is not clear to me whether at this point the user would also be able
+to set other settings of the likelihood or not, like the way we treat
+contamination by DLAs or metals, resolution or noise corrections, or the
+parameterization of the temperature-density relation in the simulations.}
+
+\AFR{I believe the answer is that each of these analysis choices would be
+a different likelihood object, and then the user can decided whether to
+use the likelihood object where the DLA marginalization used the formula
+from \cite{McDonald2005b} or whether to use the one that used the formula
+from \cite{Rogers2018a}.
+Similarly, every time we want to use a different prior for the nuisance
+parameters (say we want to include measurements of mean flux or temperature)
+we would need to recompute the marginalization, and provide a new likelihood
+look-up table.}
+
+The output from the \textit{likelihood code} will be:
+\begin{itemize}
+ \item A value of (log-)likelihood for each dataset, possibly a value for 
+  each redshift bin. 
+  Most users will only care about this.
+ \item For the experts, we would also output the best-fit theoretical 
+  prediction for each dataset, for that particular cosmological model.
+  We would also provide the values of the nuisance parameters that correspond
+  to the best fit model (mean flux, temperature-density relation, metal or DLA
+  contamination...).
+ \item We could also provide a random sample of theory lines that are above a 
+  likelihood threshold for that particular model, exploring different 
+  thermal histories and other nuisance parameters.
+\end{itemize}
+
+\AFR{Actually, I don't think at this point you can get any of the above.
+The user of the final likelihood code will only get a total value for the
+likelihood for the total dataset.
+Even though one would compute the un-marginalized likelihood for each redshift
+and each dataset separately, at the step of marginalizing over nuisance 
+parameters (see section \ref{sec:emu}) you would need to include them 
+all at the same time.}
+
+
+\subsection{From cosmological model to likelihood parameters}
+
+Under the hood, we will use more effective (and cryptic) parameters in our 
+likelihood, to reduce the internal degeneracies between parameters.
+There are many, many possibilities here, but we will start by discussing a 
+possible setting. 
+
+\subsubsection{Fiducial cosmological model}
+ 
+We will choose a fiducial cosmological model, based on a recent Planck+BAO 
+analysis, and use it to compute a fiducial linear power spectrum, $P_L^0(z,k)$, 
+a fiducial Hubble expansion, $H^0(z)$, a fiducial growth rate $f^0(z)$...
+All quantities with a superscript $^0$ will refer to the fiducial model.
+
+\subsubsection{Linear power shape}
+
+Since we have decided to use only models where the linear power spectrum 
+can be factorized, we will describe its shape at the central redshift only, 
+$z_\star=3$. 
+In general we will use the subscript $_\star$ to refer to quantities that 
+have been evaluated at $z_\star$, but in this sub-section we will ignore 
+the redshift and assume that all power spectra are evaluated at $z_\star$.
+
+We will compress the difference between the input power spectrum, $P_L(k)$, 
+and the fiducial power spectrum, $P^0_L(k)$, into a handful of parameters. 
+We start by fitting the fiducial power with a smooth function, 
+$P^0_{nw}(k)$, using the \textit{no-wiggle} model from \cite{Eisenstein1998}.
+We define the oscillatory (or \textit{wiggle}) component of the 
+fiducial power, $W^0(k)$, as the ratio of these two powers:
+\begin{equation}
+ W^0(k) = \frac{P^0_L(k)}{P^0_{nw}(k)} ~.
+\end{equation} 
+
+We will assume that the oscillatory component of the input model can be 
+described with the oscillations in the fiducial model, shifted by the ratio 
+of their sound horizons at the drag epoch ($r_d$):
+\begin{equation}
+ W(k) \sim W^0(\beta k)  
+\qquad  
+ \beta = \frac{r_d}{r^0_d} ~.
+\end{equation}
+We have decided to use $\beta$ and not $\alpha$, more common in BAO analyses,
+because the latter includes a ratio of transformations from observable to 
+commoving coordinates, and we do not need this at this point. 
+
+Finally, we will model the differences in the smooth component with a smooth,
+parameterized function:
+\begin{equation}
+ B(k) = \frac{P_{nw}(k)}{P_{nw}^0(k)} ~.
+\end{equation}
+There are different parameterizations possible, but for the rest of this 
+discussion we will assume that we use three parameters: an amplitude, 
+a slope, and a running of the slope, evaluated around $k_p = 1 \iMpc$. 
+
+To summarize, we will describe the input linear power at $z_\star$ as:
+\begin{equation} \label{eq:Pk_param}
+ P_L(k) = B(k) ~ P_{nw}^0(k) ~ W^0(\beta k) ~.
+\end{equation}
+
+\subsubsection{Linear growth}
+
+We will compute the difference of the input logarithmic growth rate with that 
+in the fiducial cosmology, $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
+evaluated at $z_\star=3$. 
+We will approximate that the different growth rate at $z_\star$ is enough 
+to compute the difference in linear growth at any redshift (within the range):
+\begin{equation}\label{eq:growth}
+ \frac{D(z)}{D^0(z)} = 1 + \Delta f_\star ~ \frac{\Delta z}{1 + z_\star} ~.
+\end{equation} 
+Note that in LCDM models, and at $2 < z < 5$, the differences in growth rate 
+are typically less than 1\%, as shown in Figure \ref{fig:fz_Om}.
+
+\subsubsection{Hubble expansion}
+
+If we could observe the \lya\ power spectrum in comoving coordinates, that 
+would be enough. 
+However, we observe the power spectrum in observing coordinates, wavelengths
+and angles, and a more natural choice is to use velocity units ($\kms$) for 
+the clustering measurements. 
+Indeed, all recent measurements of the 1D \lya\ power reported their results
+in units of $\kms$, and we will assume the same in this discussion.
+
+In general, we would need to use $H(z)$ from each model to compare 
+measurements in $\kms$ with model preditions in $\Mpc$:
+\begin{equation}
+ q = \frac{1+z}{H(z)} ~ k = a_v k~,
+\end{equation}
+where we use $q$ to refer to wavenumbers in velocity units, and we have 
+defined $a_v$ as the transformation from $\kms$ to $\Mpc$.
+This would force us to add in the emulator some sort of Hubble 
+parameter, either at $z=0$ ($h$) or at $z_\star=3$. 
+However, as suggested by \cite{McDonald2005a}, it is possible to avoid this
+burden if we describe our model (the linear power spectrum) already in 
+units of $\kms$.
+We claim that two models with different expansion histories $H(z)$, but the
+same linear power in units of $\kms$, will have very similar \lya\ power
+spectra, with small remaining differences being caused by astrophysical 
+effects (different reionization history, different thermal history, different
+mean flux...). 
+And since we plan to marginalize over these to get the final cosmological 
+constraints, we do not need to worry about these differences. 
+For the rest of this discussion, we will assume that this is true.
+
+How does this affect the discussion above?
+
+Let us use $\tilde P(q)$ to refer to power spectra in units of velocity:
+\begin{equation}
+ \tilde P(q) = a_v^3 ~ P(k= q / a_v) ~.
+\end{equation}
+
+We can then redo the whole discussion above, but using power spectra in 
+velocity units:
+\begin{align} 
+ \tilde P^0_L(q) & = (a^0_v)^3 ~ P^0_L(q / a^0_v)         \nonumber \\
+   & = (a^0_v)^3 ~ P^0_{nw}(q / a^0_v) ~ W^0(q / a^0_v)      \nonumber \\
+   & = \tilde P^0_{nw}(q) ~ \tilde W^0(q)  ~,
+\end{align}
+where we have also defined $\tilde W^0(q) = W^0(q / a^0_v0$.
+
+We can now define a term for the ratio of the smooth power, in velocity
+units:
+\begin{align}
+ \tilde B(q) & = \frac{\tilde P_{nw}(q)}{\tilde P^0_{nw}(q)}    \nonumber \\
+  & = \left(\frac{a_v}{a_v^0}\right)^3 
+      \frac{P_{nw}(q / a_v)}{P^0_{nw}(q / a_v^0)} ~,
+\end{align}
+and we can finally write 
+\begin{align}
+ \tilde P_L(q) & = \tilde P_{nw}(q) ~ W(q / a_v)                \nonumber \\
+  & = \tilde B(q) ~ \tilde P^0_{nw}(q) ~ \tilde W^0(\alpha q) ~,
+\end{align}
+where we have defined $\alpha$ as the ratio of sound horizons in units of 
+velocity: 
+\begin{equation}
+ \alpha = \beta \frac{a_v^0}{a_v} = \frac{r_d ~ H_\star}{r_d^0 ~ H^0_\star}~.
+\end{equation}
+
+The cosmological model in the likelihood will then be described by a 
+set of parameters $\theta$ describing the linear power spectrum, including:
+\begin{itemize}
+ \item Ratio of sound horizons in units of $\kms$, $\alpha$, where the 
+conversion from $\Mpc$ to $\kms$ is computed at $z_\star=3$. 
+This is the inverse of the usual definition of BAO $\alpha_\parallel$.
+ \item Approximately 3 parameters describing the ratio of the smooth
+  linear power at $z_\star=3$, in units of $\kms$.
+ \item Difference of growth rates at $z_\star=3$, $\Delta f_\star$. 
+\end{itemize}
+
+We will ask the likelihood code: for these set of parameters $\theta$,
+what is the likelihood of getting the measured power, after marginalizing
+over all nuisance parameters (including mean flux and thermal history)?
+Or in math, what we want is:
+\begin{equation} \label{eq:marg}
+ L(\vd | \theta)
+  = \int d\phi ~ \Pi(\phi) ~ L(\vd | \theta, \phi) ~,
+\end{equation}
+where $\vd$ is the measured flux power spectrum, $\phi$ are the nuisance
+parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
+
+This likelihood will have been evaluated at a grid of points in $\theta$,
+and it will be stored as a look up table.
+Evaluating the likelihood, once the lookup table has been computed,
+should then be trivial and extremely fast.
+

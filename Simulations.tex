@@ -106,7 +106,7 @@ the differences.
 The small scale structure is suppressed on very small scales because of the
 pressure in the gas. 
 As described in \cite{Hui1997,Gnedin1998}, the smoothing can be described
-by a characteristic scale, $k_F)(z)$, the \textit{filtering scale}, that is
+by a characteristic scale, $k_F(z)$, the \textit{filtering scale}, that is
 an integral version of the Jeans length that depends also on the temperature
 in the past.
 
@@ -127,7 +127,7 @@ used in all papers by Hennawi / Lukic / Onorbe.}
 In the linear regime, and for a single specie, the growth of structure is 
 scale independent, and it can be described by the growth factor $D(z)$.
 %\begin{equation}
-% \Plin(z,k) = \frac{D^2(z)}{D^2(z_0)} ~ \Plin(z_0,k) ~.
+% P_L(z,k) = \frac{D^2(z)}{D^2(z_0)} ~ P_L(z_0,k) ~.
 %\end{equation}
 
 If the \lya\ power spectra depended only on the linear power spectrum, this 
@@ -135,12 +135,8 @@ would suggest that there would be a complete degeneracy between changing
 the overall amplitude of the linear power spectrum and changing the redshift
 at which we ouput the snapshot. 
 Therefore, we could use the amplitude of the linear power at a given snapshot
-to label it, and use the different snapshots of the same simulation to study 
-models with different amplitudes of the linear power. 
-
-In section \ref{sec:dens} we will check whether this is still true at the 
-level of the non-linear power spectrum, and in section \ref{sec:lya} we 
-will look at this degeneracy in the \lya\ power spectrum. 
+to label it, and we could potentially use different snapshots of the same 
+simulation to study models with different amplitudes of the linear power. 
 
 \AFR{How do we measure the linear power in the snapshot? 
 I could see three options (in order of my preference): 
@@ -155,7 +151,7 @@ from the predicted by CAMB/CLASS because of issues in the linear growht).}
 To sum up, each snapshot will be used to generate multiple simulated 
 fields, and we can label each of them by their values of: 
 mean flux (1 parameter) $\bar F$,
-linear power (3 parameters) $\Plin$,
+linear power (3 parameters) $P_L$,
 TDR (2 parameters) $T_0$ and $\gamma$, 
 filtering scale $k_F$.
 

@@ -10,6 +10,8 @@ baryons and CDM, and always work with their weighted-averaged power.
 
 \subsection{User interface}
 
+\as{I don't like the expression ``user interface'' here. Wouldn't
+  likelihood parameterization be more appropriate?}
 The aim of the project is to provide a public likelihood package that others
 can use to include \lya\ results in their cosmological parameter constraints.
 The end-user does not need to know about the internal details, about the 
@@ -21,7 +23,7 @@ power in units of $\kms$, $\Mpc$ or $\hMpc$.
 There are different possible interfaces that we could setup, and probably 
 we will want to provide more than one with different levels of complexity.
 But we will start discussing a particular interface, where we will ask 
-the user to provide for each cosmologicla model:
+the user to provide for each cosmological model:
 \begin{itemize}
  \item Linear matter power (baryons+CDM), as a function of redshift and 
   wavenumber, in units of $\iMpc$. 
@@ -31,13 +33,18 @@ the user to provide for each cosmologicla model:
   spectra that can be factorized ,in the range of redshift and scales 
   described above, in a power spectrum at a central redshift, 
   $P_L(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
+  \as{If you are to compress flux measurement over X redshift bins
+    into one linear power constrain, just as for the linear power
+    at that $z_{\rm pivot}$ and $f$ at that redshift. If you are going
+    to compress into two $z$s, ask for those two $z$s and two $f$s}.
  \item Logarithmic growth rate, $f(z)$, that could be computed directly
   from the evolution of $D(z)$.
  \item Hubble parameter as a function of redshift, $H(z)$, over the same 
   redshift range.
  \item If we want the likelihood code to be able to fit 3D clustering as well,
   we would need as an input the angular diameter distance, $D_A(z)$, 
-  over the full redshift range.
+  over the full redshift range. \as{I would add $r_d$ and also $r_d$
+    fiducial for generality}.
 \end{itemize}
 
 The user will also specify:
@@ -60,6 +67,7 @@ The user will also specify:
 to set other settings of the likelihood or not, like the way we treat
 contamination by DLAs or metals, resolution or noise corrections, or the
 parameterization of the temperature-density relation in the simulations.}
+\as{This is implementational detail, no need to worry about this now.}
 
 \AFR{I believe the answer is that each of these analysis choices would be
 a different likelihood object, and then the user can decided whether to
@@ -93,6 +101,14 @@ Even though one would compute the un-marginalized likelihood for each redshift
 and each dataset separately, at the step of marginalizing over nuisance 
 parameters (see section \ref{sec:emu}) you would need to include them 
 all at the same time.}
+\as{No, no. You don't marginalise over nuissance parameters inside
+  your likelihood code. Some nuissance parameters will have particular
+  degeneracies with the big picture cosmological parameters, and in
+  addition you never know how clever the user's sampler is. It is ok
+  to ask for linear power, $f$, $H(z)$, $D_A(z)$ and a set of
+  nuissance parameters, which users doesn't need to understand except
+  for valid ranges. You can add a small wrapper that does this
+  marginalisation internally for those who don't care.}
 
 
 \subsection{From cosmological model to likelihood parameters}
@@ -188,7 +204,9 @@ This would force us to add in the emulator some sort of Hubble
 parameter, either at $z=0$ ($h$) or at $z_\star=3$. 
 However, as suggested by \cite{McDonald2005a}, it is possible to avoid this
 burden if we describe our model (the linear power spectrum) already in 
-units of $\kms$.
+units of $\kms$. \as{This confused the shit out of me until very
+  recently. I vote for having power spectra in Mpc and also require
+  $H(z_\star)$ and do this conversion internally -- it is trivial. }
 We claim that two models with different expansion histories $H(z)$, but the
 same linear power in units of $\kms$, will have very similar \lya\ power
 spectra, with small remaining differences being caused by astrophysical 
@@ -253,6 +271,13 @@ Or in math, what we want is:
 \end{equation}
 where $\vd$ is the measured flux power spectrum, $\phi$ are the nuisance
 parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
+\as{Again, marginalisation is for the user to do. The code should
+  output total $\chi^2$ at this point and optionally data-points and
+  theory predictions at this point include full gory of nuissance
+  parameters. If you look at eg \texttt{cosmomc} it internally
+  marginalises already over some 15 Planck parameters, it can do 15
+  more for us.}
+
 
 This likelihood will have been evaluated at a grid of points in $\theta$,
 and it will be stored as a look up table.

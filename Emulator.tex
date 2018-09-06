@@ -36,19 +36,26 @@ comoving and velocity separations $a_v$ changes with redshift.
 I guess one could use the fiducial model to compute this difference?
 The alternative would be to have a 6th cosmological parameter describing
 the difference in the change in the Hubble expansion around $z_\star$?}
+\as{If DE is truly negligible for sensible models, then just don't
+  worry about it and assumed EdS. If it makes small corrections, then
+  the best course of action would be to also specify $d
+  H^2/da=-3\Omega_m/a^4$ at $z=z_\star$.}
+
 
 At this point, we can completely forget about the redshift $z_i$.
 
 Instead, we will go to our simulation database, and ask:
 is there any simulated flux power spectra that was computed from a snapshot
 with similar linear power (in velocity units) $\tilde P_i(q)$, similar
-mean flux $\bar F_i$ and similar filtering length $k_{Fi}$?
+mean flux $\bar F_i$ and similar filtering length $k_{Fi}$? \as{And
+  similar $f$ for velocity effects? Again, only matters if non-EdS matters.}
 
 If we had an extremely large number of simulations, we could just setup a
 metric to find the closest snapshot, and directly read the flux power
 from the snapshot.
 Since we will have a sparse sampling of the parameter space, we will need
-to do some interpolation between them.
+to do some interpolation between them. \as{This is a good way to think
+  about this, yes.}
 This interpolation is precisely the role of the \textit{emulator}.
 
 Note that the internal metric used for the interpolation does not need to 

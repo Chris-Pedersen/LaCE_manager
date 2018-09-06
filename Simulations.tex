@@ -120,6 +120,12 @@ We would also need to discuss the best way to measure $k_F$ in the snapshots:
 fit a Gaussian kernel in the power spectrum of $F_{\rm real}$, where no 
 redshift-space distortions have been included? I believe that is what is 
 used in all papers by Hennawi / Lukic / Onorbe.}
+\as{I remember having massive trouble with this when Nishi was still
+  around. I naively imagined that I would just plot the 3D baryon
+  power spectrum, see supression by eye and call $k$ at the midpoint of
+  supression the smoothing. No cigar -- the baryon power spectrum is
+  dominated by shot-noise of baryons in halos, you really need to be a
+  bit clever about this. Perhaps this has been solved.}
 
 
 \subsection{Labelling the snapshots}
@@ -147,13 +153,15 @@ the low-k part;
 run a very cheap simulation without hydro and a very low value of $A_s$, to 
 compute the actual linear power in the simulation (that might sadly differ 
 from the predicted by CAMB/CLASS because of issues in the linear growht).}
-
+\as{By far preferrable, in fact the only way that wouldn't look dodgy
+  would be not to measure it at all. :) It is a known quantity give
+  linear codes. :)}
 To sum up, each snapshot will be used to generate multiple simulated 
 fields, and we can label each of them by their values of: 
 mean flux (1 parameter) $\bar F$,
 linear power (3 parameters) $P_L$,
 TDR (2 parameters) $T_0$ and $\gamma$, 
-filtering scale $k_F$.
+filtering scale $k_F$. \as{Perhaps you need $f$ again.}
 
 Redshift will NOT be a label describing the simulated field, and neither
 will be the TREECOOL file or the redshift of reionization.

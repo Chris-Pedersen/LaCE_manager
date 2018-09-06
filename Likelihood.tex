@@ -81,12 +81,10 @@ The output from the \textit{likelihood code} will be:
 \end{itemize}
 
 
-\subsection{From cosmological model to emulator input}
+\subsection{From cosmological model to likelihood parameters}
 
 Under the hood, we will use more effective (and cryptic) parameters in our 
-\textit{emulator}, understood as the package that will use black magic 
-(or white magic) and a suite of hydrodynamical simulations to make 
-predictions for the flux power spectrum.
+likelihood, to reduce the internal degeneracies between parameters.
 There are many, many possibilities here, but we will start by discussing a 
 possible setting. 
 
@@ -184,8 +182,7 @@ effects (different reionization history, different thermal history, different
 mean flux...). 
 And since we plan to marginalize over these to get the final cosmological 
 constraints, we do not need to worry about these differences. 
-For the rest of this discussion, we will assume that this is true, and we 
-will come back to this in section \ref{sec:lya}.
+For the rest of this discussion, we will assume that this is true.
 
 How does this affect the discussion above?
 
@@ -221,7 +218,8 @@ velocity:
  \alpha = \beta \frac{a_v^0}{a_v} = \frac{r_d ~ H_\star}{r_d^0 ~ H^0_\star}~.
 \end{equation}
 
-The input parameters of the emulator will then be:
+The cosmological model in the likelihood will then be described by a 
+set of parameters $\theta$ describing the linear power spectrum, including:
 \begin{itemize}
  \item Ratio of sound horizons in units of $\kms$, $\alpha$, where the 
 conversion from $\Mpc$ to $\kms$ is computed at $z_\star=3$. 
@@ -231,4 +229,19 @@ This is the inverse of the usual definition of BAO $\alpha_\parallel$.
  \item Difference of growth rates at $z_\star=3$, $\Delta f_\star$. 
 \end{itemize}
 
-No cosmological parameter will ever enter the emulator.
+We will ask the likelihood code: for these set of parameters $\theta$,
+what is the likelihood of getting the measured power, after marginalizing
+over all nuisance parameters (including mean flux and thermal history)?
+Or in math, what we want is:
+\begin{equation} \label{eq:marg}
+ L(\vd | \theta)
+  = \int d\phi ~ \Pi(\phi) ~ L(\vd | \theta, \phi) ~,
+\end{equation}
+where $\vd$ is the measured flux power spectrum, $\phi$ are the nuisance
+parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
+
+This likelihood will have been evaluated at a grid of points in $\theta$,
+and it will be stored as a look up table.
+Evaluating the likelihood, once the lookup table has been computed,
+should then be trivial and extremely fast.
+

@@ -404,6 +404,15 @@ parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
 \AFR{Ok, this is the type of discussion I wanted to have. 
 Is this really how it was done in SDSS-I? What was the look-up table for, then?
 To make plots?}
+\pvm{I guess I should further to un-agree with \anze... 
+If you wanted to assume everyone
+will be using cosmoMC so you could just make a module for that and broadcast
+it, I guess it would be ok (but I think still a lot of people would consider
+your LyaF parameters to be too literally a nuisance... and be less tolerant 
+of it than of Planck nuisance), but I don't think you want to think this way.
+I don't think one MCMC code will dominate, so you need to assume people are
+going to be grafting your likelihood code into various things themselves, 
+so you want to make sure to have a very easy option. }
 
 This likelihood will have been evaluated at a grid of points in $\theta$,
 and it will be stored as a look up table.

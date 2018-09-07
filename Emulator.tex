@@ -48,7 +48,9 @@ spectrum produced from that redshift output.
 E.g., there is a linear power spectrum associated with each redshift
 output, which you can easily compute using CLASS -- you don't really care
 where it came from in terms or evolution from higher z, or, if you do, it is 
-only as a very subdominant correction. Even if you decided you needed to 
+only as a very subdominant correction.}
+\NEW{Yes, I got that. That's what I was trying to say here...}
+\pvm{Even if you decided you needed to 
 track differences in evolution for fixed output-time linear power, you would
 probably want to do that by extracting $dP_{lin}/dz(z_{output})$ 
 from CLASS, i.e., 
@@ -74,8 +76,9 @@ kinds of things
 as much as possible -- and then a simulation mapping of those
 things into non-linear power (in more or less arbitrary units, followed by 
 observation, applying the necessary units -- this part I think is easy for
-everyone to agree on). 
-This is an opportunity to say something I've been thinking about all this 
+everyone to agree on). }
+\NEW{Yes, that was my plan.}
+\pvm{This is an opportunity to say something I've been thinking about all this 
 including neutrino, etc., sim testing: by *far* the most efficient way to 
 test whether an idea you have for simplifying the emulator parameterization is
 good enough is
@@ -108,7 +111,7 @@ But we threw that information away because we claimed that the only thing
 that matters (the only parameters in our final likelihood) were there 
 $\theta$ parameters.
 So we need to be able to reconstruct any linear power from these, so that 
-then we can look at the simulations and try to look for one a "snapshot" 
+then we can look at the simulations and try to look for a "snapshot" 
 (more precisely, one of the multiple reproccessed snapshots) that had 
 this particular power spectrum.
 I'm not sure this is any clearer... 
@@ -122,15 +125,31 @@ $z=4$, you need a prediction for it, what does your emulator need to know to
 predict it? I'd say at first approximation it needs to know $P(k,z=4)$, in 
 km/s. So the input to the emulator is $P(k,z=4)$ in km/s, period, end of 
 story for emulator -- it has a hard enough job doing this well, it doesn't
-need to worry about where this $P(k in km/s,z=4)$ came from. If you're asking
+need to worry about where this $P(k in km/s,z=4)$ came from. }
+\NEW{Yes, I agree. I realize now that I was using the word \textit{emulator}
+in the wrong way, including what you call bellow "code to make a $\chi^2$ 
+table".}
+\pvm{If you're asking
 like ``how would I use this emulator to make a $\chi^2$ table of final results 
 for $\Delta^2,\neff(z=3,k=0.009 s/km)$", worrying about broader z (and k) 
 dependence,
 I think you just pick the current best cosmological model as fiducial, and
 define $\Delta^2,\neff(z=3,k=0.009 s/km)$ effectively as variations of 
 $A_s$ and $n_s$ -- this gives you your $P(k in km/s,z=4)$ to feed the 
-emulator, but it is really a completely separate thing from the emulator. 
-Of course, maybe you want to fit for growth deviations, and this gives you 
+emulator, but it is really a completely separate thing from the emulator. }
+\NEW{Just to be sure. $\theta$ parameters describe the different shape of the 
+linear power, in $\kms$, at $z_\star=3$. 
+I can try to use these, and $H^0(z_\star)$ from the fiducial model, to compute 
+the equivalent linear power in comoving coordinates.
+Then I can translate that to a different redshift using the linear growth
+of the fiducial model (may be corrected by difference in $f_\star$), and 
+then use the Hubble parameter of the fiducial model at the redshift, 
+$H^0(z_i=4)$ to compute the final power we needed to talk to the simulations.
+Correct? The only thing this could break is if the redshift evolution of 
+$H(z)$ and $H^0(z)$ were very different, but that should not be the case for
+most models, and if it was we could add an extra parameter to take care of 
+this. Did I understand it?}
+\pvm{Of course, maybe you want to fit for growth deviations, and this gives you 
 a different way of getting $P(k in km/s,z=4)$, or maybe you are doing a big
 global MCMC chain... the emulator who's job is to predict 
 1D flux power at z=4 doesn't want to know what you are doing globally, it 
@@ -139,6 +158,11 @@ $P(k in km/s,z=4)$ because I carefully wrote 1D power and it is shorter than
 writing ``$P(k in Mpc,z=4)$ and $H(z=4)$", which I think we agree is probably
 how things should really go for pedagogical reasons, and 
 add $D_A(z=4)$ for 3D.) }
+\NEW{Ok, I think we are getting closer. I think part of the confusion was 
+my poor use of the word \textit{emulator}, and the other part of the confusion
+is that I always wanted to focus on the "look-up table" version, and not on 
+the cosmomc version.}
+
 
 
 At this point, we can completely forget about the redshift $z_i$.

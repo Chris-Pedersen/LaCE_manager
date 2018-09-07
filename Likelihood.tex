@@ -12,7 +12,7 @@ baryons and CDM, and always work with their weighted-averaged power.
 
 \as{I don't like the expression ``user interface'' here. Wouldn't
   likelihood parameterization be more appropriate?}
-\AFR{Anze, this is an internal document, to make sure we are all (including
+\AFR{\anze, this is an internal document, to make sure we are all (including
 Chris, Hiranya, Andrew, Tom...) in the same page. 
 The second part of this section is about the parameterization, this first 
 part is really just about the interface... 
@@ -185,6 +185,12 @@ think through how necessary I think the marginalized version really is...).
 ... I don't think this has to be very ``cryptic" even under the hood though...
 I wouldn't call a $\chi^2$ table in $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ 
 cryptic... } 
+
+\NEW{Perfect. Just for the record, in my original text (two days ago) I never
+meant to talk about the CosmoMC option, I always had in mind to compress it
+all to a look-up table with $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ or 
+equivalent (may be extending to $f_\star$ or running.}
+
 \pvm{Ok, since it isn't actually perfectly trivial to define 
 $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ in practice, e.g., do you really want to
 do an infinitesimal derivative at exactly this point or some kind of broader
@@ -192,6 +198,7 @@ thing, I think you will always want to control how that is done by asking
 for full P(k), and they should be happy to let you take care of it, so maybe it
 could get a little cryptic, but this is not much related to the more physical
 stuff related to emulator.} 
+\NEW{Agreed.}
 
 
 \subsection{From cosmological model to likelihood parameters}
@@ -232,6 +239,10 @@ general PT... you can use that to pull out the feature essentially
 analytically. Never mind what I said about ``units of BAO"... this is surely 
 the way to go since you don't want to be trying to interpolate between raw
 sim power at that scale anyway...}
+\NEW{No, in the main analysis I would not vary $r_d$ as a free parameter. 
+But talking about this option might help others understand what we are doing, 
+even though we then say: "we do not expect our results to be sensitive to
+BAO, and therefore we fix $r_d$ to Planck value".} 
 
 We will assume that the oscillatory component of the input model can be 
 described with the oscillations in the fiducial model, shifted by the ratio 
@@ -296,7 +307,7 @@ burden if we describe our model (the linear power spectrum) already in
 units of $\kms$. \as{This confused the shit out of me until very
   recently. I vote for having power spectra in Mpc and also require
   $H(z_\star)$ and do this conversion internally -- it is trivial. }
-\AFR{Yes, Anze, that was the entire point of the user interface. 
+\AFR{Yes, \anze, that was the entire point of the user interface. 
 We ask the users to provide power in $\Mpc$, and we ask for $H(z)$, 
 and we do the convertions under the hood.}
 
@@ -315,11 +326,20 @@ away from asking for at least $(H D_A)(z)$. The argument about km/s was always
 that you should quote results as a linear power measurement in km/s at 
 $z\sim 3$, *if you are going to quote results from LyaF $\sim$alone* -- the
 goal there was to produce ``model independent" constraints that could be
-propagated forward. But if 
+propagated forward.}
+\NEW{My plan was to translate the flux power into linear power, in $\kms$, 
+and make that public as a look-up table, with a user interface in $\Mpc$ to 
+make it easier for others to use. 
+This is what I was trying to explain all along, mostly in section
+\ref{sec:over}, but I guess I didn't do a good job \smiley.} \pvm{But if 
 you're going to be using flux power directly in global chains fitting 
 cosmological parameters, which seems to be what you're talking about here, 
 that argument doesn't apply -- you have the only relevant cosmological model 
-on hand point-by-point. This does raise the question though, how much you 
+on hand point-by-point. }
+\NEW{I never talked about doing this! Only \anze\ talked about it. 
+I only talked about cosmological models as a wrapper, but the likelihood 
+and the emulator would only hear about our compressed parameterization.} 
+\pvm{This does raise the question though, how much you 
 want to commit to that approach, i.e., to primarily present a likelihood code
 that does direct fits to flux power measurements on the fly, vs. boiling 
 things down to linear power measurement (which you would again obviously 
@@ -338,6 +358,7 @@ $\Delta^2,\neff(z=3, k=0.009 s/km)$,
 defined as deviations from a central model (i.e.,
 effectively variations of $A_s$ and $n_s$ with other parameters fixed), 
 to compare to past... this is clearly going to be *most of* what matters.} 
+\NEW{Yes, I agree with the above.}
 
 
 How does this affect the discussion above?
@@ -413,6 +434,8 @@ of it than of Planck nuisance), but I don't think you want to think this way.
 I don't think one MCMC code will dominate, so you need to assume people are
 going to be grafting your likelihood code into various things themselves, 
 so you want to make sure to have a very easy option. }
+\NEW{Agreed. We should have an easy version for all to use, and a difficult
+one for testing and for the experts to use.}
 
 This likelihood will have been evaluated at a grid of points in $\theta$,
 and it will be stored as a look up table.

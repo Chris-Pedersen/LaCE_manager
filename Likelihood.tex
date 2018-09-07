@@ -175,6 +175,12 @@ fiducial power, $W^0(k)$, as the ratio of these two powers:
 \begin{equation}
  W^0(k) = \frac{P^0_L(k)}{P^0_{nw}(k)} ~.
 \end{equation} 
+\pvm{Are your boxes actually going to be big enough to worry about BAO? If 
+so, I think you should *definitely* model that part by linear bias/more 
+general PT... you can use that to pull out the feature essentially 
+analytically. Never mind what I said about ``units of BAO"... this is surely 
+the way to go since you don't want to be trying to interpolate between raw
+sim power at that scale anyway...}
 
 We will assume that the oscillatory component of the input model can be 
 described with the oscillations in the fiducial model, shifted by the ratio 
@@ -247,6 +253,37 @@ mean flux...).
 And since we plan to marginalize over these to get the final cosmological 
 constraints, we do not need to worry about these differences. 
 For the rest of this discussion, we will assume that this is true.
+
+\pvm{I agree with \anze\ that you should move to just using Mpc and asking for
+$H(z)$, where, a clincher is in 3D you can't get
+away from asking for at least $(H D_A)(z)$. The argument about km/s was always
+that you should quote results as a linear power measurement in km/s at 
+$z\sim 3$, *if you are going to quote results from LyaF $\sim$alone* -- the
+goal there was to produce ``model independent" constraints that could be
+propagated forward. But if 
+you're going to be using flux power directly in global chains fitting 
+cosmological parameters, which seems to be what you're talking about here, 
+that argument doesn't apply -- you have the only relevant cosmological model 
+on hand point-by-point. This does raise the question though, how much you 
+want to commit to that approach, i.e., to primarily present a likelihood code
+that does direct fits to flux power measurements on the fly, vs. boiling 
+things down to linear power measurement (which you would again obviously 
+present in observable coordinates). Certainly internally you want to be able
+to do both, and the code to do linear boil-down should probably wrap the other
+one, but there is a question where to spend more time cleaning and advertising. 
+Arguments in favor of boil-down to linear could be speed (in old days, like 
+I said, we could do both, but fit to flux power really slowed down global
+fits, while my $\chi^2$ table gave identical results), and just... it is nice
+to be able to show the more-or-less LyaF-model-independent cosmological thing
+you claim to have measured, not just present a big black likelihood box. 
+It helps, e.g., estimate how these constraints will affect new cosmological  
+models. In any case, you can figure out what to advertise later. It seems like
+first goal should be to produce $\chi^2$ contours for, e.g.,  
+$\Delta^2,\neff(z=3, k=0.009 s/km)$,  
+defined as deviations from a central model (i.e.,
+effectively variations of $A_s$ and $n_s$ with other parameters fixed), 
+to compare to past... this is clearly going to be *most of* what matters.} 
+
 
 How does this affect the discussion above?
 

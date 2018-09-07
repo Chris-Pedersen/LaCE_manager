@@ -83,6 +83,7 @@ We could do this at two different levels:
 think there is any physical possibility of them not using the same 
 temperatures... (so I wouldn't mess with it, except maybe in some pedagogical
 example)}
+ \AFR{Great, thanks.}
 \end{itemize}
 
 Note that, even though this would capture most of the effects of having a 
@@ -96,6 +97,7 @@ different way to say it... if all pressure came from temperature in observable
 range I'd say this is a little bit of a nitpicky distinction, but the 
 contribution from pressure at early times sort of fundamentally decouples the
 two uses of temperature...  }
+\AFR{Agreed.}
 However, we will include a parameter to study the dependence on the pressure
 smoothing, the filtering length $k_F$, and this should be able to capture
 the differences.
@@ -156,12 +158,19 @@ from the predicted by CAMB/CLASS because of issues in the linear growht).}
 \as{By far preferrable, in fact the only way that wouldn't look dodgy
   would be not to measure it at all. :) It is a known quantity give
   linear codes. :)}
+\AFR{Pat always claims that measured power is better than predicted power, 
+given cosmic variance in the box.
+We shouldn't care about the mean power over infinite number of realizations, 
+it is more useful to talk about the actual power than went into the simulation,
+and that is why we could measure linear power in the initial conditions.}
+
 To sum up, each snapshot will be used to generate multiple simulated 
 fields, and we can label each of them by their values of: 
 mean flux (1 parameter) $\bar F$,
 linear power (3 parameters) $P_L$,
 TDR (2 parameters) $T_0$ and $\gamma$, 
 filtering scale $k_F$. \as{Perhaps you need $f$ again.}
+\AFR{Yes, good point.}
 
 Redshift will NOT be a label describing the simulated field, and neither
 will be the TREECOOL file or the redshift of reionization.

@@ -85,6 +85,34 @@ you should just need to expand parameter space a little and add some sims to
 probe the new effect, still using what you have done (assuming it was sensible
 and the addition is more or less perturbative).  }
 
+\AFR{Pat, that is what I was trying to write... See discussion below, about
+computing some quantities at the particular redshift, and then completely 
+dropping the redshift altogether.}
+
+\AFR{But I don't think I've got an answer to my question. 
+We define a model, by choosing $\theta$ (linear power at $z_\star=3$, 
+in $\kms$, and may be $f_\star$) and by choosing $\phi$ ($\bar F$, $k_F$...);
+We then ask the emulator to give us the prediction for flux power spectrum
+at $z=4$, and the emulator needs to figure out how to translate this model
+($\theta$,$\phi$) to the parameters describing the simulations outputs, to 
+figure out which one to use (imagine we have infinit simulations);
+For the IGM parameters it is easy, we have a way to use $\phi$ parameters
+and the fiducial evolution, and turn that into a prediction for 
+$\bar F_i$ and $k_{F~i}$;
+However, we also need a way to translate the $\theta$ parameters, and the 
+fiducial cosmological model, to a linear power at $z_i=4$, in $\kms$. 
+How do we do this? 
+If we had still access to the full $P(z,k)$ and $H(z)$ that entered the 
+user interface, that would be trivial. 
+But we threw that information away because we claimed that the only thing 
+that matters (the only parameters in our final likelihood) were there 
+$\theta$ parameters.
+So we need to be able to reconstruct any linear power from these, so that 
+then we can look at the simulations and try to look for one a "snapshot" 
+(more precisely, one of the multiple reproccessed snapshots) that had 
+this particular power spectrum.
+I'm not sure this is any clearer... 
+}
 
 At this point, we can completely forget about the redshift $z_i$.
 
@@ -101,7 +129,8 @@ Remember that you can easily compute from CLASS the velocity power spectrum as
 well as density, which gives you your leading order handle on changes in 
 evolution... (arguably if you had to choose you'd probably want this instead
 of density power for LyaF, but you don't have to choose...)}
-
+\AFR{Yes, we could add linear velocity power instead of $f(z)$, and compute
+from there any parameter we want to use internally.}
 
 If we had an extremely large number of simulations, we could just setup a
 metric to find the closest snapshot, and directly read the flux power

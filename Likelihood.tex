@@ -12,6 +12,13 @@ baryons and CDM, and always work with their weighted-averaged power.
 
 \as{I don't like the expression ``user interface'' here. Wouldn't
   likelihood parameterization be more appropriate?}
+\AFR{Anze, this is an internal document, to make sure we are all (including
+Chris, Hiranya, Andrew, Tom...) in the same page. 
+The second part of this section is about the parameterization, this first 
+part is really just about the interface... 
+As Pat mentiones below, we can give an easy interface to the users, 
+and under the hood we compress that into any set of parameters we want.}
+
 The aim of the project is to provide a public likelihood package that others
 can use to include \lya\ results in their cosmological parameter constraints.
 The end-user does not need to know about the internal details, about the 
@@ -34,9 +41,12 @@ the user to provide for each cosmological model:
   described above, in a power spectrum at a central redshift, 
   $P_L(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
   \as{If you are to compress flux measurement over X redshift bins
-    into one linear power constrain, just as for the linear power
+    into one linear power constrain, just ask for the linear power
     at that $z_{\rm pivot}$ and $f$ at that redshift. If you are going
     to compress into two $z$s, ask for those two $z$s and two $f$s}.
+  \AFR{Yes, this is an option. But as Pat mentions below, this might not 
+   be the easier option for some users. But when I mentioned above that we 
+   could have more than one interface, this is what I had in mind.}
  \item Logarithmic growth rate, $f(z)$, that could be computed directly
   from the evolution of $D(z)$.
  \item Hubble parameter as a function of redshift, $H(z)$, over the same 
@@ -44,7 +54,10 @@ the user to provide for each cosmological model:
  \item If we want the likelihood code to be able to fit 3D clustering as well,
   we would need as an input the angular diameter distance, $D_A(z)$, 
   over the full redshift range. \as{I would add $r_d$ and also $r_d$
-    fiducial for generality}.
+  fiducial for generality}.
+  \AFR{Yes, I forgot about $r_d$ here. Although we could fit it from the 
+  linear power ourselves under the hood, to prevent some users to use EH98 
+  and others using CAMB to compute it.} 
 \end{itemize}
 
 \pvm{I don't think you should skimp on what you want from the outside. E.g., 
@@ -66,6 +79,8 @@ I wouldn't worry
 too much about what you're going to ask for though. Focus on making a good 
 emulator and then ask for what you need for that... 
 }
+\AFR{Great, that's all I wanted to hear. For now, let's assume this is a 
+possible option, and we'll come back to it later on.} 
 
 The user will also specify:
 \begin{itemize}
@@ -142,6 +157,19 @@ discussion of final public likelihood code is getting way ahead of yourself...
 \smiley\
 I'd focus on ``what do I need to do to get an emulator capable of any kind of
 fit to a LyaF data set?" ...  }
+
+\AFR{Nooooooo! I need to understand how the final package will be used, 
+before I can think of emulators and simulations!}
+
+\AFR{Pat, in your 2005 paper, you had $\chi^2$ look-up tables, that were only
+a function of amplitude and slope (and may be running). 
+I always thougth that this type of look-up table would be the end product of 
+the analysis, with a nice wrapper around it with a public interface to 
+translate cosmology to our cryptic parameters in the lookup table.
+Isn't it the case? 
+You made the look-up table public, and that table had already marginalized
+over all nuisance parameters, right?}
+
 
 \subsection{From cosmological model to likelihood parameters}
 
@@ -239,6 +267,10 @@ burden if we describe our model (the linear power spectrum) already in
 units of $\kms$. \as{This confused the shit out of me until very
   recently. I vote for having power spectra in Mpc and also require
   $H(z_\star)$ and do this conversion internally -- it is trivial. }
+\AFR{Yes, Anze, that was the entire point of the user interface. 
+We ask the users to provide power in $\Mpc$, and we ask for $H(z)$, 
+and we do the convertions under the hood.}
+
 We claim that two models with different expansion histories $H(z)$, but the
 same linear power in units of $\kms$, will have very similar \lya\ power
 spectra, with small remaining differences being caused by astrophysical 
@@ -309,7 +341,9 @@ parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
   parameters. If you look at eg \texttt{cosmomc} it internally
   marginalises already over some 15 Planck parameters, it can do 15
   more for us.}
-
+\AFR{Ok, this is the type of discussion I wanted to have. 
+Is this really how it was done in SDSS-I? What was the look-up table for, then?
+To make plots?}
 
 This likelihood will have been evaluated at a grid of points in $\theta$,
 and it will be stored as a look up table.

@@ -113,6 +113,33 @@ then we can look at the simulations and try to look for one a "snapshot"
 this particular power spectrum.
 I'm not sure this is any clearer... 
 }
+\pvm{*For the emulator*, who says you need to ``define a model" by choosing 
+power at $z_\star=3$? Where by ``emulator" I mean this thing that takes 
+some kind of relatively easy to compute quantities and produces what it thinks
+would be simulation results given them. Maybe it is easiest to think of it 
+by sort of back-propagation: you have a 1D flux power spectrum measurement at 
+$z=4$, you need a prediction for it, what does your emulator need to know to 
+predict it? I'd say at first approximation it needs to know $P(k,z=4)$, in 
+km/s. So the input to the emulator is $P(k,z=4)$ in km/s, period, end of 
+story for emulator -- it has a hard enough job doing this well, it doesn't
+need to worry about where this $P(k in km/s,z=4)$ came from. If you're asking
+like ``how would I use this emulator to make a $\chi^2$ table of final results 
+for $\Delta^2,\neff(z=3,k=0.009 s/km)$", worrying about broader z (and k) 
+dependence,
+I think you just pick the current best cosmological model as fiducial, and
+define $\Delta^2,\neff(z=3,k=0.009 s/km)$ effectively as variations of 
+$A_s$ and $n_s$ -- this gives you your $P(k in km/s,z=4)$ to feed the 
+emulator, but it is really a completely separate thing from the emulator. 
+Of course, maybe you want to fit for growth deviations, and this gives you 
+a different way of getting $P(k in km/s,z=4)$, or maybe you are doing a big
+global MCMC chain... the emulator who's job is to predict 
+1D flux power at z=4 doesn't want to know what you are doing globally, it 
+just wants to know $P(k in km/s,z=4)$... (I've been writing 
+$P(k in km/s,z=4)$ because I carefully wrote 1D power and it is shorter than
+writing ``$P(k in Mpc,z=4)$ and $H(z=4)$", which I think we agree is probably
+how things should really go for pedagogical reasons, and 
+add $D_A(z=4)$ for 3D.) }
+
 
 At this point, we can completely forget about the redshift $z_i$.
 

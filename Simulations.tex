@@ -27,13 +27,11 @@ Therefore, from each snapshot we will get a set of power spectra for different
 values of $A_\tau$.
 We can label the different power spectra by their associated value of $A_\tau$,
 or we can label them by their resulting value of the mean flux $\bar F$. 
-
 \cite{Lukic2015} showed that the rescaling might introduce biases in the 
 1D power spectrum for values of $A_\tau$ very different than one. 
 However, their test compared two simulations with different thermal history
 and different pressure, so it is difficult to tell whether the bias came 
 from the rescaling or from the different IGM physics.
-
 \AFR{It would be great to repeat this exercise in two simulations that 
 have very similar thermal history but different mean flux, I will ask 
 Jose Onorbe for help (he is visiting UCL soon). 
@@ -61,11 +59,11 @@ For each snapshot, we can fit their values of $T_0$ and $\gamma$, and use
 these to label the snapshot, instead of using the name of the TREECOOL, 
 or the parameters that we have used to modify a given file 
 (MP-Gadget can implement the recipes in \cite{Bolton2008} to modify TRECOOL
-files by setting the parameters \textit{HeatAmplitude} and \textit{HealSlope}).
+files by setting the parameters \textit{HeatAmplitude} and \textit{HeatSlope}).
 
 Just like we did with the optical depth, we can rescale the temperatures in 
 post-processing. 
-We could do this at two different levels:
+This would capture correctly two different physical effects:
 \begin{itemize}
  \item Thermal broadening: when extracting the skewers from the boxes, 
   the last step is to compute the redshift-space-distorted optical depth. 
@@ -75,46 +73,45 @@ We could do this at two different levels:
   different temperature rescalings.
  \item Recombination rates: the temperature also sets the recombination rate,
   $\alpha(T) \sim T^{-0.7}$. 
-  It would also be possible to change the recombination rate at each cell, 
+  We could recompute the recombination rate at each cell, 
   propagate this into a change in the neutral fraction (proportional to the 
   recombination rate), and finally to the optical depth (proportional to the 
   neutral fraction).
- \pvm{Note that these two are both essentially instantaneous, i.e., I don't 
+ \pvmhid{Note that these two are both essentially instantaneous, i.e., I don't 
 think there is any physical possibility of them not using the same 
 temperatures... (so I wouldn't mess with it, except maybe in some pedagogical
 example)}
- \AFR{Great, thanks.}
+ \afhid{Great, thanks.}
 \end{itemize}
-
-Note that, even though this would capture most of the effects of having a 
-different temperature, we would miss the effect that different temperature
-have in the pressure smoothing.
-\pvm{Which is of course not really the same temperature (unlike above), i.e., 
-the functional derivative of $P(z)$ with respect to $T(z')$ through the effect
-of pressure is zero at $z=z'$, while it is a delta function through thermal 
-broadening and recombination rate... I know you know this, this is just a 
-different way to say it... if all pressure came from temperature in observable
-range I'd say this is a little bit of a nitpicky distinction, but the 
-contribution from pressure at early times sort of fundamentally decouples the
-two uses of temperature...  }
-\AFR{Agreed.}
-However, we will include a parameter to study the dependence on the pressure
-smoothing, the filtering length $k_F$, and this should be able to capture
-the differences.
 
 
 \subsection{Adding pressure smoothing}
 
 The small scale structure is suppressed on very small scales because of the
-pressure in the gas. 
+pressure in the gas.
 As described in \cite{Hui1997,Gnedin1998}, the smoothing can be described
 by a characteristic scale, $k_F(z)$, the \textit{filtering scale}, that is
 an integral version of the Jeans length that depends also on the temperature
 in the past.
 
-It would be interesting to see if we can add smoothing in postprocessing, 
-effectively lowering the value of $k_F$ in the simulation by hand. 
-Of course, it would not be possible to reduce the smoothing, and to do that 
+It is important to distinguish the effect of pressure from the effect of
+temperature, since one can have two snapshots with very similar temperature
+but very different values of $k_F$ because of a different reionization
+history.
+
+\pvmhid{Which is of course not really the same temperature (unlike above), i.e.,
+the functional derivative of $P(z)$ with respect to $T(z')$ through the effect
+of pressure is zero at $z=z'$, while it is a delta function through thermal
+broadening and recombination rate... I know you know this, this is just a
+different way to say it... if all pressure came from temperature in observable
+range I'd say this is a little bit of a nitpicky distinction, but the
+contribution from pressure at early times sort of fundamentally decouples the
+two uses of temperature...}
+\afhid{Agreed.}
+
+It would be interesting to see if we can add smoothing in post-processing,
+effectively lowering the value of $k_F$ in the simulation by hand.
+Of course, it would not be possible to reduce the smoothing, and to do that
 one would need to run a simulation with an earlier redshift of reionization.
 
 \AFR{We could also ask Jose Onorbe for help to setup this type of test. 
@@ -132,48 +129,56 @@ used in all papers by Hennawi / Lukic / Onorbe.}
 
 \subsection{Labelling the snapshots}
 
-In the linear regime, and for a single specie, the growth of structure is 
+In the linear regime, and for a single specie, the growth of structure is
 scale independent, and it can be described by the growth factor $D(z)$.
 %\begin{equation}
 % P_L(z,k) = \frac{D^2(z)}{D^2(z_0)} ~ P_L(z_0,k) ~.
 %\end{equation}
-
-If the \lya\ power spectra depended only on the linear power spectrum, this 
-would suggest that there would be a complete degeneracy between changing 
+If the \lya\ power spectra depended only on the linear power spectrum, this
+would suggest that there would be a complete degeneracy between changing
 the overall amplitude of the linear power spectrum and changing the redshift
-at which we ouput the snapshot. 
+at which we ouput the snapshot.
 Therefore, we could use the amplitude of the linear power at a given snapshot
-to label it, and we could potentially use different snapshots of the same 
-simulation to study models with different amplitudes of the linear power. 
+to label it, and we could potentially use different snapshots of the same
+simulation to study models with different amplitudes of the linear power.
 
-\AFR{How do we measure the linear power in the snapshot? 
-I could see three options (in order of my preference): 
+\afhid{How do we measure the linear power in the snapshot?
+I could see three options (in order of my preference):
 predict it using the power measured in the initial conditions, and the relative
 growth as computed from CAMB/CLASS;
-measure the density power in the snapshot, and fit the growth factor from 
+measure the density power in the snapshot, and fit the growth factor from
 the low-k part;
-run a very cheap simulation without hydro and a very low value of $A_s$, to 
-compute the actual linear power in the simulation (that might sadly differ 
+run a very cheap simulation without hydro and a very low value of $A_s$, to
+compute the actual linear power in the simulation (that might sadly differ
 from the predicted by CAMB/CLASS because of issues in the linear growht).}
-\as{By far preferrable, in fact the only way that wouldn't look dodgy
-  would be not to measure it at all. :) It is a known quantity give
-  linear codes. :)}
-\AFR{Pat always claims that measured power is better than predicted power, 
+\ashid{By far preferrable, in fact the only way that wouldn't look dodgy
+would be not to measure it at all \smiley . It is a known quantity give
+linear codes \smiley .}
+\afhid{Pat always claims that measured power is better than predicted power,
 given cosmic variance in the box.
-We shouldn't care about the mean power over infinite number of realizations, 
+We shouldn't care about the mean power over infinite number of realizations,
 it is more useful to talk about the actual power than went into the simulation,
 and that is why we could measure linear power in the initial
-conditions.} \as{Ok, but then you have the IC power spectrum that you
+conditions.}
+\ashid{Ok, but then you have the IC power spectrum that you
 can multiply by the correct transfer function.}
 
+To sum up, each snapshot will be used to generate multiple simulated
+fields in post-process (rescaling optical depth, temperature, pressure...),
+and we will compute the power spectrum for each of the simulated fields.
+We will also compute (using CAMB/CLASS) the predited linear power for the
+snapshot (in velocity units) and its velocity power, and will compute other
+IGM properties like the mean flux $\bar F$, the TDR parameters
+($T_0$ and $\gamma$) and the filtering scale $k_F$.
+\ashid{Perhaps you need $f$ again.}
+\afhid{Yes, good point.}
 
-To sum up, each snapshot will be used to generate multiple simulated 
-fields, and we can label each of them by their values of: 
-mean flux (1 parameter) $\bar F$,
-linear power (3 parameters) $P_L$,
-TDR (2 parameters) $T_0$ and $\gamma$, 
-filtering scale $k_F$. \as{Perhaps you need $f$ again.}
-\AFR{Yes, good point.}
+The emulator will have a list of all the models for which we have simulated
+power spectra, and it will specify a metric quantifying the separation
+between two models.
+Every time we ask for a the prediction for a given model (specified by
+$P(q)$, $P_\theta(q)$, $\bar F$, $T_0$ $\gamma$, and $k_F$), the emulator
+will use the nearest points and (somehow) interpolate between these.
 
 Redshift will NOT be a label describing the simulated field, and neither
 will be the TREECOOL file or the redshift of reionization.

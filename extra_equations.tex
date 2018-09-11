@@ -1,5 +1,8 @@
 \section{Derivation of equations in the main text} \label{app:eq}
 
+
+\subsection{Different growth rate}
+
 I write below the equations deriving equation \ref{eq:growth}.
 
 For the input cosmology, we define:
@@ -44,3 +47,23 @@ where we have used
  \label{fig:fz_Om}
 \end{figure}
 
+
+\subsection{Different expansion rate}
+
+\begin{figure}[ht]
+ \begin{center}
+  \includegraphics[scale=0.7]{Figures/Hz3_omega_m}
+ \end{center}
+ \caption{Differences in the expansion rate, $H(z)$, with respect of EdS, 
+  for different cosmologies}
+ \label{fig:Hz_Om}
+\end{figure}
+
+The expansion history at $z>2$ is not quite Einstein-de Sitter (EdS), so 
+we might need to worry about the different expansion history of each model
+with respect to the fiducial model. 
+These differences are shown in Figure \ref{fig:Hz_Om}.
+
+We could do something similar to what we did for the growth factor, and 
+define a single parameter (derivative of $H(z)$ at z=3) to parameterize 
+that, and add this as an extra likelihood parameter.

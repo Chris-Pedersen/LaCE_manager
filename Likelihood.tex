@@ -1,66 +1,53 @@
 \section{Public likelihood code} \label{sec:like}
 
 In order to properly discuss our choice of parameterization and simulation
-setup, it is important to describe how we intend the end product,
-the \textit{likelihood code}, to be used in a cosmological analysis.
-
-Note that during this discussion we have ignored the differences between 
-baryons and CDM, and always work with their weighted-averaged power. 
+setup, it will be helpful to start by describing how we intend the end
+product, the \textit{likelihood code}, to be used in a cosmological analysis.
 
 
 \subsection{User interface}
 
-\as{I don't like the expression ``user interface'' here. Wouldn't
+\ashid{I don't like the expression ``user interface'' here. Wouldn't
   likelihood parameterization be more appropriate?}
-\AFR{\anze, this is an internal document, to make sure we are all (including
-Chris, Hiranya, Andrew, Tom...) in the same page. 
-The second part of this section is about the parameterization, this first 
-part is really just about the interface... 
-As Pat mentiones below, we can give an easy interface to the users, 
+\afhid{\anze, this is an internal document, to make sure we are all (including
+Chris, Hiranya, Andrew, Tom...) in the same page.
+The second part of this section is about the parameterization, this first
+part is really just about the interface...
+As Pat mentiones below, we can give an easy interface to the users,
 and under the hood we compress that into any set of parameters we want.}
 
 The aim of the project is to provide a public likelihood package that others
 can use to include \lya\ results in their cosmological parameter constraints.
-The end-user does not need to know about the internal details, about the 
-suite of simulations, the nuisance parameters or the interpolation scheme 
+The end-user does not need to know about the internal details, about the
+suite of simulations, the nuisance parameters or the interpolation scheme
 used in the emulator.
-They do not need to know either whether internally we are describing the 
-power in units of $\kms$, $\Mpc$ or $\hMpc$. 
-
-There are different possible interfaces that we could setup, and probably 
+They do not need to know either whether internally we are describing the
+power in units of $\kms$, $\Mpc$ or $\hMpc$, etc.
+There are different possible interfaces that we could setup, and probably
 we will want to provide more than one with different levels of complexity.
-But we will start discussing a particular interface, where we will ask 
+But we will start by discussing a particular interface, where we will ask
 the user to provide for each cosmological model:
 \begin{itemize}
- \item Linear matter power (baryons+CDM), as a function of redshift and 
-  wavenumber, in units of $\iMpc$. 
+ \item $P(z,k)$, the linear density power spectrum
+  \footnote{During the rest of this paper we will use linear power spectrum
+  to refer to the baryons+CDM power.}, as a function of redshift and
+  wavenumber, in units of $\iMpc$.
   The redshift range should cover at least $2 < z < 5$, and the wavenumber
-  range should cover at least $0.01 \iMpc < k < 10 \iMpc$. 
-  For simplicity, we will restrict ourselves to models with a linear power 
-  spectra that can be factorized ,in the range of redshift and scales 
-  described above, in a power spectrum at a central redshift, 
-  $P_L(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.
-  \as{If you are to compress flux measurement over X redshift bins
-    into one linear power constrain, just ask for the linear power
-    at that $z_{\rm pivot}$ and $f$ at that redshift. If you are going
-    to compress into two $z$s, ask for those two $z$s and two $f$s}.
-  \AFR{Yes, this is an option. But as Pat mentions below, this might not 
-   be the easier option for some users. But when I mentioned above that we 
-   could have more than one interface, this is what I had in mind.}
- \item Logarithmic growth rate, $f(z)$, that could be computed directly
-  from the evolution of $D(z)$.
- \item Hubble parameter as a function of redshift, $H(z)$, over the same 
+  range should cover at least $0.01 \iMpc < k < 10 \iMpc$.
+ \item $P_\theta(z,k)$, the linear power spectrum of velocity divergence,
+  or \textit{velocity power}, over the same range of redshift and scales.
+ \item Hubble parameter as a function of redshift, $H(z)$, over the same
   redshift range.
- \item If we want the likelihood code to be able to fit 3D clustering as well,
-  we would need as an input the angular diameter distance, $D_A(z)$, 
-  over the full redshift range. \as{I would add $r_d$ and also $r_d$
-  fiducial for generality}.
-  \AFR{Yes, I forgot about $r_d$ here. Although we could fit it from the 
-  linear power ourselves under the hood, to prevent some users to use EH98 
-  and others using CAMB to compute it.} 
+ \item If we wanted the likelihood to be able to describe 3D clustering as well,
+  we would need as an input the angular diameter distance $D_A(z)$ (or the
+  Alcock-Paczy\'nski coefficient, $\propto D_A(z) H(z)$, \cite{Alcock1979})
+  over the full redshift range, as well as the sound horizon at the drag epoch
+  describing BAO, $r_d$. \AFR{Although we could also fit $r_d$ ourselves 
+  from the linear power ourselves under the hood, to prevent having some 
+  users using EH98 and others using CAMB.}
 \end{itemize}
 
-\pvm{I don't think you should skimp on what you want from the outside. E.g., 
+\pvmhid{I don't think you should skimp on what you want from the outside. E.g., 
 in neutrino mass era it is starting to feel a little quaint to talk 
 about $D(z)$, 
 $f(z)$ -- both generally depend on $k$. At the same time, producing density 
@@ -79,9 +66,9 @@ I wouldn't worry
 too much about what you're going to ask for though. Focus on making a good 
 emulator and then ask for what you need for that... 
 }
-\AFR{Great, that's all I wanted to hear. For now, let's assume this is a 
+\afhid{Great, that's all I wanted to hear. For now, let's assume this is a 
 possible option, and we'll come back to it later on.} 
-\as{I like Pat's idea of just asking for a bunch of power spectra,
+\ashid{I like Pat's idea of just asking for a bunch of power spectra,
   including matter, velocity and perhaps baryon as well. For example,
   you could easily also check if the power spectra are not so
   pathological that approximations employed are not valid. For example
@@ -221,6 +208,445 @@ possible setting.
 We will choose a fiducial cosmological model, based on a recent Planck+BAO 
 analysis, and use it to compute a fiducial linear power spectrum, $P_L^0(z,k)$, 
 a fiducial Hubble expansion, $H^0(z)$, a fiducial growth rate $f^0(z)$...
+All quantities with a superscript $^0$ will refer to the fiducial model.
+
+\subsubsection{Linear power shape}
+
+Since we have decided to use only models where the linear power spectrum 
+can be factorized, we will describe its shape at the central redshift only, 
+$z_\star=3$. 
+In general we will use the subscript $_\star$ to refer to quantities that 
+have been evaluated at $z_\star$, but in this sub-section we will ignore 
+the redshift and assume that all power spectra are evaluated at $z_\star$.
+
+We will compress the difference between the input power spectrum, $P_L(k)$, 
+and the fiducial power spectrum, $P^0_L(k)$, into a handful of parameters. 
+We start by fitting the fiducial power with a smooth function, 
+$P^0_{nw}(k)$, using the \textit{no-wiggle} model from \cite{Eisenstein1998}.
+We define the oscillatory (or \textit{wiggle}) component of the 
+fiducial power, $W^0(k)$, as the ratio of these two powers:
+\begin{equation}
+ W^0(k) = \frac{P^0_L(k)}{P^0_{nw}(k)} ~.
+\end{equation} 
+\pvm{Are your boxes actually going to be big enough to worry about BAO? If 
+so, I think you should *definitely* model that part by linear bias/more 
+general PT... you can use that to pull out the feature essentially 
+analytically. Never mind what I said about ``units of BAO"... this is surely 
+the way to go since you don't want to be trying to interpolate between raw
+sim power at that scale anyway...}
+\NEW{No, in the main analysis I would not vary $r_d$ as a free parameter. 
+But talking about this option might help others understand what we are doing, 
+even though we then say: "we do not expect our results to be sensitive to
+BAO, and therefore we fix $r_d$ to Planck value".} 
+
+We will assume that the oscillatory component of the input model can be 
+described with the oscillations in the fiducial model, shifted by the ratio 
+of their sound horizons at the drag epoch ($r_d$):
+\begin{equation}
+ W(k) \sim W^0(\beta k)  
+\qquad  
+ \beta = \frac{r_d}{r^0_d} ~.
+\end{equation}
+We have decided to use $\beta$ and not $\alpha$, more common in BAO analyses,
+because the latter includes a ratio of transformations from observable to 
+commoving coordinates, and we do not need this at this point. 
+
+Finally, we will model the differences in the smooth component with a smooth,
+parameterized function:
+\begin{equation}
+ B(k) = \frac{P_{nw}(k)}{P_{nw}^0(k)} ~.
+\end{equation}
+There are different parameterizations possible, but for the rest of this 
+discussion we will assume that we use three parameters: an amplitude, 
+a slope, and a running of the slope, evaluated around $k_p = 1 \iMpc$. 
+
+To summarize, we will describe the input linear power at $z_\star$ as:
+\begin{equation} \label{eq:Pk_param}
+ P_L(k) = B(k) ~ P_{nw}^0(k) ~ W^0(\beta k) ~.
+\end{equation}
+
+\subsubsection{Linear growth}
+
+We will compute the difference of the input logarithmic growth rate with that 
+in the fiducial cosmology, $\Delta f_\star = f(z_\star) - f^0(z_\star)$, 
+evaluated at $z_\star=3$. 
+We will approximate that the different growth rate at $z_\star$ is enough 
+to compute the difference in linear growth at any redshift (within the range):
+\begin{equation}\label{eq:growth}
+ \frac{D(z)}{D^0(z)} = 1 + \Delta f_\star ~ \frac{\Delta z}{1 + z_\star} ~.
+\end{equation} 
+Note that in LCDM models, and at $2 < z < 5$, the differences in growth rate 
+are typically less than 1\%, as shown in Figure \ref{fig:fz_Om}.
+
+\subsubsection{Hubble expansion}
+
+If we could observe the \lya\ power spectrum in comoving coordinates, that 
+would be enough. 
+However, we observe the power spectrum in observing coordinates, wavelengths
+and angles, and a more natural choice is to use velocity units ($\kms$) for 
+the clustering measurements. 
+Indeed, all recent measurements of the 1D \lya\ power reported their results
+in units of $\kms$, and we will assume the same in this discussion.
+
+In general, we would need to use $H(z)$ from each model to compare 
+measurements in $\kms$ with model preditions in $\Mpc$:
+\begin{equation}
+ q = \frac{1+z}{H(z)} ~ k = a_v k~,
+\end{equation}
+where we use $q$ to refer to wavenumbers in velocity units, and we have 
+defined $a_v$ as the transformation from $\kms$ to $\Mpc$.
+This would force us to add in the emulator some sort of Hubble 
+parameter, either at $z=0$ ($h$) or at $z_\star=3$. 
+However, as suggested by \cite{McDonald2005a}, it is possible to avoid this
+burden if we describe our model (the linear power spectrum) already in 
+units of $\kms$. \as{This confused the shit out of me until very
+  recently. I vote for having power spectra in Mpc and also require
+  $H(z_\star)$ and do this conversion internally -- it is trivial. }
+\AFR{Yes, \anze, that was the entire point of the user interface. 
+We ask the users to provide power in $\Mpc$, and we ask for $H(z)$, 
+and we do the convertions under the hood.}
+
+We claim that two models with different expansion histories $H(z)$, but the
+same linear power in units of $\kms$, will have very similar \lya\ power
+spectra, with small remaining differences being caused by astrophysical 
+effects (different reionization history, different thermal history, different
+mean flux...). 
+And since we plan to marginalize over these to get the final cosmological 
+constraints, we do not need to worry about these differences. 
+For the rest of this discussion, we will assume that this is true.
+
+\pvm{I agree with \anze\ that you should move to just using Mpc and asking for
+$H(z)$, where, a clincher is in 3D you can't get
+away from asking for at least $(H D_A)(z)$. The argument about km/s was always
+that you should quote results as a linear power measurement in km/s at 
+$z\sim 3$, *if you are going to quote results from LyaF $\sim$alone* -- the
+goal there was to produce ``model independent" constraints that could be
+propagated forward.}
+\NEW{My plan was to translate the flux power into linear power, in $\kms$, 
+and make that public as a look-up table, with a user interface in $\Mpc$ to 
+make it easier for others to use. 
+This is what I was trying to explain all along, mostly in section
+\ref{sec:over}, but I guess I didn't do a good job \smiley.} \pvm{But if 
+you're going to be using flux power directly in global chains fitting 
+cosmological parameters, which seems to be what you're talking about here, 
+that argument doesn't apply -- you have the only relevant cosmological model 
+on hand point-by-point. }
+\NEW{I never talked about doing this! Only \anze\ talked about it. 
+I only talked about cosmological models as a wrapper, but the likelihood 
+and the emulator would only hear about our compressed parameterization.} 
+\pvm{This does raise the question though, how much you 
+want to commit to that approach, i.e., to primarily present a likelihood code
+that does direct fits to flux power measurements on the fly, vs. boiling 
+things down to linear power measurement (which you would again obviously 
+present in observable coordinates). Certainly internally you want to be able
+to do both, and the code to do linear boil-down should probably wrap the other
+one, but there is a question where to spend more time cleaning and advertising. 
+Arguments in favor of boil-down to linear could be speed (in old days, like 
+I said, we could do both, but fit to flux power really slowed down global
+fits, while my $\chi^2$ table gave identical results), and just... it is nice
+to be able to show the more-or-less LyaF-model-independent cosmological thing
+you claim to have measured, not just present a big black likelihood box. 
+It helps, e.g., estimate how these constraints will affect new cosmological  
+models. In any case, you can figure out what to advertise later. It seems like
+first goal should be to produce $\chi^2$ contours for, e.g.,  
+$\Delta^2,\neff(z=3, k=0.009 s/km)$,  
+defined as deviations from a central model (i.e.,
+effectively variations of $A_s$ and $n_s$ with other parameters fixed), 
+to compare to past... this is clearly going to be *most of* what matters.} 
+\NEW{Yes, I agree with the above.}
+
+
+How does this affect the discussion above?
+
+Let us use $\tilde P(q)$ to refer to power spectra in units of velocity:
+\begin{equation}
+ \tilde P(q) = a_v^3 ~ P(k= q / a_v) ~.
+\end{equation}
+
+We can then redo the whole discussion above, but using power spectra in 
+velocity units:
+\begin{align} 
+ \tilde P^0_L(q) & = (a^0_v)^3 ~ P^0_L(q / a^0_v)         \nonumber \\
+   & = (a^0_v)^3 ~ P^0_{nw}(q / a^0_v) ~ W^0(q / a^0_v)      \nonumber \\
+   & = \tilde P^0_{nw}(q) ~ \tilde W^0(q)  ~,
+\end{align}
+where we have also defined $\tilde W^0(q) = W^0(q / a^0_v0$.
+
+We can now define a term for the ratio of the smooth power, in velocity
+units:
+\begin{align}
+ \tilde B(q) & = \frac{\tilde P_{nw}(q)}{\tilde P^0_{nw}(q)}    \nonumber \\
+  & = \left(\frac{a_v}{a_v^0}\right)^3 
+      \frac{P_{nw}(q / a_v)}{P^0_{nw}(q / a_v^0)} ~,
+\end{align}
+and we can finally write 
+\begin{align}
+ \tilde P_L(q) & = \tilde P_{nw}(q) ~ W(q / a_v)                \nonumber \\
+  & = \tilde B(q) ~ \tilde P^0_{nw}(q) ~ \tilde W^0(\alpha q) ~,
+\end{align}
+where we have defined $\alpha$ as the ratio of sound horizons in units of 
+velocity: 
+\begin{equation}
+ \alpha = \beta \frac{a_v^0}{a_v} = \frac{r_d ~ H_\star}{r_d^0 ~ H^0_\star}~.
+\end{equation}
+
+The cosmological model in the likelihood will then be described by a 
+set of parameters $\theta$ describing the linear power spectrum, including:
+\begin{itemize}
+ \item Ratio of sound horizons in units of $\kms$, $\alpha$, where the 
+conversion from $\Mpc$ to $\kms$ is computed at $z_\star=3$. 
+This is the inverse of the usual definition of BAO $\alpha_\parallel$.
+ \item Approximately 3 parameters describing the ratio of the smooth
+  linear power at $z_\star=3$, in units of $\kms$.
+ \item Difference of growth rates at $z_\star=3$, $\Delta f_\star$. 
+\end{itemize}
+
+We will ask the likelihood code: for these set of parameters $\theta$,
+what is the likelihood of getting the measured power, after marginalizing
+over all nuisance parameters (including mean flux and thermal history)?
+Or in math, what we want is:
+\begin{equation} \label{eq:marg}
+ L(\vd | \theta)
+  = \int d\phi ~ \Pi(\phi) ~ L(\vd | \theta, \phi) ~,
+\end{equation}
+where $\vd$ is the measured flux power spectrum, $\phi$ are the nuisance
+parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
+\as{Again, marginalisation is for the user to do. The code should
+  output total $\chi^2$ at this point and optionally data-points and
+  theory predictions at this point include full gory of nuissance
+  parameters. If you look at eg \texttt{cosmomc} it internally
+  marginalises already over some 15 Planck parameters, it can do 15
+  more for us.}
+\AFR{Ok, this is the type of discussion I wanted to have. 
+Is this really how it was done in SDSS-I? What was the look-up table for, then?
+To make plots?}
+\pvm{I guess I should further to un-agree with \anze... 
+If you wanted to assume everyone
+will be using cosmoMC so you could just make a module for that and broadcast
+it, I guess it would be ok (but I think still a lot of people would consider
+your LyaF parameters to be too literally a nuisance... and be less tolerant 
+of it than of Planck nuisance), but I don't think you want to think this way.
+I don't think one MCMC code will dominate, so you need to assume people are
+going to be grafting your likelihood code into various things themselves, 
+so you want to make sure to have a very easy option. }
+\NEW{Agreed. We should have an easy version for all to use, and a difficult
+one for testing and for the experts to use.}
+
+This likelihood will have been evaluated at a grid of points in $\theta$,
+and it will be stored as a look up table.
+Evaluating the likelihood, once the lookup table has been computed,
+should then be trivial and extremely fast.
+
+  
+\afhid{For simplicity, we will restrict ourselves to models with a linear power 
+  spectra that can be factorized in a power spectrum at a central redshift, 
+  $P(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.}
+\ashid{If you are to compress flux measurement over X redshift bins
+  into one linear power constrain, just ask for the linear power
+  at that $z_{\rm pivot}$ and $f$ at that redshift. If you are going
+  to compress into two $z$s, ask for those two $z$s and two $f$s}.
+\afhid{Yes, this is an option. But as Pat mentions below, this might not 
+ be the easier option for some users. But when I mentioned above that we 
+ could have more than one interface, this is what I had in mind.}
+
+\pvmhid{I don't think you should skimp on what you want from the outside. E.g., 
+in neutrino mass era it is starting to feel a little quaint to talk 
+about $D(z)$, 
+$f(z)$ -- both generally depend on $k$. At the same time, producing density 
+and velocity power spectra as a function of k and z is just getting easier and 
+easier as people get more comfortable with things like CLASS. 
+(I mean, no I 
+don't actually think $k$ dependence of $D$ and $f$ will ever matter, 
+but it seems
+just easier to ask for the linear $P(z,k)$ than worry about defining and
+justifying these things
+(e.g., I remember kind of
+laughing at Alexey Makarov for producing $D(z)$ by running CMBfast, which 
+seemed like overkill when I had a little numerical integrator code, but to him
+this was actually easier than setting up that code...))
+I wouldn't worry
+too much about what you're going to ask for though. Focus on making a good 
+emulator and then ask for what you need for that... 
+}
+\afhid{Great, that's all I wanted to hear. For now, let's assume this is a 
+possible option, and we'll come back to it later on.} 
+\ashid{I like Pat's idea of just asking for a bunch of power spectra,
+  including matter, velocity and perhaps baryon as well. For example,
+  you could easily also check if the power spectra are not so
+  pathological that approximations employed are not valid. For example
+  Pat's code wasn't the right thing to use for WDM models and here you
+  can guard against that. }
+
+
+\subsection{Full likelihood vs look-up table}
+
+We will consider two type of users: the experts, who will like to access
+the full likelihood, and the non-experts that will like to have a quick and 
+easy access to the marginalized likelihood, i.e., where simulation details 
+have been hidden away and astrophysical / nuisance parameters have already been 
+marginalized over.
+
+Every call of the \textit{full likelihood} involves the following steps:
+\begin{itemize}
+ \item 
+\end{itemize}
+we will need to to refer to the option
+
+
+
+
+We expect to provide two different packages:
+\begin{itemize}
+ \item \textit{Slow likelihood} will return the un-marginalized likelihood
+  for a given model, including both cosmological parameters and astrophysical
+  or nuisance parameters (mean flux, thermal history, contaminants...).
+  Evey 
+
+\end{itemize}
+
+
+
+
+
+
+
+
+
+The user will also specify:
+\begin{itemize}
+ \item Data products to use:
+  SDSS-I from \cite{McDonald2006},
+  BOSS from \cite{Palanque-Delabrouille2013},
+  HIRES/UVES from \cite{Viel2013},
+  XQSO-100 from \cite{Irsic2017},
+  HIRES/UVES from \cite{Walther2018a}.
+  We should also allow the user to specify what redshifts to use from each
+  dataset, since they are independent, and probably also allow the user
+  to specify the scales to be used in the fit for each dataset.
+ \item Extra analysis settings, like whether to allow for running in the
+  linear power, differences in the linear growth, or differences in the BAO
+  wiggles.
+\end{itemize}
+
+\AFR{It is not clear to me whether at this point the user would also be able
+to set other settings of the likelihood or not, like the way we treat
+contamination by DLAs or metals, resolution or noise corrections, or the
+parameterization of the temperature-density relation in the simulations.}
+\as{This is implementational detail, no need to worry about this now.}
+
+\AFR{I believe the answer is that each of these analysis choices would be
+a different likelihood object, and then the user can decided whether to
+use the likelihood object where the DLA marginalization used the formula
+from \cite{McDonald2005b} or whether to use the one that used the formula
+from \cite{Rogers2018a}.
+Similarly, every time we want to use a different prior for the nuisance
+parameters (say we want to include measurements of mean flux or temperature)
+we would need to recompute the marginalization, and provide a new likelihood
+look-up table.}
+
+The output from the \textit{likelihood code} will be:
+\begin{itemize}
+ \item A value of (log-)likelihood for each dataset, possibly a value for 
+  each redshift bin. 
+  Most users will only care about this.
+ \item For the experts, we would also output the best-fit theoretical 
+  prediction for each dataset, for that particular cosmological model.
+  We would also provide the values of the nuisance parameters that correspond
+  to the best fit model (mean flux, temperature-density relation, metal or DLA
+  contamination...).
+ \item We could also provide a random sample of theory lines that are above a 
+  likelihood threshold for that particular model, exploring different 
+  thermal histories and other nuisance parameters.
+\end{itemize}
+
+\AFR{Actually, I don't think at this point you can get any of the above.
+The user of the final likelihood code will only get a total value for the
+likelihood for the total dataset.
+Even though one would compute the un-marginalized likelihood for each redshift
+and each dataset separately, at the step of marginalizing over nuisance 
+parameters (see section \ref{sec:emu}) you would need to include them 
+all at the same time.}
+\as{No, no. You don't marginalise over nuissance parameters inside
+  your likelihood code. Some nuissance parameters will have particular
+  degeneracies with the big picture cosmological parameters, and in
+  addition you never know how clever the user's sampler is. It is ok
+  to ask for linear power, $f$, $H(z)$, $D_A(z)$ and a set of
+  nuissance parameters, which users doesn't need to understand except
+  for valid ranges. You can add a small wrapper that does this
+  marginalisation internally for those who don't care.}
+\pvm{In principle I more or less agree with \anze\ about the nuisance 
+parameters, the core level of the code should be written treating all 
+parameters symmetrically and this should be kept accessible... although,
+if you were, e.g., importance sampling a Planck chain you would effectively
+return to needing the code to marginalize over nuisance parameters. On the 
+other hand, I remember long ago in Alexey Makarov days we ended up retreating
+from this idea because the generic MCMC was painfully slowed by marginalization
+over these nuisances when we knew how to make it fast internally... Ugh - 
+I'm going to try not to read anything but emulator section since I think this
+discussion of final public likelihood code is getting way ahead of yourself... 
+\smiley\
+I'd focus on ``what do I need to do to get an emulator capable of any kind of
+fit to a LyaF data set?" ...  }
+
+\AFR{Nooooooo! I need to understand how the final package will be used, 
+before I can think of emulators and simulations!}
+
+\AFR{Pat, in your 2005 paper, you had $\chi^2$ look-up tables, that were only
+a function of amplitude and slope (and may be running). 
+I always thougth that this type of look-up table would be the end product of 
+the analysis, with a nice wrapper around it with a public interface to 
+translate cosmology to our cryptic parameters in the lookup table.
+Isn't it the case? 
+You made the look-up table public, and that table had already marginalized
+over all nuisance parameters, right?}
+\pvm{Yes. This is getting at what I rambled about in comment later. While
+\anze's desired option to control all parameters simultaneously in a cosmoMC
+run should certainly *exist,* I don't think you should present this as, e.g., 
+what anyone would run in their first use of your results. I do think you still
+want to produce some form of ``de-forested'' linear power main result, that
+will contain everything most people would want. You need it for 
+``opening the black box" purposes, but also, it will be faster, and why force
+people to mess with a bunch of forest nuisance parameters they don't care 
+about when you know they can get the same results without it? The option to
+run global chain with LyaF nuisances should exist for comparison, and so you
+can see correlations, but not be the lead option... (this is sort of what I
+was trying to indicate here saying ``core level of code", but I didn't really
+think through how necessary I think the marginalized version really is...).
+... I don't think this has to be very ``cryptic" even under the hood though...
+I wouldn't call a $\chi^2$ table in $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ 
+cryptic... } 
+
+\NEW{Perfect. Just for the record, in my original text (two days ago) I never
+meant to talk about the CosmoMC option, I always had in mind to compress it
+all to a look-up table with $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ or 
+equivalent (may be extending to $f_\star$ or running.}
+
+\pvm{Ok, since it isn't actually perfectly trivial to define 
+$\Delta^2_L, \neff(z=3,k=0.009 s/km)$ in practice, e.g., do you really want to
+do an infinitesimal derivative at exactly this point or some kind of broader
+thing, I think you will always want to control how that is done by asking 
+for full P(k), and they should be happy to let you take care of it, so maybe it
+could get a little cryptic, but this is not much related to the more physical
+stuff related to emulator.} 
+\NEW{Agreed.}
+\as{I agree as well.}
+
+
+
+
+\subsection{From cosmological model to likelihood parameters}
+
+Under the hood, we will use more effective (and cryptic) parameters in our 
+likelihood, to reduce the internal degeneracies between parameters.
+There are many, many possibilities here, but we will start by discussing a 
+possible setting. 
+
+\subsubsection{Fiducial cosmological model}
+ 
+We will choose a fiducial cosmological model, based on a recent Planck+BAO 
+analysis \cite{Planck2015}, and use it to compute a fiducial linear power 
+spectrum, $P_L^0(z,k)$, a fiducial Hubble expansion, $H^0(z)$, a fiducial 
+growth rate $f^0(z)$...
 All quantities with a superscript $^0$ will refer to the fiducial model.
 
 \subsubsection{Linear power shape}

@@ -40,7 +40,25 @@ Jose Onorbe for help (he is visiting UCL soon).
 It is also possible that the test is clearer if we look at the 3D power,
 where pressure only affects the high-k limit, and the scale independent
 linera bias.}
-
+\pvm{It seems useful to be sure to understand the physics you're talking about
+here. If I am remembering correctly, a change in ionizing background at the
+output time will change the ionization rate exactly proportionally, which 
+will change the neutral density and therefor optical depth exactly 
+proportionally, in the 
+ionization equilibrium, fully ionized, only photo-ionization limit. 
+So to say the rescaling ``doesn't work" is to say you have a breakdown 
+somewhere in here. E.g., collisional ionization violates 
+``only photo-ionization", but generally only at very high density, where...
+if this was what was going on you really need to find a way to desensitize 
+yourself to this high density, because surely you are getting it wrong in 
+other ways. Basically I think this is the story with all possibilities, i.e.,
+there is no possibility that the solution to any imperfection in this scaling
+would be to not do the rescaling, because there is *nothing you can simulate
+reliably* that can violate it. Much more likely (than collisional ionization)
+of course, like you say here, a
+change someone finds when they rerun with different ionizing background is
+from changing temperatures, which you are supposed to be marginalizing over. 
+}
 
 \subsection{Rescaling of the temperature}
 

@@ -149,6 +149,22 @@ Correct? The only thing this could break is if the redshift evolution of
 $H(z)$ and $H^0(z)$ were very different, but that should not be the case for
 most models, and if it was we could add an extra parameter to take care of 
 this. Did I understand it?}
+\pvm{In practice, I think you want to use $\Delta^2,\neff(z=3,k=0.009 s/km)$
+to fix $A_s$ and $n_s$ in your fiducial model (i.e., the rest of it is fixed,
+but they are varied), then you compute linear power at whatever redshift you
+want directly from CLASS. I'm sure this is equivalent to what you are 
+saying about scalings, and I wouldn't even object if you actually did those
+scalings, but you should understand that they are a shortcut for this 
+$A_s, n_s$ setting $\rightarrow$ CLASS run, not anything else. Of course, 
+if $H(z)$ or something deviates enough from your fiducial model this 
+single-amp-slope
+compression won't be good enough, but that is a different issue (an extended
+table would add running of spectral index and arbitrary power law modification
+of growth factor, allowing you to do fits testing consistency of those 
+things... and I should say, with improved precision maybe deviations within 
+realistic models will be big enough to matter... I'm not saying they won't,
+just that you should have a baseline idea and then think about whether you
+need to expand).  }
 \pvm{Of course, maybe you want to fit for growth deviations, and this gives you 
 a different way of getting $P(k in km/s,z=4)$, or maybe you are doing a big
 global MCMC chain... the emulator who's job is to predict 
@@ -162,7 +178,6 @@ add $D_A(z=4)$ for 3D.) }
 my poor use of the word \textit{emulator}, and the other part of the confusion
 is that I always wanted to focus on the "look-up table" version, and not on 
 the cosmomc version.}
-
 
 
 At this point, we can completely forget about the redshift $z_i$.

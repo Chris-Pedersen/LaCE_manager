@@ -412,7 +412,7 @@ of the linear power.
 To sum up, all cosmological information will be compreseed to the following
 parameters:
 \begin{itemize}
- \item 2 or 3 $\beta$ parameters describing the $\tilde B(q)$, the ratio of 
+ \item 2 or 3 $\beta$ parameters describing $\tilde B(q)$, the ratio of 
   the linear power at $z_\star=3$ with respect to the fiducial, in velocity
   units.
  \item $\Delta f_\star$, the difference of growth rates at $z_\star=3$.
@@ -422,28 +422,39 @@ parameters:
 if we think that the difference in expansions might make it difficult to
 compute the linear power at $z=4$ in velocity units.}
 
+Note that in \cite{McDonald2005a} the main result was a look-up table with
+only two $\beta$ parameters (amplitude and slope around $q = 0.009 \ikms$),
+but they also discussed extensions with extra parameters: a third $\beta$ 
+parameter (running) and a parameter describing the linear growth around 
+$z_\star=3$, similar to the $\Delta f_\star$ presented here.
 
-\subsection{Marginalization / compression}
 
-\AFR{Add here discussion on marginalization, moving here some of the
-text currently under Emulator.}
+\subsection{Constructing the compressed likelihood}
 
-We will ask the likelihood code: for these set of parameters $\theta$,
-what is the likelihood of getting the measured power, after marginalizing
-over all nuisance parameters (including mean flux and thermal history)?
-Or in math, what we want is:
-\begin{equation} \label{eq:marg}
+We want to compute a look-up table with the likelihood as a function of the
+cosmologically relevant parameters $\theta$, describing the shape of the
+linear power at $z_\star=3$ in velocity units ($\beta$) and the linear growth
+($\Delta f_\star$).
+There are many possible implementations, but in this section we will focus
+on a simple one. 
+
+We start by specifying a grid of values of the $\theta$ parameters, and for
+each of these we will compute the marginalized likelihood by integrating
+equation \ref{eq:marg}:
+\begin{equation} 
  L(\vd | \theta)
   = \int d\phi ~ \Pi(\phi) ~ L(\vd | \theta, \phi) ~,
 \end{equation}
-where $\vd$ is the measured flux power spectrum, $\phi$ are the nuisance
-parameters, and $\Pi(\phi)$ are the priors on the nuisance parameters.
+where $\phi$ are the nuisance parameters (mean flux, temperature...), and 
+$\Pi(\phi)$ are the priors on the nuisance parameters.
+We will compute this integral using MCMC or similar. 
+
 \ashid{Again, marginalisation is for the user to do. The code should
-  output total $\chi^2$ at this point and optionally data-points and
-  theory predictions at this point include full gory of nuissance
-  parameters. If you look at eg \texttt{cosmomc} it internally
-  marginalises already over some 15 Planck parameters, it can do 15
-  more for us.}
+output total $\chi^2$ at this point and optionally data-points and
+theory predictions at this point include full gory of nuissance
+parameters. If you look at eg \texttt{cosmomc} it internally
+marginalises already over some 15 Planck parameters, it can do 15
+more for us.}
 \afhid{Ok, this is the type of discussion I wanted to have. 
 Is this really how it was done in SDSS-I? What was the look-up table for, then?
 To make plots?}
@@ -459,8 +470,178 @@ so you want to make sure to have a very easy option. }
 \afhid{Agreed. We should have an easy version for all to use, and a difficult
 one for testing and for the experts to use.}
 
-This likelihood will have been evaluated at a grid of points in $\theta$,
-and it will be stored as a look up table.
-Evaluating the likelihood, once the lookup table has been computed,
-should then be trivial and extremely fast.
+In order to compute the full likelihood $L(\vd | \theta, \phi)$ we will
+need an \textit{emulator} that will use whatever simulations are available
+to make a prediction for the flux power in a particular model.
+However, we will not pass the parameters $(\theta,\phi)$ to the emulator
+and ask for a prediction for all data poinst $P_{\rm 1D}(z,k_\parallel)$.
+Instead, we will do the following:
+\begin{itemize}
+ \item For each redshift $z_i$, we use the nuisance parameters $\phi$ to
+  make a prediction for the mean flux at the redshift ($\bar F_i$), the
+  values of the temperature-density relation at the redshit 
+  ($T_{0i}$,$\gamma_i$) and the filtering scale at the redshift ($k_{Fi}$).
+ \item At the same time, we use the parameters describing the linear power
+  $\theta$ and the fiducial cosmology to make a prediction for the linear
+  power in velocity units at the redshift ($\tilde P_i(q)$) and for the
+  logarithmic growth rate at the redshift ($f_i$).
+ \item We then ask the emulator to give us a prediction for the flux power
+  spectrum corresponding to ($\bar F_i$,$T_{0i}$,$\gamma_i$,$k_{Fi}$,
+  $\tilde P_i(q)$,$f_i$).
+\end{itemize}
+
+
+\AFR{This is one of the pieces that is still not crystal clear in my head.
+Would we just take $\tilde P_L(z_\star,q)$, the linear power in velocity
+units at the central redshift, and rescale it using the discussion around
+equation \ref{eq:growth}?
+If we did that, we would be missing the fact that the transformation between
+comoving and velocity separations $a_v$ changes with redshift.
+I guess one could use the fiducial model to compute this difference?
+The alternative would be to have a 6th cosmological parameter describing
+the difference in the change in the Hubble expansion around $z_\star$?}
+\as{If DE is truly negligible for sensible models, then just don't
+  worry about it and assumed EdS. If it makes small corrections, then
+  the best course of action would be to also specify $d
+  H^2/da=-3\Omega_m/a^4$ at $z=z_\star$.}
+\pvm{I think there is a key thing you (Andreu) should add to your thinking 
+about these things: don't focus on the parameters you put in when running the
+simulation, focus on the effective parameters you *achieve* for each redshift 
+output, i.e., the numbers you can associate most directly with the flux power 
+spectrum produced from that redshift output. 
+E.g., there is a linear power spectrum associated with each redshift
+output, which you can easily compute using CLASS -- you don't really care
+where it came from in terms or evolution from higher z, or, if you do, it is 
+only as a very subdominant correction.}
+\NEW{Yes, I got that. That's what I was trying to say here...}
+\pvm{Even if you decided you needed to 
+track differences in evolution for fixed output-time linear power, you would
+probably want to do that by extracting $dP_{lin}/dz(z_{output})$ 
+from CLASS, i.e., 
+keep everything you associate with an output local in $z$. Going on, there is
+an $F(z_{out})$, there is a $T(z_{out})$, there is a $k_F(z_{out})$ -- 
+there is no
+need to talk about a ``fiducial z" at all at this level. You only need to think
+about that at a higher level of fitting, when, e.g., you want to produce 
+$\chi^2$ contours in $\Delta^2_L(z=3), \neff(z=3)$ plane (fixing linear power
+at other z assuming some model), or you want to enforce physically reasonable
+temperature evolution connecting $T(z)$, $k_F(z)$. This isn't an entirely 
+non-trivial attitude. E.g., if you didn't think you could summarize pressure
+by a $k_F(z)$ you could calculate for each output, maybe you'd want to 
+associate a full temperature history with each output instead of only 
+writing down local-in-z quantities, and then you might want to parameterize
+that thermal history somehow, but I would worry about that only when pushed to
+it (and probably it would always be better to invent some local-in-z quantity
+you could compute to capture the physical effect you were missing). 
+To put it another way: you want to separate your picture into things you can
+calculate about the conditions in the Universe at a given z without sims 
+(including if necessary derivatives) -- you want to take advantage of these
+kinds of things
+as much as possible -- and then a simulation mapping of those
+things into non-linear power (in more or less arbitrary units, followed by 
+observation, applying the necessary units -- this part I think is easy for
+everyone to agree on). }
+\NEW{Yes, that was my plan.}
+\pvm{This is an opportunity to say something I've been thinking about all this 
+including neutrino, etc., sim testing: by *far* the most efficient way to 
+test whether an idea you have for simplifying the emulator parameterization is
+good enough is
+to just do the simple version and then see if it works in the case you think it
+might not. Probably it will work, and if not you haven't lost anything since
+you should just need to expand parameter space a little and add some sims to 
+probe the new effect, still using what you have done (assuming it was sensible
+and the addition is more or less perturbative).  }
+
+\AFR{Pat, that is what I was trying to write... See discussion below, about
+computing some quantities at the particular redshift, and then completely 
+dropping the redshift altogether.}
+
+\AFR{But I don't think I've got an answer to my question. 
+We define a model, by choosing $\theta$ (linear power at $z_\star=3$, 
+in $\kms$, and may be $f_\star$) and by choosing $\phi$ ($\bar F$, $k_F$...);
+We then ask the emulator to give us the prediction for flux power spectrum
+at $z=4$, and the emulator needs to figure out how to translate this model
+($\theta$,$\phi$) to the parameters describing the simulations outputs, to 
+figure out which one to use (imagine we have infinit simulations);
+For the IGM parameters it is easy, we have a way to use $\phi$ parameters
+and the fiducial evolution, and turn that into a prediction for 
+$\bar F_i$ and $k_{F~i}$;
+However, we also need a way to translate the $\theta$ parameters, and the 
+fiducial cosmological model, to a linear power at $z_i=4$, in $\kms$. 
+How do we do this? 
+If we had still access to the full $P(z,k)$ and $H(z)$ that entered the 
+user interface, that would be trivial. 
+But we threw that information away because we claimed that the only thing 
+that matters (the only parameters in our final likelihood) were there 
+$\theta$ parameters.
+So we need to be able to reconstruct any linear power from these, so that 
+then we can look at the simulations and try to look for a "snapshot" 
+(more precisely, one of the multiple reproccessed snapshots) that had 
+this particular power spectrum.
+I'm not sure this is any clearer... 
+}
+\pvm{*For the emulator*, who says you need to ``define a model" by choosing 
+power at $z_\star=3$? Where by ``emulator" I mean this thing that takes 
+some kind of relatively easy to compute quantities and produces what it thinks
+would be simulation results given them. Maybe it is easiest to think of it 
+by sort of back-propagation: you have a 1D flux power spectrum measurement at 
+$z=4$, you need a prediction for it, what does your emulator need to know to 
+predict it? I'd say at first approximation it needs to know $P(k,z=4)$, in 
+km/s. So the input to the emulator is $P(k,z=4)$ in km/s, period, end of 
+story for emulator -- it has a hard enough job doing this well, it doesn't
+need to worry about where this $P(k in km/s,z=4)$ came from. }
+\NEW{Yes, I agree. I realize now that I was using the word \textit{emulator}
+in the wrong way, including what you call bellow "code to make a $\chi^2$ 
+table".}
+\pvm{If you're asking
+like ``how would I use this emulator to make a $\chi^2$ table of final results 
+for $\Delta^2,\neff(z=3,k=0.009 s/km)$", worrying about broader z (and k) 
+dependence,
+I think you just pick the current best cosmological model as fiducial, and
+define $\Delta^2,\neff(z=3,k=0.009 s/km)$ effectively as variations of 
+$A_s$ and $n_s$ -- this gives you your $P(k in km/s,z=4)$ to feed the 
+emulator, but it is really a completely separate thing from the emulator. }
+\NEW{Just to be sure. $\theta$ parameters describe the different shape of the 
+linear power, in $\kms$, at $z_\star=3$. 
+I can try to use these, and $H^0(z_\star)$ from the fiducial model, to compute 
+the equivalent linear power in comoving coordinates.
+Then I can translate that to a different redshift using the linear growth
+of the fiducial model (may be corrected by difference in $f_\star$), and 
+then use the Hubble parameter of the fiducial model at the redshift, 
+$H^0(z_i=4)$ to compute the final power we needed to talk to the simulations.
+Correct? The only thing this could break is if the redshift evolution of 
+$H(z)$ and $H^0(z)$ were very different, but that should not be the case for
+most models, and if it was we could add an extra parameter to take care of 
+this. Did I understand it?}
+\pvm{In practice, I think you want to use $\Delta^2,\neff(z=3,k=0.009 s/km)$
+to fix $A_s$ and $n_s$ in your fiducial model (i.e., the rest of it is fixed,
+but they are varied), then you compute linear power at whatever redshift you
+want directly from CLASS. I'm sure this is equivalent to what you are 
+saying about scalings, and I wouldn't even object if you actually did those
+scalings, but you should understand that they are a shortcut for this 
+$A_s, n_s$ setting $\rightarrow$ CLASS run, not anything else. Of course, 
+if $H(z)$ or something deviates enough from your fiducial model this 
+single-amp-slope
+compression won't be good enough, but that is a different issue (an extended
+table would add running of spectral index and arbitrary power law modification
+of growth factor, allowing you to do fits testing consistency of those 
+things... and I should say, with improved precision maybe deviations within 
+realistic models will be big enough to matter... I'm not saying they won't,
+just that you should have a baseline idea and then think about whether you
+need to expand).  }
+\pvm{Of course, maybe you want to fit for growth deviations, and this gives you 
+a different way of getting $P(k in km/s,z=4)$, or maybe you are doing a big
+global MCMC chain... the emulator who's job is to predict 
+1D flux power at z=4 doesn't want to know what you are doing globally, it 
+just wants to know $P(k in km/s,z=4)$... (I've been writing 
+$P(k in km/s,z=4)$ because I carefully wrote 1D power and it is shorter than
+writing ``$P(k in Mpc,z=4)$ and $H(z=4)$", which I think we agree is probably
+how things should really go for pedagogical reasons, and 
+add $D_A(z=4)$ for 3D.) }
+\NEW{Ok, I think we are getting closer. I think part of the confusion was 
+my poor use of the word \textit{emulator}, and the other part of the confusion
+is that I always wanted to focus on the "look-up table" version, and not on 
+the cosmomc version.}
+
+At this point, we can completely forget about the redshift $z_i$.
 

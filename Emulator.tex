@@ -33,7 +33,6 @@ Since we will have a sparse sampling of the parameter space, we will need
 to do some interpolation between them. 
 \ashid{This is a good way to think about this, yes.}
 This interpolation is precisely the role of the \textit{emulator}.
-
 There are different options for the emulator itself, for instance one could
 use Gaussian Processes \cite{Heitmann2009,Heitmann2014,SLAC2018,
 Walther2018a,Bird2018,Rogers2018c}, but the exact interpolation scheme will
@@ -60,7 +59,7 @@ Finally, we could decide to fit the simulated flux power with a handful of
 coefficients (polynomials or PCA components), and interpolate these
 instead of the noisy band powers.
 
-\AFR{Written this way, it is clear that we are talking about emulating
+\NEW{Written this way, it is clear that we are talking about emulating
 the theory, and not emulating the likelihood.
 This has not been clear to me in the past...
 One of the key features of GP emulators is that they can provide an

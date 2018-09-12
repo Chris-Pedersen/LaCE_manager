@@ -5,6 +5,11 @@ likelihood of a given dataset we ask the emulator to provide the predicted
 flux power spectrum $P_{\rm 1D}(z_i,k_\parallel)$ for a given model,
 specified by ($\bar F_i$,$T_{0i}$,$\gamma_i$,$k_{Fi}$,$\tilde P_i(q)$,$f_i$).
 
+Note, again, that the emulator does not need to know about the concept of
+redshift.
+Yes, snapshots from simulations have associated output redshifts, but this
+information does not need to be passed to the emulator.
+
 \ashid{And similar $f$ for velocity effects? Again, only matters if non-EdS
 matters.}
 \pvmhid{Remember that much of non-EdS effects can still be accounted for by

@@ -133,8 +133,8 @@ need to use it any more.
 In other words, most users will not even need to install the emulator code,
 they will directly use the pre-computed look-up table.
 
-Of course, we would make available different look-up tables for different
-combinations of \lya\ measurements:
+We could make available different look-up tables for different combinations
+of \lya\ measurements:
 SDSS-I from \cite{McDonald2006},
 BOSS from \cite{Palanque-Delabrouille2013},
 HIRES/UVES from \cite{Viel2013},
@@ -365,12 +365,13 @@ you're going to be using flux power directly in global chains fitting
 cosmological parameters, which seems to be what you're talking about here, 
 that argument doesn't apply -- you have the only relevant cosmological model 
 on hand point-by-point. }
-\afhid{I never talked about doing this! Only \anze\ talked about it. 
-I only talked about cosmological models as a wrapper, but the likelihood 
-and the emulator would only hear about our compressed parameterization.} 
-\pvm{In \anze's defense, it was a good point that you want to make sure 
+\afhid{I never talked about doing this! Only \anze\ talked about it.
+I only talked about cosmological models as a wrapper, but the likelihood
+and the emulator would only hear about our compressed parameterization.}
+\pvmhid{In \anze's defense, it was a good point that you want to make sure
 the mode with LyaF nuisance parameters symmetric with cosmological parameters
 in CosmoMC is possible.}
+\afhid{Of course! I learned a lot from this discussion the last week \smiley.}
 \pvmhid{This does raise the question though, how much you 
 want to commit to that approach, i.e., to primarily present a likelihood code
 that does direct fits to flux power measurements on the fly, vs. boiling 

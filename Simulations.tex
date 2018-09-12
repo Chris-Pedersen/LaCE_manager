@@ -151,6 +151,25 @@ used in all papers by Hennawi / Lukic / Onorbe.}
   supression the smoothing. No cigar -- the baryon power spectrum is
   dominated by shot-noise of baryons in halos, you really need to be a
   bit clever about this. Perhaps this has been solved.}
+\pvm{What \anze\ says here sounds right -- power spectra that don't account
+for $e^{-\tau}$ effect (desensitizing to high density) are never very 
+relevant, because always dominated by high density (in non-linear regime). 
+But their method *does* account for this at some level -- it is why they 
+define ``$F_{real}$". 
+But what I had in mind (and more or less did in the past) is quantifying
+your TDR(z) at relevant densities by something like median fit to gas at 
+those densities, and then 
+literally computing Gnedin \& Hui analytic $k_F$ based on this TDR(z).  
+You aren't trying to compute a filtering length you can interpret literally, 
+just some number that your emulator can map into a quantified level of 
+smoothing in flux power (as a bonus though, since the relation between $k_F$
+and past temperature is explicitely defined here, you *can* relate fit 
+results for this $k_F$ back to past temperature possibilities, without
+needing sims to make *that* mapping, as you do if you define $k_F$ by some
+complicated statistics of simulation outputs). None of these things are going
+to be perfect -- you just need something for a first round, after which you 
+look for deviations and try to figure out what do do about them 
+(of course, you also need to worry about winds from galaxies, etc.).} 
 
 
 \subsection{Labelling the snapshots}

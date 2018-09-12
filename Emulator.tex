@@ -50,6 +50,11 @@ so that they all have the same box size in velocity units at $z_\star=3$.
 Even then, we would only match the noise spikes at one redshift, and there
 could be (very minor) differences at other redshifts that could confuse
 the emulator.
+\pvm{This seems outdated, in that if you say from the beginning you are going
+to internally define boxes and bands and things fixed in comoving Mpc, 
+modes will naturally always align between redshifts and models, 
+without even needing to think about it... and for this reason it seems like 
+the thing to plan to do...}
 
 In order to reduce the effect of cosmic variance and noise spikes, we could
 also decide to run \textit{paired-fixed} simulations 

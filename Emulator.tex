@@ -50,16 +50,23 @@ so that they all have the same box size in velocity units at $z_\star=3$.
 Even then, we would only match the noise spikes at one redshift, and there
 could be (very minor) differences at other redshifts that could confuse
 the emulator.
-\pvm{This seems outdated, in that if you say from the beginning you are going
+
+\AFR{Actually, we could avoid this nuisance by letting the emulator work
+in comoving coordinates, in $\Mpc$.
+We could use the expansion history from the fiducial model $H^0(z)$ to
+convert all quantities back and forth when needed.
+The only important thing is that if we use $\Mpc$ for the linear power
+spectrum and for the flux power spectrum, we have to use $\Mpc$ for the
+thermal broadening at $T_0$, $\sigma_0$, and for the filtering scale $k_F$.
+In any case, it would not affect the setting of the simulations, only the
+internal interpolation of the emulator, and we could try and compare
+both approaches.}
+
+\pvmhid{This seems outdated, in that if you say from the beginning you are going
 to internally define boxes and bands and things fixed in comoving Mpc, 
 modes will naturally always align between redshifts and models, 
 without even needing to think about it... and for this reason it seems like 
 the thing to plan to do...}
-\NEW{Wait, what? I'm confused again... When did we say this?
-I thought that we had always been talking about defining the band powers in
-velocity units! 
-We need to make predictions for the *flux* power in velocity units for sure,
-and what we care about are the noise spikes in the flux power, right?}
 
 In order to reduce the effect of cosmic variance and noise spikes, we could
 also decide to run \textit{paired-fixed} simulations 

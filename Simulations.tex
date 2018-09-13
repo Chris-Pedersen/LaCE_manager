@@ -1,13 +1,26 @@
 \section{Simulations}
 \label{sec:sims}
 
-Describe here the simulations, include the initial conditions code (GenIC),
-the code to evolve the fields (MP-Gadget), the different boxes used,
-and the code to extract skewers (fake\_spectra).
+Even though we could always move to Gadget-3, we would like to start the 
+project with MP-Gadget as our main code to evolve the initial conditions. 
+We should do a comparison of the linear growth in both codes, and that should
+help us make a final decision.
 
-Discuss also here the optical depth rescaling, different transfer functions
-(if any), and thermal history effects (that will be mostly ignored in this
-paper).
+Our baseline plan is to run simulations with $N=1024^3$ particle per especies
+(baryons and CDM) in boxes of roughly $100 \Mpc$.
+This would give us a mean particle separation of roughly $100 \kpc$, or 
+$70 \hkpc$, that should be enough to have a first decent emulator working.
+
+\AFR{This might not be enough to properly study the higher redhift bins in
+HIRES/UVES, $z > 5$, where the gas is less smooth and it is harder to resolve
+all the structure.
+But I think it is better to err on this side than to have boxes that are too
+small, since poor resolution is somewhat degenerated with different
+reionization / filtering length that we want to marginalize over anyway.}
+
+We discuss here the different post-processing of the snapshots, and how we
+store the simulated power spectrum that the emulator will later use to make
+predictions.
 
 
 \subsection{Rescaling of the optical depth}
@@ -265,13 +278,11 @@ Since we will define the linear power in units of $\kms$, we will not
 need to include the Hubble parameter at the box as a label.
 We will not care about any other cosmological parameter in the box
 either.
-\pvm{You probably want to label it in Mpc, e.g., for mode consistency reasons
-discussed above, 
+
+\pvmhid{You probably want to label it in Mpc, e.g., for mode consistency
+reasons discussed above, 
 but you still don't need to record Hubble parameter, you just need to record
 temperature and $k_F$ also in Mpc... This probably relies on the (I believe
 good) approximation that the recombination coefficient is a power law in 
 temperature -- you should think about it... }
-\NEW{I'm very confused... If we store the flux power spectrum in comoving
-units, we will need a Hubble parameter to compare the predictions with the
-measured one...}
 

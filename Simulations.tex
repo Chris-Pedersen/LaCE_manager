@@ -1,8 +1,8 @@
 \section{Simulations}
 \label{sec:sims}
 
-Describe here the simulations, include the initial conditions code (GenIC), 
-the code to evolve the fields (MP-Gadget), the different boxes used, 
+Describe here the simulations, include the initial conditions code (GenIC),
+the code to evolve the fields (MP-Gadget), the different boxes used,
 and the code to extract skewers (fake\_spectra).
 
 Discuss also here the optical depth rescaling, different transfer functions
@@ -12,53 +12,62 @@ paper).
 
 \subsection{Rescaling of the optical depth}
 
-From each simulation we will get a set of snapshots, outputs at different 
+From each simulation we will get a serie of snapshots, outputs at different
 redshifts. 
 
-From each snapshot, we will extract \lya\ skewers, and use these to compute 
-their power spectra. 
-We will repeat this exercise for different rescalings of the optical depth, 
+From each snapshot, we will extract \lya\ skewers, and use these to compute
+their power spectra.
+We will repeat this exercise for different rescalings of the optical depth,
 i.e., we will multiply the optical depth in all cells by a constant factor
-in the range $0.8 < A_\tau < 1.2$ (approximately), and for each value of 
+in the range $0.5 < A_\tau < 2.0$ (approximately), and for each value of
 $A_\tau$ we will compute the transmitted flux fraction $F$, its mean value
-(mean flux), and the power spectra of their fluctuations $\delta_F$. 
+(mean flux), and the power spectra of their fluctuations $\delta_F$.
 
 Therefore, from each snapshot we will get a set of power spectra for different
 values of $A_\tau$.
-We can label the different power spectra by their associated value of $A_\tau$,
-or we can label them by their resulting value of the mean flux $\bar F$. 
-\cite{Lukic2015} showed that the rescaling might introduce biases in the 
-1D power spectrum for values of $A_\tau$ very different than one. 
+We could label the different power spectra by their associated value of
+$A_\tau$, but we will label instead by their resulting value of the mean
+flux $\bar F$.
+\cite{Lukic2015} showed that the rescaling might introduce biases in the
+1D power spectrum for values of $A_\tau$ very different than one.
 However, their test compared two simulations with different thermal history
-and different pressure, so it is difficult to tell whether the bias came 
+and different pressure, so it is difficult to tell whether the bias came
 from the rescaling or from the different IGM physics.
-\AFR{It would be great to repeat this exercise in two simulations that 
-have very similar thermal history but different mean flux, I will ask 
-Jose Onorbe for help (he is visiting UCL soon). 
+
+Collisional ionization could potentially break the rescaling, but this type
+of ionization should only be relevant on very high-density regions,
+where we know that our simulations are not correct anyway
+\footnote{So if we found that collisional ionizations mattered we would
+have to consider using more realistic (and expensive!) simulations.}.
+
+\afhid{It would be great to repeat this exercise in two simulations that
+have very similar thermal history but different mean flux, I will ask
+Jose Onorbe for help (he is visiting UCL soon).
 It is also possible that the test is clearer if we look at the 3D power,
 where pressure only affects the high-k limit, and the scale independent
 linera bias.}
-\pvm{It seems useful to be sure to understand the physics you're talking about
-here. If I am remembering correctly, a change in ionizing background at the
-output time will change the ionization rate exactly proportionally, which 
-will change the neutral density and therefor optical depth exactly 
-proportionally, in the 
-ionization equilibrium, fully ionized, only photo-ionization limit. 
-So to say the rescaling ``doesn't work" is to say you have a breakdown 
-somewhere in here. E.g., collisional ionization violates 
+\pvmhid{It seems useful to be sure to understand the physics you're talking
+about here.
+If I am remembering correctly, a change in ionizing background at the
+output time will change the ionization rate exactly proportionally, which
+will change the neutral density and therefor optical depth exactly
+proportionally, in the
+ionization equilibrium, fully ionized, only photo-ionization limit.
+So to say the rescaling ``doesn't work" is to say you have a breakdown
+somewhere in here. E.g., collisional ionization violates
 ``only photo-ionization", but generally only at very high density, where...
-if this was what was going on you really need to find a way to desensitize 
-yourself to this high density, because surely you are getting it wrong in 
+if this was what was going on you really need to find a way to desensitize
+yourself to this high density, because surely you are getting it wrong in
 other ways. Basically I think this is the story with all possibilities, i.e.,
 there is no possibility that the solution to any imperfection in this scaling
 would be to not do the rescaling, because there is *nothing you can simulate
 reliably* that can violate it. Much more likely (than collisional ionization)
 of course, like you say here, a
 change someone finds when they rerun with different ionizing background is
-from changing temperatures, which you are supposed to be marginalizing over. 
+from changing temperatures, which you are supposed to be marginalizing over.
 }
-\AFR{Yes, you are right. I had a chat with Jose about this a couple of weeks
-ago, and he mentioned collisional ionization as a possible reason for the 
+\afhid{Yes, you are right. I had a chat with Jose about this a couple of weeks
+ago, and he mentioned collisional ionization as a possible reason for the
 breakdown, but as you say we don't trust these high-density regions anyway.
 It is more likely that the reason that \cite{Lukic2015} finds a "bias" is that
 they have different thermal histories in the two simulations (they acknowledge
@@ -110,6 +119,12 @@ example)}
  \afhid{Great, thanks.}
 \end{itemize}
 
+It does not matter whether we use different TREECOOL files or different
+\textit{HeatAmplitude} and \textit{HeatSlope} parameters, at the end of the
+day we will compute the actual values of ($T_0$,$\gamma$) in the snapshots
+and store that information to described the power measured in the
+post-processed snapshot.
+
 
 \subsection{Adding pressure smoothing}
 
@@ -140,18 +155,37 @@ effectively lowering the value of $k_F$ in the simulation by hand.
 Of course, it would not be possible to reduce the smoothing, and to do that
 one would need to run a simulation with an earlier redshift of reionization.
 
-\AFR{We could also ask Jose Onorbe for help to setup this type of test. 
+Note that it is not trivial to define $k_F$.
+One would be tempted to measure the gas density power spectrum and fit an
+effective Gaussian cut-off, but this power spectrum is completely dominanted
+by the non-linear regime (high densities) that we do not trust in our 
+simulations.
+In several papers by Onorbe/Lukic/Hennawi 
+\cite{Lukic2015,Onorbe2016,Walther2018a,Walther2018b} they fit $k_F$ from
+the power spectrum of $e^{-\tau}$ in real space, without adding redshift
+space distortions.
+An alternative would be to use the information about the temperature in
+previous snapshots to compute $k_F$ using equation $8$ in \cite{Gnedin1998}.
+
+\AFR{I wonder whether this would require storing even more snapshots,
+increasing even further the total amount of disk space required.
+It is possible that we can compute the temperature on the fly, or write
+only a sub-sample of particles for "intermediate" snapshots.}
+
+\afhid{We could also ask Jose Onorbe for help to setup this type of test. 
 We would also need to discuss the best way to measure $k_F$ in the snapshots:
 fit a Gaussian kernel in the power spectrum of $F_{\rm real}$, where no 
 redshift-space distortions have been included? I believe that is what is 
 used in all papers by Hennawi / Lukic / Onorbe.}
-\as{I remember having massive trouble with this when Nishi was still
+
+\ashid{I remember having massive trouble with this when Nishi was still
   around. I naively imagined that I would just plot the 3D baryon
   power spectrum, see supression by eye and call $k$ at the midpoint of
   supression the smoothing. No cigar -- the baryon power spectrum is
   dominated by shot-noise of baryons in halos, you really need to be a
   bit clever about this. Perhaps this has been solved.}
-\pvm{What \anze\ says here sounds right -- power spectra that don't account
+
+\pvmhid{What \anze\ says here sounds right -- power spectra that don't account
 for $e^{-\tau}$ effect (desensitizing to high density) are never very 
 relevant, because always dominated by high density (in non-linear regime). 
 But their method *does* account for this at some level -- it is why they 
@@ -237,4 +271,7 @@ but you still don't need to record Hubble parameter, you just need to record
 temperature and $k_F$ also in Mpc... This probably relies on the (I believe
 good) approximation that the recombination coefficient is a power law in 
 temperature -- you should think about it... }
+\NEW{I'm very confused... If we store the flux power spectrum in comoving
+units, we will need a Hubble parameter to compare the predictions with the
+measured one...}
 

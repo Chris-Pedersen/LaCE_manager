@@ -74,10 +74,21 @@ the theory, and not emulating the likelihood.
 This has not been clear to me in the past...
 One of the key features of GP emulators is that they can provide an
 estimate on the uncertainty in the theoretical prediction.
-In \cite{Rogers2018c} we have been looking at how to implement a 
+In \cite{Rogers2018c} we have been looking at how to implement a
 \textit{refinement} step, where we combine the posterior probability for
 (a very different) set of parameters with the predicted theoretical
 uncertainty to decide where to run the next batch of simulations to more
 efficiently improve the description of the posterior.
 I wonder how could one implement something similar in the setting described
 here.}
+
+\AFR{I guess there are two things that should be addressed:
+How do we propagate the theoretical uncertainty reported by the emulator
+to uncertainties in the likelihood?
+And once we identify the points in parameter space that we would like to
+refine, specified by ($\theta$,$\phi$), how do we translate this into a
+configuration for the simulation to run, specified by a linear power spectrum
+at $z_{\rm ini}=99$, a cosmology to evolve the density fields, and a TRECOOL
+file specifying the heating and ionization rates?
+I am sure there are approximated ways to do this, but we'd need to think
+about it.}

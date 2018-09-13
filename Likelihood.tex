@@ -37,19 +37,19 @@ the user to provide for each cosmological model:
   range should cover at least $0.01 \iMpc < k < 10 \iMpc$.
  \item $P_\theta(z,k)$, the linear power spectrum of velocity divergence,
   or \textit{velocity power}, over the same range of redshift and scales.
-  \AFR{Equivalently we could ask for $f(z,k)$, but I think it is less
-  confusing to ask for the velocity power.}
+  Equivalently we could ask for $f(z,k)$, since one could compute one from
+  the other.
  \item Hubble parameter as a function of redshift, $H(z)$, over the same
   redshift range.
  \item If we wanted the likelihood to be able to describe 3D clustering as well,
   we would need as an input the angular diameter distance $D_A(z)$ (or the
   Alcock-Paczy\'nski coefficient, $\propto D_A(z) H(z)$, \cite{Alcock1979})
-  over the full redshift range, as well as the sound horizon at the drag epoch
-  describing BAO, $r_d$. \AFR{Although we could also fit $r_d$ ourselves 
-  from the linear power ourselves under the hood, to prevent having some 
-  users using EH98 and others using CAMB.}
-\pvm{Yes, I don't understand why you talk about asking for this here, when you 
-have no plan to do anything with it... it just seems like noise...}
+  over the full redshift range.
+  \afhid{as well as the sound horizon at the drag epoch describing BAO, $r_d$. 
+  Although we could also fit $r_d$ from the linear power ourselves, under the
+  hood, to prevent having some users using EH98 and others using CAMB.}
+  \pvmhid{Yes, I don't understand why you talk about asking for this here,
+   when you have no plan to do anything with it... it just seems like noise...}
 \end{itemize}
  
 In exchange, the user will get a value of the (log-) likelihood for this model,
@@ -235,20 +235,20 @@ stuff related to emulator.}
 
 \subsection{From cosmological model to likelihood parameters}
 
-\AFR{We asked the user for the full linear density and velocity power, in
+We asked the user for the full linear density and velocity power, in
 comoving coordinates and over a wide range of redshift and scales,
 as well as the expansion history.
 In this section we will describe how we compress all this information into
 a handful of parameters that will be used to describe our likelihood.
-We claim that this is an almost lost-less compression.}
+We claim that this is an almost lost-less compression.
 
-\AFR{Note that this discussion is only relevant because we want to be able
+Note that this discussion is only relevant because we want to be able
 to generate and publish the compressed likelihood, the look-up table that has
 already marginalized over nuisance parameters.
 If we only wanted to use the full likelihood, there would be no need to
 do this compression.
 For each model we could compute the required linear power at each redshift,
-in velocity units, and ask the emulator for the flux power.}
+in velocity units, and ask the emulator for the flux power.
 
 \subsubsection{Fiducial cosmological model}
  
@@ -290,7 +290,7 @@ to scale-independent, and we will only use the input velocity power spectrum
 to compute an effective growth rate as a function of redshift, $f(z)$
 \footnote{Note that this would be true even in cosmologies with relatively
 massive neutrinos, as shown in \cite{Viel2010,Pedersen2018}.
-\AFR{Quantify}}.
+\todo{Quantify}}.
 
 This scale-independent growth rate $f(z)$ has two main effects: it sets
 the redshift evolution of the linear power around $z_\star$, and it sets

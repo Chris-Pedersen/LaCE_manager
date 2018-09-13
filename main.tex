@@ -18,7 +18,8 @@
 %What do you mean? I love olive! I first tried "green", but it was too bright to read. 
 %They didn't have darkgreen, so I went for olive :-)
 \renewcommand{\pvm}[1]{{\color{olive}PVM: #1}}
-
+\def\todo#1{[TO DO: {\it #1}] }
+\newcommand{\NEW}[1]{{\color{violet}AFR: #1}}
 
 
 \begin{document}
@@ -44,12 +45,12 @@ This is an internal document aimed at clarifying the work-flow related to extrac
 from the \lya\ forest power spectrum, using emulators and hydrodynamical simulations.
 It could be used for an eventual publication, but for now the main goal is to make sure we are all on the
 same page, and help build the science case for the 11th DiRAC Call.
-Some of this discussion started by me (Andreu) trying to understand the details of the SDSS-I analysis, 
-and how one would do an equivalent 3D analysis. 
+Some of this discussion started years ago when I was trying to understand the details of the SDSS-I analyses
+by Pat and \uros, and how one would do an equivalent 3D analysis. 
 Some of it is from chats with Pat and Simeon in 2016, trying to understand why $H_0$ should not be a
 parameter in \lya\ analyses. 
-Most of the discussion is from discussions with Pat and \anze\ over email, 
-and some of it is from \anze\ and I in a whiteboard at the Cosmoparticle hub.
+The current version is mostly influenced by discussions with \anze\ in a whiteboard of the Cosmoparticle hub,
+and by feedback from Pat on an earlier version of this document.
 \end{abstract}
 
 \maketitle
@@ -64,11 +65,7 @@ and some of it is from \anze\ and I in a whiteboard at the Cosmoparticle hub.
 
 \input{Simulations}
 
-%\input{Density}
-
-%\input{Lya}
-
-%\input{Discussion}
+\input{Forecast}
 
 \section*{Acknowledgements}
 AFR acknowledges support by an STFC Ernest Rutherford Fellowship, grant reference ST/N003853/1.

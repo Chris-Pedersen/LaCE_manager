@@ -10,7 +10,6 @@ Our baseline plan is to run simulations with $N=1024^3$ particle per especies
 (baryons and CDM) in boxes of roughly $100 \Mpc$.
 This would give us a mean particle separation of roughly $100 \kpc$, or 
 $70 \hkpc$, that should be enough to have a first decent emulator working.
-
 \AFR{This might not be enough to properly study the higher redhift bins in
 HIRES/UVES, $z > 5$, where the gas is less smooth and it is harder to resolve
 all the structure.
@@ -41,13 +40,12 @@ values of $A_\tau$.
 We could label the different power spectra by their associated value of
 $A_\tau$, but we will label instead by their resulting value of the mean
 flux $\bar F$.
-\cite{Lukic2015} showed that the rescaling might introduce biases in the
+\cite{Lukic2015} argued that the rescaling might introduce biases in the
 1D power spectrum for values of $A_\tau$ very different than one.
 However, their test compared two simulations with different thermal history
 and different pressure, so it is difficult to tell whether the bias came
 from the rescaling or from the different IGM physics.
-
-Collisional ionization could potentially break the rescaling, but this type
+It is true that collisional ionization could break the rescaling, but this type
 of ionization should only be relevant on very high-density regions,
 where we know that our simulations are not correct anyway
 \footnote{So if we found that collisional ionizations mattered we would
@@ -139,7 +137,7 @@ and store that information to described the power measured in the
 post-processed snapshot.
 
 
-\subsection{Adding pressure smoothing}
+\subsection{Pressure smoothing}
 
 The small scale structure is suppressed on very small scales because of the
 pressure in the gas.
@@ -147,7 +145,6 @@ As described in \cite{Hui1997,Gnedin1998}, the smoothing can be described
 by a characteristic scale, $k_F(z)$, the \textit{filtering scale}, that is
 an integral version of the Jeans length that depends also on the temperature
 in the past.
-
 It is important to distinguish the effect of pressure from the effect of
 temperature, since one can have two snapshots with very similar temperature
 but very different values of $k_F$ because of a different reionization
@@ -163,13 +160,13 @@ contribution from pressure at early times sort of fundamentally decouples the
 two uses of temperature...}
 \afhid{Agreed.}
 
-It would be interesting to see if we can add smoothing in post-processing,
+\afhid{Unfortunately it is very difficult to add smoothing in post-processing,
 effectively lowering the value of $k_F$ in the simulation by hand.
-Of course, it would not be possible to reduce the smoothing, and to do that
-one would need to run a simulation with an earlier redshift of reionization.
+Of course, it would never be possible to reduce the smoothing, and to do that
+one would need to run a simulation with an earlier redshift of reionization.}
 
-Note that it is not trivial to define $k_F$.
-One would be tempted to measure the gas density power spectrum and fit an
+Note that it is not trivial to measure $k_F$ from a snapshot.
+One could be tempted to measure the gas density power spectrum and fit an
 effective Gaussian cut-off, but this power spectrum is completely dominanted
 by the non-linear regime (high densities) that we do not trust in our 
 simulations.
@@ -256,12 +253,12 @@ conditions.}
 can multiply by the correct transfer function.}
 
 To sum up, each snapshot will be used to generate multiple simulated
-fields in post-process (rescaling optical depth, temperature, pressure...),
+fields in post-process (rescaling optical depth, temperature...),
 and we will compute the power spectrum for each of the simulated fields.
 We will also compute (using CAMB/CLASS) the predited linear power for the
-snapshot (in velocity units) and its velocity power, and will compute other
-IGM properties like the mean flux $\bar F$, the TDR parameters
-($T_0$ and $\gamma$) and the filtering scale $k_F$.
+snapshot (in velocity units) and its logarithmic growth rate, and will measure
+from the snapshots other IGM properties like the mean flux $\bar F$, the TDR
+parameters ($T_0$ and $\gamma$) and the filtering scale $k_F$.
 \ashid{Perhaps you need $f$ again.}
 \afhid{Yes, good point.}
 
@@ -269,7 +266,7 @@ The emulator will have a list of all the models for which we have simulated
 power spectra, and it will specify a metric quantifying the separation
 between two models.
 Every time we ask for a the prediction for a given model (specified by
-$P(q)$, $P_\theta(q)$, $\bar F$, $T_0$ $\gamma$, and $k_F$), the emulator
+$\bar F,~T_0,~\gamma,~k_F,~\tilde P(q),~f$), the emulator
 will use the nearest points and (somehow) interpolate between these.
 
 Redshift will NOT be a label describing the simulated field, and neither

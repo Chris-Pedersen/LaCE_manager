@@ -151,13 +151,13 @@ likelihood $L(\vd | \theta, \phi)$.
 This will be important to allow external experts to cross-check our results,
 and to test whether the results depend on the compression step.
 It will also be important to allow others to generate new look-up tables
-by using different priors on the nuisance parameters $\phi$, or by adding
-new datasets.
+by using different priors on the nuisance parameters $\Pi(\phi)$, or by adding
+new datasets $\vd$.
 
 Those accessing the full likelihood will be able to ask also for the value
 of the (log-) likelihood for a particular data point, or a particular
 redshift.
-They will be able to run their our MCMC chain and compute the best fit 
+They will be able to run their own MCMC chain and compute the best fit 
 values for the nuisance parameters, and their confidence intervals.
 
 \afhid{Actually, I don't think at this point you can get any of the above.
@@ -264,8 +264,7 @@ We will assume that we can factorize the linear power spectrum in a
 constant shape (in comoving coordinates) and scale-independent growth 
 around the central redshift, $z_\star=3$. 
 In general we will use the subscript $_\star$ to refer to quantities that 
-have been evaluated at $z_\star$, but in this sub-section we will ignore 
-the redshift and assume that all power spectra are evaluated at $z_\star$.
+have been evaluated at $z_\star$.
 
 The goal is then to compress the difference between the input power spectrum
 at $z_\star$, $P_\star(k)$, and the fiducial power spectrum, $P_\star^0(k)$, 
@@ -281,9 +280,8 @@ need 2-3 parameters.
 
 \subsubsection{Linear growth}
 
-In standard cosmological models, the velocity power spectrum
-$P_\theta(z,k)$ is related to the linear density power $P(z,k)$ by the
-logarithmic growth rate $f(z,k)$.
+The velocity power spectrum $P_\theta(z,k)$ is related to the linear density
+power $P(z,k)$ by the logarithmic growth rate $f(z,k)$.
 
 In the redshift and scales of interest, this growth rate is very close
 to scale-independent, and we will only use the input velocity power spectrum
@@ -331,8 +329,8 @@ defined $a_v$ as the transformation from $\kms$ to $\Mpc$.
 This would force us to add in the emulator some sort of Hubble 
 parameter, either at $z=0$ ($h$) or at $z_\star=3$. 
 However, as suggested by \cite{McDonald2005a}, it is possible to avoid this
-burden if we describe our model (the linear power spectrum) already in 
-units of $\kms$. 
+burden if we parameterize our likelihood (the linear power spectrum) already
+in units of $\kms$. 
 
 \ashid{This confused the shit out of me until very
   recently. I vote for having power spectra in Mpc and also require
@@ -420,15 +418,18 @@ parameters:
  \item $\Delta f_\star$, the difference of growth rates at $z_\star=3$.
 \end{itemize}
 
-\AFR{As discussed below, we *might* also add $H(z_\star)/Hi^0(z_\star)$,
-if we think that the difference in expansions might make it difficult to
-compute the linear power at $z=4$ in velocity units.}
+\AFR{As discussed below, we *might* also add a parameter describing 
+the (des-)acceleration of the Universe at $z_\star$, to describe the 
+differences in expansion history between the cosmologies below and above
+$z_\star$, similarly to what we have done with growth in equation 
+\ref{eq:growth}.}
 
 Note that in \cite{McDonald2005a} the main result was a look-up table with
 only two $\beta$ parameters (amplitude and slope around $q = 0.009 \ikms$),
 but they also discussed extensions with extra parameters: a third $\beta$ 
 parameter (running) and a parameter describing the linear growth around 
-$z_\star=3$, similar to the $\Delta f_\star$ presented here.
+$z_\star=3$, similar to the $\Delta f_\star$ presented here, for which
+they found they did not have much constraining power.
 
 
 \subsection{Constructing the compressed likelihood}
@@ -440,9 +441,11 @@ linear power at $z_\star=3$ in velocity units ($\beta$) and the linear growth
 There are many possible implementations, but in this section we will focus
 on a simple one. 
 
-We start by specifying a grid of values of the $\theta$ parameters, and for
-each of these we will compute the marginalized likelihood by integrating
-equation \ref{eq:marg}:
+We start by specifying a grid of values of the $\theta$ parameters
+\footnote{We could probably get away with an irregular grid.
+It would make interpolation a tiny bit more complicated, but it would help us
+in setting up the simulations.}, and for each of these we will compute the
+marginalized likelihood by integrating equation \ref{eq:marg}:
 \begin{equation} 
  L(\vd | \theta)
   = \int d\phi ~ \Pi(\phi) ~ L(\vd | \theta, \phi) ~,
@@ -476,7 +479,7 @@ In order to compute the full likelihood $L(\vd | \theta, \phi)$ we will
 need an \textit{emulator} that will use whatever simulations are available
 to make a prediction for the flux power in a particular model.
 However, we will not pass the parameters $(\theta,\phi)$ to the emulator
-and ask for a prediction for all data poinst $P_{\rm 1D}(z,k_\parallel)$.
+and ask for a prediction for all data points $P_{\rm 1D}(z,k_\parallel)$.
 Instead, we will do the following:
 \begin{itemize}
  \item For each redshift $z_i$, we use the nuisance parameters $\phi$ to
@@ -493,8 +496,11 @@ Instead, we will do the following:
   logarithmic growth rate at the redshift ($f_i$).
   How exactly this is done is described in Appendix \ref{app:P_L}.
  \item We then ask the emulator to give us a prediction for the flux power
-  spectrum corresponding to ($\bar F_i$,$T_{0i}$,$\gamma_i$,$k_{Fi}$,
-  $\tilde P_i(q)$,$f_i$).
+  spectrum corresponding to 
+  $\left( \bar F_i,~T_{0i},~\gamma_i,~k_{Fi},~\tilde P_i(q),~f_i \right)$.
+  Note that we do not tell the emulator what redshift this corresponds to,
+  and we do not tell it either anything about the $\theta$ or $\phi$
+  parameters.
 \end{itemize}
 
 \afhid{This is one of the pieces that is still not crystal clear in my head.
@@ -560,6 +566,4 @@ and the addition is more or less perturbative).  }
 \afhid{Pat, that is what I was trying to write... See discussion below, about
 computing some quantities at the particular redshift, and then completely 
 dropping the redshift altogether.}
-
-At this point, we can completely forget about the redshift $z_i$.
 

@@ -97,47 +97,32 @@ def dkms_dhMpc(pars,z):
     return dvdX
 
 
-def fit_power(k_kms,P_kms,k_p_kms=0.009,alpha_p=None):
-    """Fits small scales power spectrum using a power law with running.
-    Inputs: 
-        - k_kms: wavenumbers in velocity units
-        - P_kms: power spectrum in velocity units
-        - k_p_kms: pivot wavenumber, in velocity units
-        - alpha_p: use fixed value for 2nd derivative. 
-            If set to None, it will fit for it.
-    Outputs:
-        - A_p: amplitude of linear power at k_p
-        - n_p: log derivative at k_p
-        - alpha_p: second log derivative at k_p 
-    """
-    # start by defining region that we want to use for the fit
-    mask = (k_kms > 0.5*k_p_kms) & (k_kms < 2.0*k_p_kms)
+def fit_f_star(zs,Ps,k,k_p):
+    """ Given three redshifts, and power spectra, compute logarithmic growth
+        around k_p"""
+    Nz=len(zs)
+    if Nz is not 3:
+        raise ValueError("compute_f_star expects three redshifts")
+    if len(Ps) is not 3:
+        raise ValueError("compute_f_star expects three power spectra")
+    z_down,z_star,z_up=zs
+    P_down,P_star,P_up=Ps
+    # get linear growth with respect to Einstein-de Sitter
+    eta_down=np.sqrt(P_down/P_star)*(1+z_down)/(1+z_star)
+    eta_up=np.sqrt(P_up/P_star)*(1+z_up)/(1+z_star)
+    # compute derivatives of eta, to compute f_star
+    deta_dz = (eta_up-eta_down)/(z_up-z_down)
+    f_star = 1 - (1+z_star) * deta_dz
+    # average value of f_star around k_p
+    mask=(k > 0.8*k_p) & (k < 1.2*k_p)
+    f_star_p = np.mean(f_star[mask])
+    return f_star_p
 
-    # start by computing log P, and log k/kp
-    y = np.log(P_kms[mask])
-    x = np.log(k_kms[mask]/k_p_kms)
 
-    # at this point, y = A + n*x + 1/2*alpha*x*x
+def fit_polynomial(xmin,xmax,x,y,deg=2):
+    """ Fit a polynomial on the log of the function, within range"""
+    x_fit= (x > xmin) & (x < xmax)
+    poly=np.polyfit(np.log(x[x_fit]), np.log(y[x_fit]), deg=deg)
+    return np.poly1d(poly)
 
-    # check if 2nd derivative is fixed
-    if alpha_p is not None:
-        # subtract 2nd derivative term from log power
-        #print('using fixed alpha_p = %f'%alpha_p)
-        y -= 0.5*alpha_p*x**2
-        # fit only for a straight line
-        poly=np.polyfit(x,y,deg=1)
-        n_p = poly[0]
-        A_p = np.exp(poly[1])
-        # we want to report Delta_L^2 = A_p * k_p^3 / (2*pi^2)
-        DL2_p = k_p_kms**3 * A_p / (2*np.pi**2)
-        return DL2_p, n_p
-    else:
-        # fit a 2nd order polynomial
-        poly=np.polyfit(x,y,deg=2)
-        alpha_p = poly[0]
-        n_p = poly[1]
-        A_p = np.exp(poly[2])
-        # we want to report Delta_L^2 = A_p * k_p^3 / (2*pi^2)
-        DL2_p = k_p_kms**3 * A_p / (2*np.pi**2)
-        return DL2_p, n_p, alpha_p
 

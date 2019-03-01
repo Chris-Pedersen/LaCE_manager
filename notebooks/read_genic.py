@@ -152,5 +152,5 @@ if __name__ ==  "__main__":
             help='print runtime info',required=False)
     args = parser.parse_args()
 
-camb_from_genic(args.paramfile, args.verbose)
-class_from_genic(args.paramfile, args.verbose)
+    camb_from_genic(args.paramfile, args.verbose)
+    class_from_genic(args.paramfile, args.verbose)

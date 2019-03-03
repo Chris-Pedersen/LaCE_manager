@@ -151,6 +151,7 @@ def fit_linP_ratio_kms(pars,pars_fid,z_star,kmin_kms,kmax_kms,deg=2,
 def fit_polynomial(xmin,xmax,x,y,deg=2):
     """ Fit a polynomial on the log of the function, within range"""
     x_fit= (x > xmin) & (x < xmax)
+    # We could make these less correlated by better choice of parameters
     poly=np.polyfit(np.log(x[x_fit]), np.log(y[x_fit]), deg=deg)
     return np.poly1d(poly)
 
@@ -169,5 +170,38 @@ def parameterize_cosmology(pars,pars_fid,z_star=3,kp_min_kms=0.005,
     # compute ratio of linear power, in velocity units, at z_star
     linP_ratio_kms = fit_linP_ratio_kms(pars,pars_fid,z_star,kp_min_kms,
             kp_max_kms,deg=2,have_power=True)
-    return f_star-f_star_fid,g_star-g_star_fid,linP_ratio_kms
+    results={'df_star':f_star-f_star_fid}
+    results['dg_star']=g_star-g_star_fid
+    results['linP_ratio_kms']=linP_ratio_kms
+    return results
 
+def reconstruct_linP_kms(zs,k_kms,pars_fid,linP_params,z_star):
+    """Given fiducial cosmology and linear parameters, reconstruct linear
+        power spectra"""
+    # get linear power and background expansion for fiducial cosmology
+    results_fid = camb.get_results(pars_fid)
+    H_star_fid = results_fid.hubble_parameter(z=z_star)
+    k_kms_fid, zs_out, P_kms_fid = get_linP_kms(pars_fid,zs)
+    # get parameters describing linear power
+    df_star=linP_params['df_star']
+    dg_star=linP_params['dg_star']
+    linP_ratio_kms=linP_params['linP_ratio_kms']
+    # will store reconstructed linear power here
+    Nz=len(zs)
+    Nk=len(k_kms)
+    linP_kms=np.empty([Nz,Nk])
+    for iz in range(Nz):
+        z=zs_out[iz]
+        # Hubble parameter in fiducial cosmology
+        H_fid = results_fid.hubble_parameter(z=z)
+        # evaluate fiducial power at slightly different wavenumber 
+        x = 1 + 3/2*dg_star*(z-z_star)/(1+z_star)
+        P_rec = np.interp(x*k_kms,k_kms_fid[iz],P_kms_fid[iz]) * x**3
+        # apply change in shape, taking into account we work in km/s
+        y_fid = H_fid/(1+z)/H_star_fid*(1+z_star)
+        y=y_fid*x
+        P_rec *= np.exp(linP_ratio_kms(np.log(y*k_kms)))
+        # correct linear growth
+        P_rec *= (1-df_star*(z-z_star)/(1+z_star))**2
+        linP_kms[iz]=P_rec
+    return linP_kms

@@ -29,7 +29,7 @@ def print_info(pars):
     return
 
 
-def get_Plin_hMpc(pars,zs=[3]):
+def get_linP_hMpc(pars,zs=[3],have_power=False):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of h/Mpc"""
     # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
@@ -39,15 +39,15 @@ def get_Plin_hMpc(pars,zs=[3]):
     fluid=8
     # maxkh and npoints here refer to points where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = results.get_matter_power_spectrum(var1=fluid,var2=fluid,
-            npoints=5000,maxkh=20)
+            npoints=5000,maxkh=20,have_power_spectra=have_power)
     return kh, zs_out, Ph
 
 
-def get_Plin_Mpc(pars,zs=[3]):
+def get_linP_Mpc(pars,zs=[3],have_power=False):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of 1/Mpc"""
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_Plin_hMpc(pars,zs)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,have_power=have_power)
     # translate to Mpc
     h = pars.H0 / 100.0
     k_Mpc = k_hMpc * h
@@ -55,11 +55,11 @@ def get_Plin_Mpc(pars,zs=[3]):
     return k_Mpc, zs_out, P_Mpc
 
 
-def get_Plin_kms(pars,zs=[3]):
+def get_linP_kms(pars,zs=[3],have_power=False):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of 1/Mpc"""
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_Plin_hMpc(pars,zs)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,have_power=have_power)
 
     # each redshift will now have a different set of wavenumbers
     Nz=len(zs)
@@ -94,50 +94,52 @@ def dkms_dhMpc(pars,z):
     return dvdX
 
 
-def fit_g_star(pars,z_star):
-    """ Compute derivative of Hubble expansion, normalized to EdS"""
+def get_g_star(pars,z_star):
+    """ Compute logarithmic derivative of Hubble expansion, normalized to EdS:
+        g(z) = dln H(z) / dln(1+z)^3/2 = 3/2 (1+z)/H(z) dH/dz """
     results = camb.get_results(pars)
+    # compute derivative of Hubble
     dz=z_star/100.0
     z_minus=z_star-dz
     z_plus=z_star+dz
     H_minus=results.hubble_parameter(z=z_minus)
-    H_star=results.hubble_parameter(z=z_star)
     H_plus=results.hubble_parameter(z=z_plus)
-    gamma_minus=H_minus/H_star*((1+z_star)/(1+z_minus))**1.5
-    gamma_plus=H_plus/H_star*((1+z_star)/(1+z_plus))**1.5
-    g_star=(gamma_plus-gamma_minus)/(z_plus-z_minus)
+    dHdz=(H_plus-H_minus)/(z_plus-z_minus)
+    # compute hubble at z_star, and return g(z_star)
+    H_star=results.hubble_parameter(z=z_star)
+    g_star=dHdz/H_star*(1+z_star)*2/3
     return g_star
 
 
-def fit_f_star(pars,z_star=3.0,k_p_Mpc=1.0):
+def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0,have_power=False):
     """Given cosmology, compute logarithmic growth rate (f) at z_star, around
-        pivot point k_p (in 1/Mpc)"""
-    # will compute derivative around z_star
+        pivot point k_p (in h/Mpc):
+        f(z) = d lnD / d lna = - 1/2 * (1+z)/P(z) dP/dz """
+    # will compute derivative of linear power at z_star
     dz=z_star/100.0
     z_minus=z_star-dz
     z_plus=z_star+dz
     zs=[z_minus,z_star,z_plus]
-    k_Mpc, zs_out, P_Mpc = get_Plin_Mpc(pars,zs)
-    P_minus=P_Mpc[0]
-    P_star=P_Mpc[1]
-    P_plus=P_Mpc[2]
-    # get linear growth with respect to Einstein-de Sitter
-    eta_minus=np.sqrt(P_minus/P_star)*(1+z_minus)/(1+z_star)
-    eta_plus=np.sqrt(P_plus/P_star)*(1+z_plus)/(1+z_star)
-    # compute derivatives of eta, to compute f_star
-    deta_dz = (eta_plus-eta_minus)/(z_plus-z_minus)
-    f_star = 1 - (1+z_star) * deta_dz
-    # average value of f_star around k_p
-    mask=(k_Mpc > 0.8*k_p_Mpc) & (k_Mpc < 1.2*k_p_Mpc)
-    f_star_p = np.mean(f_star[mask])
-    return f_star_p
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,have_power=have_power)
+    P_minus=P_hMpc[0]
+    P_star=P_hMpc[1]
+    P_plus=P_hMpc[2]
+    dPdz=(P_plus-P_minus)/(z_plus-z_minus)
+    # compute logarithmic growth rate
+    f_star_k = -0.5*dPdz/P_star*(1+z_star)
+    # compute mean around k_p
+    mask=(k_hMpc > 0.8*k_p_hMpc) & (k_hMpc < 1.2*k_p_hMpc)
+    f_star = np.mean(f_star_k[mask])
+    return f_star
 
 
-def fit_linP_ratio_kms(pars,pars_fid,z_star,kmin_kms,kmax_kms,deg=2):
+def fit_linP_ratio_kms(pars,pars_fid,z_star,kmin_kms,kmax_kms,deg=2,
+        have_power=False):
     """Given two cosmologies, compute ratio of linear power at z_star,
         in units of velocity, and fit polynomial to log ratio"""
-    k_kms, _, P_kms = get_Plin_kms(pars,[z_star])
-    k_kms_fid, _, P_kms_fid = get_Plin_kms(pars_fid,[z_star])
+    k_kms, _, P_kms = get_linP_kms(pars,[z_star],have_power=have_power)
+    k_kms_fid, _, P_kms_fid = get_linP_kms(pars_fid,[z_star],
+            have_power=have_power)
     # compute ratio
     k_ratio=np.logspace(np.log10(kmin_kms),np.log10(kmax_kms),1000)
     P_ratio=np.interp(k_ratio,k_kms[0],P_kms[0]) \
@@ -152,4 +154,20 @@ def fit_polynomial(xmin,xmax,x,y,deg=2):
     poly=np.polyfit(np.log(x[x_fit]), np.log(y[x_fit]), deg=deg)
     return np.poly1d(poly)
 
+
+def parameterize_cosmology(pars,pars_fid,z_star=3,kp_min_kms=0.005,
+		kp_max_kms=0.02):
+    """Given cosmology, and fiducial cosmology, compute set of parameters that 
+    describe the linear power around z_star and wavenumbers kp (in km/s)."""
+    # get logarithmic growth rate in both cosmologies at z_star, around k_p_hMpc
+    k_p_hMpc=1.0
+    f_star = get_f_star(pars,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    f_star_fid = get_f_star(pars_fid,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    # compute deviation from EdS expansion
+    g_star = get_g_star(pars,z_star=z_star)
+    g_star_fid = get_g_star(pars_fid,z_star=z_star)
+    # compute ratio of linear power, in velocity units, at z_star
+    linP_ratio_kms = fit_linP_ratio_kms(pars,pars_fid,z_star,kp_min_kms,
+            kp_max_kms,deg=2,have_power=True)
+    return f_star-f_star_fid,g_star-g_star_fid,linP_ratio_kms
 

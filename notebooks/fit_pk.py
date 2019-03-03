@@ -69,10 +69,8 @@ def get_Plin_kms(pars,zs=[3]):
     for iz in range(Nz):
         z = zs[iz]
         dvdX = dkms_dhMpc(pars,z)
-        print(iz,z,dvdX)
         k_kms[iz] = k_hMpc/dvdX
         P_kms[iz] = P_hMpc[iz]*dvdX**3
-
     return k_kms, zs_out, P_kms
 
 
@@ -86,7 +84,6 @@ def dkms_dhMpc(pars,z):
     # For now assume only flat LCDM universes 
     if abs(pars.omk) > 1.e-10:
         raise ValueError("Non-flat cosmologies are not supported (yet)")
-
     h=pars.H0/100.0
     Om_m=(pars.omch2+pars.ombh2+pars.omnuh2)/h**2
     Om_L=1.0-Om_m
@@ -97,26 +94,56 @@ def dkms_dhMpc(pars,z):
     return dvdX
 
 
-def fit_f_star(zs,Ps,k,k_p):
-    """ Given three redshifts, and power spectra, compute logarithmic growth
-        around k_p"""
-    Nz=len(zs)
-    if Nz is not 3:
-        raise ValueError("compute_f_star expects three redshifts")
-    if len(Ps) is not 3:
-        raise ValueError("compute_f_star expects three power spectra")
-    z_down,z_star,z_up=zs
-    P_down,P_star,P_up=Ps
+def fit_g_star(pars,z_star):
+    """ Compute derivative of Hubble expansion, normalized to EdS"""
+    results = camb.get_results(pars)
+    dz=z_star/100.0
+    z_minus=z_star-dz
+    z_plus=z_star+dz
+    H_minus=results.hubble_parameter(z=z_minus)
+    H_star=results.hubble_parameter(z=z_star)
+    H_plus=results.hubble_parameter(z=z_plus)
+    gamma_minus=H_minus/H_star*((1+z_star)/(1+z_minus))**1.5
+    gamma_plus=H_plus/H_star*((1+z_star)/(1+z_plus))**1.5
+    g_star=(gamma_plus-gamma_minus)/(z_plus-z_minus)
+    return g_star
+
+
+def fit_f_star(pars,z_star=3.0,k_p_Mpc=1.0):
+    """Given cosmology, compute logarithmic growth rate (f) at z_star, around
+        pivot point k_p (in 1/Mpc)"""
+    # will compute derivative around z_star
+    dz=z_star/100.0
+    z_minus=z_star-dz
+    z_plus=z_star+dz
+    zs=[z_minus,z_star,z_plus]
+    k_Mpc, zs_out, P_Mpc = get_Plin_Mpc(pars,zs)
+    P_minus=P_Mpc[0]
+    P_star=P_Mpc[1]
+    P_plus=P_Mpc[2]
     # get linear growth with respect to Einstein-de Sitter
-    eta_down=np.sqrt(P_down/P_star)*(1+z_down)/(1+z_star)
-    eta_up=np.sqrt(P_up/P_star)*(1+z_up)/(1+z_star)
+    eta_minus=np.sqrt(P_minus/P_star)*(1+z_minus)/(1+z_star)
+    eta_plus=np.sqrt(P_plus/P_star)*(1+z_plus)/(1+z_star)
     # compute derivatives of eta, to compute f_star
-    deta_dz = (eta_up-eta_down)/(z_up-z_down)
+    deta_dz = (eta_plus-eta_minus)/(z_plus-z_minus)
     f_star = 1 - (1+z_star) * deta_dz
     # average value of f_star around k_p
-    mask=(k > 0.8*k_p) & (k < 1.2*k_p)
+    mask=(k_Mpc > 0.8*k_p_Mpc) & (k_Mpc < 1.2*k_p_Mpc)
     f_star_p = np.mean(f_star[mask])
     return f_star_p
+
+
+def fit_linP_ratio_kms(pars,pars_fid,z_star,kmin_kms,kmax_kms,deg=2):
+    """Given two cosmologies, compute ratio of linear power at z_star,
+        in units of velocity, and fit polynomial to log ratio"""
+    k_kms, _, P_kms = get_Plin_kms(pars,[z_star])
+    k_kms_fid, _, P_kms_fid = get_Plin_kms(pars_fid,[z_star])
+    # compute ratio
+    k_ratio=np.logspace(np.log10(kmin_kms),np.log10(kmax_kms),1000)
+    P_ratio=np.interp(k_ratio,k_kms[0],P_kms[0]) \
+            / np.interp(k_ratio,k_kms_fid[0],P_kms_fid[0])
+    P_ratio_fit=fit_polynomial(kmin_kms,kmax_kms,k_ratio,P_ratio,deg=deg)
+    return P_ratio_fit
 
 
 def fit_polynomial(xmin,xmax,x,y,deg=2):

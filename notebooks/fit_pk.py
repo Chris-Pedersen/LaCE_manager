@@ -133,18 +133,21 @@ def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0,have_power=False):
     return f_star
 
 
-def fit_linP_ratio_kms(pars,pars_fid,z_star,kmin_kms,kmax_kms,deg=2,
-        have_power=False):
+def fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2,have_power=False):
     """Given two cosmologies, compute ratio of linear power at z_star,
         in units of velocity, and fit polynomial to log ratio"""
     k_kms, _, P_kms = get_linP_kms(pars,[z_star],have_power=have_power)
     k_kms_fid, _, P_kms_fid = get_linP_kms(pars_fid,[z_star],
             have_power=have_power)
+    # specify wavenumber range to fit
+    kmin_kms = kp_kms*0.8
+    kmax_kms = kp_kms/0.8
     # compute ratio
     k_ratio=np.logspace(np.log10(kmin_kms),np.log10(kmax_kms),1000)
     P_ratio=np.interp(k_ratio,k_kms[0],P_kms[0]) \
             / np.interp(k_ratio,k_kms_fid[0],P_kms_fid[0])
-    P_ratio_fit=fit_polynomial(kmin_kms,kmax_kms,k_ratio,P_ratio,deg=deg)
+    P_ratio_fit=fit_polynomial(kmin_kms/kp_kms,kmax_kms/kp_kms,k_ratio/kp_kms,
+            P_ratio,deg=deg)
     return P_ratio_fit
 
 
@@ -156,8 +159,7 @@ def fit_polynomial(xmin,xmax,x,y,deg=2):
     return np.poly1d(poly)
 
 
-def parameterize_cosmology(pars,pars_fid,z_star=3,kp_min_kms=0.005,
-		kp_max_kms=0.02):
+def parameterize_cosmology(pars,pars_fid,z_star=3,kp_kms=0.009):
     """Given cosmology, and fiducial cosmology, compute set of parameters that 
     describe the linear power around z_star and wavenumbers kp (in km/s)."""
     # get logarithmic growth rate in both cosmologies at z_star, around k_p_hMpc
@@ -168,14 +170,15 @@ def parameterize_cosmology(pars,pars_fid,z_star=3,kp_min_kms=0.005,
     g_star = get_g_star(pars,z_star=z_star)
     g_star_fid = get_g_star(pars_fid,z_star=z_star)
     # compute ratio of linear power, in velocity units, at z_star
-    linP_ratio_kms = fit_linP_ratio_kms(pars,pars_fid,z_star,kp_min_kms,
-            kp_max_kms,deg=2,have_power=True)
+    # and fit a second order polynomial to the log ratio, around kp_kms
+    linP_ratio_kms = fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,
+            deg=2,have_power=True)
     results={'df_star':f_star-f_star_fid}
     results['dg_star']=g_star-g_star_fid
     results['linP_ratio_kms']=linP_ratio_kms
     return results
 
-def reconstruct_linP_kms(zs,k_kms,pars_fid,linP_params,z_star):
+def reconstruct_linP_kms(zs,k_kms,pars_fid,linP_params,z_star,kp_kms):
     """Given fiducial cosmology and linear parameters, reconstruct linear
         power spectra"""
     # get linear power and background expansion for fiducial cosmology
@@ -200,7 +203,7 @@ def reconstruct_linP_kms(zs,k_kms,pars_fid,linP_params,z_star):
         # apply change in shape, taking into account we work in km/s
         y_fid = H_fid/(1+z)/H_star_fid*(1+z_star)
         y=y_fid*x
-        P_rec *= np.exp(linP_ratio_kms(np.log(y*k_kms)))
+        P_rec *= np.exp(linP_ratio_kms(np.log(y*k_kms/kp_kms)))
         # correct linear growth
         P_rec *= (1-df_star*(z-z_star)/(1+z_star))**2
         linP_kms[iz]=P_rec

@@ -25,9 +25,9 @@ def gaussian_chi2_McDonald2005(neff,DL2):
     return gaussian_chi2(neff,DL2,neff_val,DL2_val,neff_err,DL2_err,r)
 
 
-def gaussian_chi2_Chabanier2018(neff,DL2):
+def gaussian_chi2_Chabanier2019(neff,DL2):
     """Compute Gaussian Delta chi^2 for a particular point(s) (neff,DL2),
-    using the measurement from Chabanier et al. (2018, Figure 20).
+    using the measurement from Chabanier et al. (2019, Figure 20).
     """
     # DL2 = k^3 P(k) / (2 pi^2)
     DL2_val=0.312

@@ -9,7 +9,7 @@ def get_cosmology(params=None,H0=67.0, mnu=0.06, omch2=0.12, ombh2=0.022,
         cosmological parameters."""
     pars = camb.CAMBparams()
     if params is None:
-        pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=0, 
+        pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk, 
                 mnu=mnu,TCMB=TCMB)
         pars.InitPower.set_params(As=As, ns=ns)
     else:
@@ -29,7 +29,7 @@ def print_info(pars):
     return
 
 
-def get_linP_hMpc(pars,zs=[3],have_power=False):
+def get_linP_hMpc(pars,zs=[3]):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of h/Mpc"""
     # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
@@ -39,15 +39,15 @@ def get_linP_hMpc(pars,zs=[3],have_power=False):
     fluid=8
     # maxkh and npoints here refer to points where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = results.get_matter_power_spectrum(var1=fluid,var2=fluid,
-            npoints=5000,maxkh=20,have_power_spectra=have_power)
+            npoints=5000,maxkh=20)
     return kh, zs_out, Ph
 
 
-def get_linP_Mpc(pars,zs=[3],have_power=False):
+def get_linP_Mpc(pars,zs=[3]):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of 1/Mpc"""
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,have_power=have_power)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs)
     # translate to Mpc
     h = pars.H0 / 100.0
     k_Mpc = k_hMpc * h
@@ -55,11 +55,11 @@ def get_linP_Mpc(pars,zs=[3],have_power=False):
     return k_Mpc, zs_out, P_Mpc
 
 
-def get_linP_kms(pars,zs=[3],have_power=False):
+def get_linP_kms(pars,zs=[3]):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of 1/Mpc"""
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,have_power=have_power)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs)
 
     # each redshift will now have a different set of wavenumbers
     Nz=len(zs)
@@ -81,9 +81,13 @@ def dkms_dhMpc(pars,z):
         - cosmo: dictionary with information about cosmological model.
         - z: redshift
     """
-    # For now assume only flat LCDM universes 
+    # Check if cosmology is non-flat
     if abs(pars.omk) > 1.e-10:
-        raise ValueError("Non-flat cosmologies are not supported (yet)")
+        results = camb.get_results(pars)
+        H_z=results.hubble_parameter(z)
+        dvdX=H_z/(1+z)/pars.H0   
+        return dvdX
+    # use flat cosmology
     h=pars.H0/100.0
     Om_m=(pars.omch2+pars.ombh2+pars.omnuh2)/h**2
     Om_L=1.0-Om_m
@@ -111,14 +115,14 @@ def get_g_star(pars,z_star):
     return g_star
 
 
-def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0,have_power=False):
+def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0):
     """Given cosmology, compute logarithmic growth rate (f) at z_star, around
         pivot point k_p (in h/Mpc):
         f(z) = d lnD / d lna = - 1/2 * (1+z)/P(z) dP/dz """
     # will compute derivative of linear power at z_star
     dz=z_star/100.0
     zs=[z_star+dz,z_star,z_star-dz]
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,have_power=have_power)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs)
     z_minus=zs_out[0]
     z_star=zs_out[1]
     z_plus=zs_out[2]
@@ -134,12 +138,11 @@ def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0,have_power=False):
     return f_star
 
 
-def fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2,have_power=False):
+def fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2):
     """Given two cosmologies, compute ratio of linear power at z_star,
         in units of velocity, and fit polynomial to log ratio"""
-    k_kms, _, P_kms = get_linP_kms(pars,[z_star],have_power=have_power)
-    k_kms_fid, _, P_kms_fid = get_linP_kms(pars_fid,[z_star],
-            have_power=have_power)
+    k_kms, _, P_kms = get_linP_kms(pars,[z_star])
+    k_kms_fid, _, P_kms_fid = get_linP_kms(pars_fid,[z_star])
     # specify wavenumber range to fit
     kmin_kms = kp_kms*0.8
     kmax_kms = kp_kms/0.8
@@ -152,10 +155,10 @@ def fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2,have_power=False):
     return P_ratio_fit
 
 
-def fit_linP_kms(pars,z_star,kp_kms,deg=2,have_power=False):
+def fit_linP_kms(pars,z_star,kp_kms,deg=2):
     """Given input cosmology, compute linear power at z_star (velocity units)
         and fit polynomial around kp_kms"""
-    k_kms, _, P_kms = get_linP_kms(pars,[z_star],have_power=have_power)
+    k_kms, _, P_kms = get_linP_kms(pars,[z_star])
     # specify wavenumber range to fit
     kmin_kms = kp_kms*0.8
     kmax_kms = kp_kms/0.8
@@ -185,8 +188,7 @@ def parameterize_cosmology_relative(pars,pars_fid,z_star=3,kp_kms=0.009):
     g_star_fid = get_g_star(pars_fid,z_star=z_star)
     # compute ratio of linear power, in velocity units, at z_star
     # and fit a second order polynomial to the log ratio, around kp_kms
-    linP_ratio_kms = fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,
-            deg=2,have_power=True)
+    linP_ratio_kms = fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2)
     results={'df_star':f_star-f_star_fid}
     results['dg_star']=g_star-g_star_fid
     results['linP_ratio_kms']=linP_ratio_kms
@@ -203,7 +205,7 @@ def parameterize_cosmology(pars,z_star=3,kp_kms=0.009):
     g_star = get_g_star(pars,z_star=z_star)
     # compute linear power, in velocity units, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
-    linP_kms = fit_linP_kms(pars,z_star,kp_kms,deg=2,have_power=True)
+    linP_kms = fit_linP_kms(pars,z_star,kp_kms,deg=2)
     results={'f_star':f_star, 'g_star':g_star, 'linP_kms':linP_kms}
     return results
 

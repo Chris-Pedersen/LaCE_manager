@@ -133,7 +133,7 @@ def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0):
     # compute logarithmic growth rate
     f_star_k = -0.5*dPdz/P_star*(1+z_star)
     # compute mean around k_p
-    mask=(k_hMpc > 0.8*k_p_hMpc) & (k_hMpc < 1.2*k_p_hMpc)
+    mask=(k_hMpc > k_p_hMpc*0.6) & (k_hMpc < k_p_hMpc/0.6)
     f_star = np.mean(f_star_k[mask])
     return f_star
 
@@ -144,8 +144,8 @@ def fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2):
     k_kms, _, P_kms = get_linP_kms(pars,[z_star])
     k_kms_fid, _, P_kms_fid = get_linP_kms(pars_fid,[z_star])
     # specify wavenumber range to fit
-    kmin_kms = kp_kms*0.8
-    kmax_kms = kp_kms/0.8
+    kmin_kms = kp_kms*0.6
+    kmax_kms = kp_kms/0.6
     # compute ratio
     k_ratio=np.logspace(np.log10(kmin_kms),np.log10(kmax_kms),1000)
     P_ratio=np.interp(k_ratio,k_kms[0],P_kms[0]) \
@@ -160,8 +160,8 @@ def fit_linP_kms(pars,z_star,kp_kms,deg=2):
         and fit polynomial around kp_kms"""
     k_kms, _, P_kms = get_linP_kms(pars,[z_star])
     # specify wavenumber range to fit
-    kmin_kms = kp_kms*0.8
-    kmax_kms = kp_kms/0.8
+    kmin_kms = kp_kms*0.6
+    kmax_kms = kp_kms/0.6
     # compute ratio
     P_fit=fit_polynomial(kmin_kms/kp_kms,kmax_kms/kp_kms,k_kms/kp_kms,
             P_kms,deg=deg)

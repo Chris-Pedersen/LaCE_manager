@@ -133,7 +133,7 @@ def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0):
     # compute logarithmic growth rate
     f_star_k = -0.5*dPdz/P_star*(1+z_star)
     # compute mean around k_p
-    mask=(k_hMpc > k_p_hMpc*0.6) & (k_hMpc < k_p_hMpc/0.6)
+    mask=(k_hMpc > 0.5*k_p_hMpc) & (k_hMpc < 2.0*k_p_hMpc)
     f_star = np.mean(f_star_k[mask])
     return f_star
 
@@ -144,8 +144,8 @@ def fit_linP_ratio_kms(pars,pars_fid,z_star,kp_kms,deg=2):
     k_kms, _, P_kms = get_linP_kms(pars,[z_star])
     k_kms_fid, _, P_kms_fid = get_linP_kms(pars_fid,[z_star])
     # specify wavenumber range to fit
-    kmin_kms = kp_kms*0.6
-    kmax_kms = kp_kms/0.6
+    kmin_kms = 0.5*kp_kms
+    kmax_kms = 2.0*kp_kms
     # compute ratio
     k_ratio=np.logspace(np.log10(kmin_kms),np.log10(kmax_kms),1000)
     P_ratio=np.interp(k_ratio,k_kms[0],P_kms[0]) \
@@ -160,8 +160,8 @@ def fit_linP_kms(pars,z_star,kp_kms,deg=2):
         and fit polynomial around kp_kms"""
     k_kms, _, P_kms = get_linP_kms(pars,[z_star])
     # specify wavenumber range to fit
-    kmin_kms = kp_kms*0.6
-    kmax_kms = kp_kms/0.6
+    kmin_kms = 0.5*kp_kms
+    kmax_kms = 2.0*kp_kms
     # compute ratio
     P_fit=fit_polynomial(kmin_kms/kp_kms,kmax_kms/kp_kms,k_kms/kp_kms,
             P_kms,deg=deg)
@@ -280,4 +280,32 @@ def reconstruct_linP_kms(zs,k_kms,pars_fid,linP_params,z_star,kp_kms):
         # correct linear growth
         P_rec *= (1-df_star*(z-z_star)/(1+z_star))**2
         rec_linP_kms[iz]=P_rec
+    return rec_linP_kms
+
+
+def reconstruct_linP_kms_nowiggles(zs,k_kms,linP_params,z_star,kp_kms):
+    """Given linear parameters for input cosmology, reconstruct linear power"""
+    # get parameters describing linear power for input cosmology
+    f_star=linP_params['f_star']
+    g_star=linP_params['g_star']
+    linP_kms=linP_params['linP_kms']
+    # will store reconstructed linear power here
+    Nz=len(zs)
+    Nk=len(k_kms)
+    rec_linP_kms=np.empty([Nz,Nk])
+    for iz in range(Nz):
+        z=zs[iz]
+        # (z-z_star) / (1+z_star)
+        dz_zs=(z-z_star)/(1+z_star)
+        # A(z)/A_star
+        Az_As_EdS=((1+z)/(1+z_star))**0.5
+        Az_As=Az_As_EdS*(1+3/2*(g_star-1)*dz_zs)
+        # D(z)/D_star
+        Dz_Ds_EdS=(1+z_star)/(1+z)
+        Dz_Ds=Dz_Ds_EdS*(1-(f_star-1)*dz_zs)
+        print(iz,z,dz_zs,Az_As,Dz_Ds,Az_As_EdS,Dz_Ds_EdS)
+        # P(z_star,q=A(z)/A_star*k)
+        lnq_kp=np.log(Az_As*k_kms/kp_kms)
+        Ps=np.exp(linP_kms(lnq_kp))
+        rec_linP_kms[iz]=Ps*(Az_As**3)*(Dz_Ds**2)
     return rec_linP_kms

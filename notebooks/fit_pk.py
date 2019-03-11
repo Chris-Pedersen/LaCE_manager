@@ -303,7 +303,8 @@ def reconstruct_linP_kms_nowiggles(zs,k_kms,linP_params,z_star,kp_kms):
         # D(z)/D_star
         Dz_Ds_EdS=(1+z_star)/(1+z)
         Dz_Ds=Dz_Ds_EdS*(1-(f_star-1)*dz_zs)
-        print(iz,z,dz_zs,Az_As,Dz_Ds,Az_As_EdS,Dz_Ds_EdS)
+        if False:
+            print(iz,z,dz_zs,Az_As,Dz_Ds,Az_As_EdS,Dz_Ds_EdS)
         # P(z_star,q=A(z)/A_star*k)
         lnq_kp=np.log(Az_As*k_kms/kp_kms)
         Ps=np.exp(linP_kms(lnq_kp))

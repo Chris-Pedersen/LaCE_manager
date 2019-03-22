@@ -168,6 +168,19 @@ def fit_linP_kms(pars,z_star,kp_kms,deg=2):
     return P_fit
 
 
+def fit_linP_Mpc(pars,z_star,kp_Mpc,deg=2):
+    """Given input cosmology, compute linear power at z_star (in Mpc)
+        and fit polynomial around kp_Mpc"""
+    k_Mpc, _, P_Mpc = get_linP_Mpc(pars,[z_star])
+    # specify wavenumber range to fit
+    kmin_Mpc = 0.5*kp_Mpc
+    kmax_Mpc = 2.0*kp_Mpc
+    # compute ratio
+    P_fit=fit_polynomial(kmin_Mpc/kp_Mpc,kmax_Mpc/kp_Mpc,k_Mpc/kp_Mpc,
+            P_Mpc[0],deg=deg)
+    return P_fit
+
+
 def fit_polynomial(xmin,xmax,x,y,deg=2):
     """ Fit a polynomial on the log of the function, within range"""
     x_fit= (x > xmin) & (x < xmax)
@@ -176,7 +189,7 @@ def fit_polynomial(xmin,xmax,x,y,deg=2):
     return np.poly1d(poly)
 
 
-def parameterize_cosmology_relative(pars,pars_fid,z_star=3,kp_kms=0.009):
+def parameterize_cosmology_kms_relative(pars,pars_fid,z_star=3,kp_kms=0.009):
     """Given cosmology, and fiducial cosmology, compute set of parameters that 
         describe the linear power around z_star and wavenumbers kp (in km/s)."""
     # get logarithmic growth rate in both cosmologies at z_star, around k_p_hMpc
@@ -195,7 +208,7 @@ def parameterize_cosmology_relative(pars,pars_fid,z_star=3,kp_kms=0.009):
     return results
 
 
-def parameterize_cosmology(pars,z_star=3,kp_kms=0.009):
+def parameterize_cosmology_kms(pars,z_star=3,kp_kms=0.009):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in km/s)."""
     # get logarithmic growth rate at z_star, around k_p_hMpc
@@ -254,7 +267,8 @@ def reconstruct_linP_kms(zs,k_kms,pars_fid,linP_params,z_star,kp_kms):
     g_star=linP_params['g_star']
     linP_kms=linP_params['linP_kms']
     # get parameters describing fiducial cosmology linear power
-    linP_params_fid=parameterize_cosmology(pars_fid,z_star=z_star,kp_kms=kp_kms)
+    linP_params_fid=parameterize_cosmology_kms(pars_fid,z_star=z_star,
+            kp_kms=kp_kms)
     f_star_fid=linP_params_fid['f_star']
     g_star_fid=linP_params_fid['g_star']
     linP_kms_fid=linP_params_fid['linP_kms']
@@ -310,3 +324,18 @@ def reconstruct_linP_kms_nowiggles(zs,k_kms,linP_params,z_star,kp_kms):
         Ps=np.exp(linP_kms(lnq_kp))
         rec_linP_kms[iz]=Ps*(Az_As**3)*(Dz_Ds**2)
     return rec_linP_kms
+
+
+def parameterize_cosmology_Mpc(pars,z_star=3,kp_Mpc=0.7):
+    """Given input cosmology, compute set of parameters that describe 
+        the linear power around z_star and wavenumbers kp (in Mpc)."""
+    # get logarithmic growth rate at z_star, around k_p_hMpc
+    k_p_hMpc=1.0
+    f_star = get_f_star(pars,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    # compute deviation from EdS expansion
+    g_star = get_g_star(pars,z_star=z_star)
+    # compute linear power, in Mpc, at z_star
+    # and fit a second order polynomial to the log power, around kp_Mpc
+    linP_Mpc = fit_linP_Mpc(pars,z_star,kp_Mpc,deg=2)
+    results={'f_star':f_star, 'g_star':g_star, 'linP_Mpc':linP_Mpc}
+    return results

@@ -1,6 +1,20 @@
 """Write GenIC / Gadget configuration file from a given cosmology."""
 
 import numpy as np
+import os
+import json
+
+def mkdir_if_not_exists(dirname,verbose=False):
+    """Check if directory exists, and create otherwise."""
+    if os.path.exists(dirname):
+        if not os.path.isdir(dirname):
+            raise ValueError(dirname+' exists but it is not a directory')
+        if verbose:
+        	print(dirname,'exists')
+    else:
+        if verbose:
+        	print('mkdir',dirname)
+        os.mkdir(dirname)
 
 
 def write_genic_file(filename,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
@@ -155,20 +169,25 @@ def write_gadget_file(filename,cosmo,mu_He=1.0,Ngrid=256,paired=False):
     gadget_file.close()
 
 
-def write_json_file(filename,cosmo,params):
+def write_json_file(filename,param_space,sim_params,linP_params):
     """Write a JSON file with meta data associated to this simulation pair."""
+    
+    json_info={}
+    # no need to copy information about parameter space
+    # json_info['param_space']=param_space
+    # copy values of parameters for this particular simulation
+    for key,param in param_space.items():
+        ip=param['ip']
+        json_info[key]=sim_params[ip]
+    # copy also linear power parameters
+    json_info['f_star']=linP_params['f_star']
+    json_info['g_star']=linP_params['g_star']
+    json_info['lnA_star']=linP_params['linP_Mpc'][0]
+    json_info['n_star']=linP_params['linP_Mpc'][1]
+    json_info['alpha_star']=linP_params['linP_Mpc'][2]
 
     filename+='.json'
-
     json_file = open(filename,"w")
-
-    print('filename ',filename)
-
-    # cosmological parameters
-    H0 = cosmo.H0
-    json_file.write("H0 = %f \n" % H0)
-    
-    print('H0')
-
+    json.dump(json_info,json_file)
     json_file.close()
 

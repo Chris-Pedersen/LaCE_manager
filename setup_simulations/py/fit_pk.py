@@ -79,7 +79,85 @@ def parameterize_cosmology_Mpc(pars,z_star=3,kp_Mpc=0.7):
     return results
 
 
-def Om_from_Om_star(Om_star,z_star=3):
+def cosmo_from_sim_params(param_space,sim_params,cosmo_fid,linP_params_fid,
+			z_star,kp_Mpc,verbose=False):
+    """Given list of simulation parameters, and fiducial cosmology, 
+		return target cosmology.
+        Input:
+            - param_space: dictionary describing the parameter space.
+            - sim_params: array with values for each parameter in this sim.
+            - cosmo_fid: CAMB object for the fiducial cosmology.
+            - linP_params_fid: linear power parameters in fiducial cosmology. 
+        Output:
+            - cosmo_sim: CAMB object for the target cosmology."""
+    
+    # translate Omega_star to Omega_0 (in target cosmology)
+    ip_Om_star=param_space['Om_star']['ip']
+    Om_star=sim_params[ip_Om_star]
+    # translate Omega_star to Omega_0 (assumes flat LCDM)
     z3=(1+z_star)**3
     Om=Om_star/(z3+Om_star-Om_star*z3)
-    return Om
+    # get parameters from fiducial cosmology
+    Obh2=cosmo_fid.ombh2
+    Och2=cosmo_fid.omch2
+    Omh2=Obh2+Och2
+    h=np.sqrt(Omh2/Om)
+    if verbose:
+        print('Omega_m_star =', Om_star)
+        print('Omega_m =', Om)
+        print('h =', h)
+    
+    # get temporary cosmology to tune primordial power spectrum
+    cosmo_temp=camb_cosmo.get_cosmology(H0=100.0*h)
+    # get linear power parameters, in comoving units
+    linP_params_temp=parameterize_cosmology_Mpc(cosmo_temp,z_star=z_star,
+			kp_Mpc=kp_Mpc)
+    
+    # difference in linear power at kp between target and fiducial cosmology
+	# (once they have the same transfer function)
+    ip_Delta2_star=param_space['Delta2_star']['ip']
+    Delta2_star=sim_params[ip_Delta2_star]
+    A_star=Delta2_star*(2*np.pi**2)/kp_Mpc**3
+    lnA_star=np.log(A_star)
+    delta_lnA_star=lnA_star-linP_params_temp['linP_Mpc'][0]        
+    # slope
+    ip_n_star=param_space['n_star']['ip']
+    n_star=sim_params[ip_n_star]
+    delta_n_star=n_star-linP_params_temp['linP_Mpc'][1]
+    # running
+    ip_alpha_star=param_space['alpha_star']['ip']
+    alpha_star=sim_params[ip_alpha_star]
+    delta_alpha_star=alpha_star-linP_params_temp['linP_Mpc'][2]
+    if verbose:
+        print('delta_lnA_star =',delta_lnA_star)
+        print('delta_n_star =',delta_n_star)
+        print('delta_alpha_star =',delta_alpha_star)
+    
+    # transform differences into differences at kp_CMB
+    kCMB=cosmo_fid.InitPower.pivot_scalar
+    # ratio of pivot points
+    ln_kCMB_p=np.log(kCMB/kp_Mpc)
+    delta_nrun=delta_alpha_star
+    delta_ns=delta_n_star+delta_alpha_star*ln_kCMB_p
+    delta_lnAs=delta_lnA_star+delta_n_star*ln_kCMB_p+0.5*delta_alpha_star*ln_kCMB_p**2
+    if verbose:
+        print('delta_lnAs =',delta_lnAs)
+        print('delta_ns =',delta_ns)
+        print('delta_nrun =',delta_nrun)
+        
+    # compute primordial power for target cosmology
+    lnAs=np.log(cosmo_temp.InitPower.As)+delta_lnAs
+    As=np.exp(lnAs)
+    ns=cosmo_temp.InitPower.ns+delta_ns
+    nrun=cosmo_temp.InitPower.nrun+delta_nrun
+    if verbose:
+        print('As =',np.exp(lnAs))
+        print('ns =',ns)
+        print('nrun =',nrun)
+        
+    # setup simulation cosmology object
+    cosmo_sim=camb_cosmo.get_cosmology(H0=100.0*h,As=As,ns=ns,nrun=nrun)
+    if verbose:
+        camb_cosmo.print_info(cosmo_sim)
+
+    return cosmo_sim

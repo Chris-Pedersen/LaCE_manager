@@ -125,9 +125,12 @@ def cosmo_from_sim_params(param_space,sim_params,cosmo_fid,linP_params_fid,
     n_star=sim_params[ip_n_star]
     delta_n_star=n_star-linP_params_temp['linP_Mpc'][1]
     # running
-    ip_alpha_star=param_space['alpha_star']['ip']
-    alpha_star=sim_params[ip_alpha_star]
-    delta_alpha_star=alpha_star-linP_params_temp['linP_Mpc'][2]
+    if 'alpha_star' in param_space:
+        ip_alpha_star=param_space['alpha_star']['ip']
+        alpha_star=sim_params[ip_alpha_star]
+        delta_alpha_star=alpha_star-linP_params_temp['linP_Mpc'][2]
+    else:
+        delta_alpha_star=0.0
     if verbose:
         print('delta_lnA_star =',delta_lnA_star)
         print('delta_n_star =',delta_n_star)

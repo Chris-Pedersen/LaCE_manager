@@ -169,12 +169,19 @@ def write_gadget_file(filename,cosmo,mu_He=1.0,Ngrid=256,paired=False):
     gadget_file.close()
 
 
-def write_json_file(filename,param_space,sim_params,linP_params):
+def write_cube_json_file(filename,param_space):
+    """Write a JSON file with meta data associated to the whole cube."""
+    
+    filename+='.json'
+    json_file = open(filename,"w")
+    json.dump(param_space,json_file)
+    json_file.close()
+
+
+def write_sim_json_file(filename,param_space,sim_params,linP_params):
     """Write a JSON file with meta data associated to this simulation pair."""
     
     json_info={}
-    # no need to copy information about parameter space
-    # json_info['param_space']=param_space
     # copy values of parameters for this particular simulation
     for key,param in param_space.items():
         ip=param['ip']

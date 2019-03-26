@@ -5,7 +5,7 @@ import numpy as np
 import camb
 
 def get_cosmology(params=None,H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, 
-            omk=0.0, TCMB=2.7255, As=2.1e-09, ns=0.96, nrun=0.0):
+            omk=0.0, TCMB=2.7255, As=2.1e-09, ns=0.965, nrun=0.0):
     """Given set of cosmological parameters, return CAMB cosmology object.
         One can either pass a dictionary (params), or a set of values for the
         cosmological parameters."""
@@ -39,14 +39,21 @@ def get_linP_hMpc(pars,zs=[3]):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of h/Mpc"""
 
+    # make sure that all models are evaluated at the same points in 1/Mpc
+    h=pars.H0/100.0
+    kmin_Mpc=1.e-4
+    kmax_Mpc=30.0
+    kmin_hMpc=kmin_Mpc/h
+    kmax_hMpc=kmax_Mpc/h
+
     # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
-    pars.set_matter_power(redshifts=zs, kmax=30.0)
+    pars.set_matter_power(redshifts=zs, kmax=2.0*kmax_Mpc)
     results = camb.get_results(pars)
     # fluid here specifies species we are interested in (8=CDM+baryons)
     fluid=8
     # maxkh and npoints where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = results.get_matter_power_spectrum(var1=fluid,var2=fluid,
-            npoints=5000,maxkh=20)
+            npoints=5000,minkh=kmin_hMpc,maxkh=kmax_hMpc)
     return kh, zs_out, Ph
 
 

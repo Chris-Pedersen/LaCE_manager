@@ -75,7 +75,15 @@ def parameterize_cosmology_Mpc(pars,z_star=3,kp_Mpc=0.7):
     # compute linear power, in Mpc, at z_star
     # and fit a second order polynomial to the log power, around kp_Mpc
     linP_Mpc = fit_linP_Mpc(pars,z_star,kp_Mpc,deg=2)
-    results={'f_star':f_star, 'g_star':g_star, 'linP_Mpc':linP_Mpc}
+    # translate the polynomial to our parameters
+    ln_A_star = linP_Mpc[0]
+    Delta2_star = np.exp(ln_A_star)*kp_Mpc**3/(2*np.pi**2)
+    n_star = linP_Mpc[1]
+    # note that the curvature is alpha/2
+    alpha_star = 2.0*linP_Mpc[2]
+    results={'f_star':f_star, 'g_star':g_star,
+            'Delta2_star':Delta2_star, 'n_star':n_star, 
+            'alpha_star':alpha_star, 'linP_Mpc':linP_Mpc}
     return results
 
 
@@ -112,23 +120,26 @@ def cosmo_from_sim_params(param_space,sim_params,cosmo_fid,linP_params_fid,
     # get linear power parameters, in comoving units
     linP_params_temp=parameterize_cosmology_Mpc(cosmo_temp,z_star=z_star,
 			kp_Mpc=kp_Mpc)
+    Delta2_star_temp=linP_params_temp['Delta2_star']
+    n_star_temp=linP_params_temp['n_star']
+    alpha_star_temp=linP_params_temp['alpha_star']
+    lnA_star_temp=np.log(2*np.pi**2*Delta2_star_temp/kp_Mpc**3)
     
     # difference in linear power at kp between target and fiducial cosmology
 	# (once they have the same transfer function)
     ip_Delta2_star=param_space['Delta2_star']['ip']
     Delta2_star=sim_params[ip_Delta2_star]
-    A_star=Delta2_star*(2*np.pi**2)/kp_Mpc**3
-    lnA_star=np.log(A_star)
-    delta_lnA_star=lnA_star-linP_params_temp['linP_Mpc'][0]        
+    lnA_star=np.log(Delta2_star*(2*np.pi**2)/kp_Mpc**3)
+    delta_lnA_star=lnA_star-lnA_star_temp
     # slope
     ip_n_star=param_space['n_star']['ip']
     n_star=sim_params[ip_n_star]
-    delta_n_star=n_star-linP_params_temp['linP_Mpc'][1]
+    delta_n_star=n_star-n_star_temp
     # running
     if 'alpha_star' in param_space:
         ip_alpha_star=param_space['alpha_star']['ip']
         alpha_star=sim_params[ip_alpha_star]
-        delta_alpha_star=alpha_star-linP_params_temp['linP_Mpc'][2]
+        delta_alpha_star=alpha_star-alpha_star_temp
     else:
         delta_alpha_star=0.0
     if verbose:
@@ -161,6 +172,6 @@ def cosmo_from_sim_params(param_space,sim_params,cosmo_fid,linP_params_fid,
     # setup simulation cosmology object
     cosmo_sim=camb_cosmo.get_cosmology(H0=100.0*h,As=As,ns=ns,nrun=nrun)
     if verbose:
-        camb_cosmo.print_info(cosmo_sim)
+        camb_cosmo.print_info(cosmo_sim,simulation=True)
 
     return cosmo_sim

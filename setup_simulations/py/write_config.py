@@ -78,11 +78,7 @@ def write_genic_file(filename,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.write("WhichSpectrum = 2 \n")
     genic_file.write("PrimordialIndex = %f \n" % cosmo.InitPower.ns)
     genic_file.write("PrimordialAmp = %.6e \n" % cosmo.InitPower.As)
-    # not able to modify running yet
-    if not np.isclose(0.0,cosmo.InitPower.nrun,atol=1.e-5):
-        print('Modify GenIC to allow for running',cosmo.InitPower.nrun)
-        #raise ValueError('Implement neutrinos in write_genic_files')
-    #genic_file.write("PrimordialRunning = %.6e \n" % cosmo.InitPower.nrun)
+    genic_file.write("PrimordialRunning = %.6e \n" % cosmo.InitPower.nrun)
 
     # not quite sure if needed...
     genic_file.write("UnitLength_in_cm = 3.085678e21 \n")
@@ -185,13 +181,13 @@ def write_sim_json_file(filename,param_space,sim_params,linP_params):
     # copy values of parameters for this particular simulation
     for key,param in param_space.items():
         ip=param['ip']
-        json_info[key]=sim_params[ip]
+        json_info['target_'+key]=sim_params[ip]
     # copy also linear power parameters
-    json_info['f_star']=linP_params['f_star']
-    json_info['g_star']=linP_params['g_star']
-    json_info['lnA_star']=linP_params['linP_Mpc'][0]
-    json_info['n_star']=linP_params['linP_Mpc'][1]
-    json_info['alpha_star']=linP_params['linP_Mpc'][2]
+    json_info['fit_f_star']=linP_params['f_star']
+    json_info['fit_g_star']=linP_params['g_star']
+    json_info['fit_Delta2_star']=linP_params['Delta2_star']
+    json_info['fit_n_star']=linP_params['n_star']
+    json_info['fit_alpha_star']=linP_params['alpha_star']
 
     filename+='.json'
     json_file = open(filename,"w")

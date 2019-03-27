@@ -24,6 +24,7 @@ MNut = float(min=0, default=0)
 MWDM_Therm = float(min=0, default=0)
 PrimordialIndex = float(default=0.971)
 PrimordialAmp = float(default=2.215e-9)
+PrimordialRunning = float(default=0.0)
 CMBTemperature = float(default=2.7255)""".split('\n')
 
 
@@ -63,9 +64,7 @@ def _build_cosmology_params_class(config):
     params['T_cmb'] = config["CMBTemperature"]
     params['A_s'] = config["PrimordialAmp"]
     params['n_s'] = config['PrimordialIndex']
-    # for now we can not modify running in GenIC / Gadget
-    params['nrun'] = 0.0
-    #params['nrun'] = config['PrimordialRunning']
+    params['alpha_s'] = config['PrimordialRunning']
     #Set up massive neutrinos
     if omeganu > 0:
         params['m_ncdm'] = '%.8f,%.8f,%.8f' % (config['MNue'], config['MNum'], 
@@ -99,9 +98,7 @@ def _build_cosmology_params_camb(config):
     params['TCMB'] = config["CMBTemperature"]
     params['As'] = config["PrimordialAmp"]
     params['ns'] = config['PrimordialIndex']
-    # for now we can not modify running in GenIC / Gadget
-    params['nrun'] = 0.0
-    #params['nrun'] = config['PrimordialRunning']
+    params['nrun'] = config['PrimordialRunning']
 
     return params
 

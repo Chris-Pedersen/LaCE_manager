@@ -24,14 +24,15 @@ def get_cosmology(params=None,H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022,
     return pars
 
 
-def print_info(pars):
+def print_info(pars,simulation=False):
     """Given CAMB cosmology object, print relevant parameters"""
 
-    print('H0 =',pars.H0,'; Omega_b h^2 =',pars.ombh2,
-          '; Omega_c h^2 =',pars.omch2,'; Omega_k =',pars.omk,
-          '; ommnuh2 =',int(1e5*pars.omnuh2)/1.e5,'; T_CMB =',pars.TCMB,
-          '; A_s =',pars.InitPower.As,'; n_s =',pars.InitPower.ns,
-          '; alpha_s =',pars.InitPower.nrun)
+    if simulation:
+        Omh2=(pars.omch2+pars.ombh2)
+        Om=Omh2/(pars.H0/100.0)**2
+        print('H0 = {:.4E}, Omega_bc = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,Om,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
+    else:
+        print('H0 = {:.4E}, Omega_b h^2 = {:.4E}, Omega_b h^2 = {:.4E}, Omega_k = {:.4E}, Omega_nu h^2 = {:.4E}, T_CMB = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,pars.ombh2,pars.omch2,pars.omk,pars.omnuh2,pars.TCMB,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
     return
 
 

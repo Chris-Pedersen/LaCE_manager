@@ -10,7 +10,6 @@ setup(name="setup_sims",
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/setup_simulations",
     author="Andreu Font-Ribera, Chris Pedersen, Keir Rogers",
     py_modules=['read_genic','write_config',
-                'latin_hypercube','camb_cosmo',
-                'fit_pk'],
+                'latin_hypercube','sim_params_cosmo'],
     package_dir={'': 'py'})
 

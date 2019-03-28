@@ -9,6 +9,6 @@ setup(name="user_interface",
     description=description,
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/user_interface",
     author="Andreu Font-Ribera, Chris Pedersen, Keir Rogers",
-    py_modules=['camb_cosmo','fit_pk_kms','lya_results'],
+    py_modules=['lya_results'],
     package_dir={'': 'py'})
 

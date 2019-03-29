@@ -3,7 +3,80 @@ import numpy as np
 import camb
 import camb_cosmo
 
-def get_g_star(pars,z_star):
+
+class LinearPowerModel(object):
+    """Parameterize linear power spectrum around z_star, kp.
+        It can work with velocity or comoving units."""
+
+    def __init__(self,cosmo,z_star=3.0,k_units='kms',kp=None):
+        """Setup model, specifying units (kms or Mpc) and pivot point"""
+
+        self.cosmo=cosmo
+        self.z_star=z_star
+        self.k_units=k_units
+        # choose suitable pivot point, depending on units
+        if kp is None:
+            if self.k_units is 'kms':
+                self.kp=0.009
+            elif self.k_units is 'Mpc':
+                self.kp=0.7
+            else:
+                raise ValueError('k_units not recognized '+self.k_units)
+        else:
+            self.kp=kp
+        # parameterize cosmology and store values
+        self.params=self._setup_cosmo_params()
+
+
+    def _setup_cosmo_params(self):
+        """Compute and store parameters describing the linear power."""
+
+        if self.k_units is 'kms':
+            self.linP_params=parameterize_cosmology_kms(self.cosmo,
+                                                        self.z_star,self.kp)
+        elif self.k_units is 'Mpc':
+            self.linP_params=parameterize_cosmology_Mpc(self.cosmo,
+                                                        self.z_star,self.kp)
+        else:
+            raise ValueError('k_units not recognized '+self.k_units)
+
+
+    def get_params(self,poly=False):
+        """Return dictionary with parameters. 
+            If False=True, return also polynomial with shape of linear power"""
+
+        params={'f_star':self.get_f_star(), 'g_star':self.get_g_star(), 
+                'Delta2_star':self.get_Delta2_star(), 
+                'n_star':self.get_n_star(), 'alpha_star':self.get_alpha_star()}
+
+        # check if we want linear power as well, in km/s or Mpc units
+        if poly:
+            if self.k_units is 'kms':
+                params['linP_kms']=self.linP_params['linP_kms']
+            elif self.k_units is 'Mpc':
+                params['linP_kms']=self.linP_params['linP_kms']
+            else:
+                raise ValueError('k_units not recognized '+self.k_units)
+        return params
+
+
+    def get_f_star(self):
+        return self.linP_params['f_star']
+
+    def get_g_star(self):
+        return self.linP_params['g_star']
+
+    def get_Delta2_star(self):
+        return self.linP_params['Delta2_star']
+
+    def get_n_star(self):
+        return self.linP_params['n_star']
+
+    def get_alpha_star(self):
+        return self.linP_params['alpha_star']
+
+
+def compute_g_star(pars,z_star):
     """ Compute logarithmic derivative of Hubble expansion, normalized to EdS:
         g(z) = dln H(z) / dln(1+z)^3/2 = 3/2 (1+z)/H(z) dH/dz """
     results = camb.get_results(pars)
@@ -20,7 +93,7 @@ def get_g_star(pars,z_star):
     return g_star
 
 
-def get_f_star(pars,z_star=3.0,k_p_hMpc=1.0):
+def compute_f_star(pars,z_star=3.0,k_p_hMpc=1.0):
     """Given cosmology, compute logarithmic growth rate (f) at z_star, around
         pivot point k_p (in h/Mpc):
         f(z) = d lnD / d lna = - 1/2 * (1+z)/P(z) dP/dz """
@@ -82,9 +155,9 @@ def parameterize_cosmology_Mpc(pars,z_star=3,kp_Mpc=0.7):
         the linear power around z_star and wavenumbers kp (in Mpc)."""
     # get logarithmic growth rate at z_star, around k_p_hMpc
     k_p_hMpc=1.0
-    f_star = get_f_star(pars,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    f_star = compute_f_star(pars,z_star=z_star,k_p_hMpc=k_p_hMpc)
     # compute deviation from EdS expansion
-    g_star = get_g_star(pars,z_star=z_star)
+    g_star = compute_g_star(pars,z_star=z_star)
     # compute linear power, in Mpc, at z_star
     # and fit a second order polynomial to the log power, around kp_Mpc
     linP_Mpc = fit_linP_Mpc(pars,z_star,kp_Mpc,deg=2)
@@ -105,9 +178,9 @@ def parameterize_cosmology_kms(pars,z_star=3,kp_kms=0.009):
         the linear power around z_star and wavenumbers kp (in km/s)."""
     # get logarithmic growth rate at z_star, around k_p_hMpc
     k_p_hMpc=1.0
-    f_star = get_f_star(pars,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    f_star = compute_f_star(pars,z_star=z_star,k_p_hMpc=k_p_hMpc)
     # compute deviation from EdS expansion
-    g_star = get_g_star(pars,z_star=z_star)
+    g_star = compute_g_star(pars,z_star=z_star)
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
     linP_kms = fit_linP_kms(pars,z_star,kp_kms,deg=2)

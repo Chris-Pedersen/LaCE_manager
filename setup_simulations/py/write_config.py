@@ -174,20 +174,27 @@ def write_cube_json_file(filename,param_space):
     json_file.close()
 
 
-def write_sim_json_file(filename,param_space,sim_params,linP_params):
+def write_sim_json_file(filename,param_space,sim_params,linP_model):
     """Write a JSON file with meta data associated to this simulation pair."""
     
     json_info={}
+
+    # copy pivot point in parameterization (should be same in all sims)
+    json_info['z_star']=linP_model.z_star
+    assert linP_model.k_units is 'Mpc', 'linP_model not in Mpc units'
+    json_info['kp_Mpc'] = linP_model.kp
+
     # copy values of parameters for this particular simulation
     for key,param in param_space.items():
         ip=param['ip']
         json_info['target_'+key]=sim_params[ip]
-    # copy also linear power parameters
-    json_info['fit_f_star']=linP_params['f_star']
-    json_info['fit_g_star']=linP_params['g_star']
-    json_info['fit_Delta2_star']=linP_params['Delta2_star']
-    json_info['fit_n_star']=linP_params['n_star']
-    json_info['fit_alpha_star']=linP_params['alpha_star']
+
+    # copy also linear power parameters actually fitted 
+    json_info['fit_f_star']=linP_model.get_f_star()
+    json_info['fit_g_star']=linP_model.get_g_star()
+    json_info['fit_Delta2_star']=linP_model.get_Delta2_star()
+    json_info['fit_n_star']=linP_model.get_n_star()
+    json_info['fit_alpha_star']=linP_model.get_alpha_star()
 
     filename+='.json'
     json_file = open(filename,"w")

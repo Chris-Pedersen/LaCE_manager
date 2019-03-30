@@ -17,7 +17,7 @@ def mkdir_if_not_exists(dirname,verbose=False):
         os.mkdir(dirname)
 
 
-def write_genic_file(filename,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
+def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):
     """Write a GenIC file for a given cosmology"""
 
@@ -30,10 +30,7 @@ def write_genic_file(filename,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     h = cosmo.H0/100.0
     box_hMpc=box_Mpc*h
 
-    if paired:
-        filename+='_paired.genic'
-    else:
-        filename+='.genic'
+    filename=simdir+'/paramfile.genic'
     genic_file = open(filename,"w")
 
     # main simulation settings (options)
@@ -43,11 +40,9 @@ def write_genic_file(filename,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.write("Seed = %d \n" % seed)
     if paired:
         genic_file.write("InvertedPhase = 1 \n")
-        genic_file.write("OutputDir = output_inverted \n")
-    else:
-        genic_file.write("OutputDir = output \n")
 
     # main simulation settings (default)
+    genic_file.write("OutputDir = output \n")
     genic_file.write("FileBase = IC \n")
     genic_file.write("ProduceGas = 1 \n")
     genic_file.write("RadiationOn = 1 \n")
@@ -88,7 +83,7 @@ def write_genic_file(filename,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.close()
 
 
-def write_gadget_file(filename,cosmo,mu_He=1.0,Ngrid=256,paired=False):
+def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256):
     """Write a MP-Gadget file for a given cosmology"""
 
     # make sure they are not asking what we can not deliver
@@ -99,24 +94,17 @@ def write_gadget_file(filename,cosmo,mu_He=1.0,Ngrid=256,paired=False):
 
     Nmesh=2*Ngrid
 
-    if paired:
-        filename+='_paired.gadget'
-    else:
-        filename+='.gadget'
+    filename=simdir+'/paramfile.gadget'
     gadget_file = open(filename,"w")
 
     # main simulation settings (options)
-    if paired:
-        gadget_file.write("InitCondFile = output_inverted/IC \n")
-        gadget_file.write("OutputDir = output_inverted \n")
-    else:
-        gadget_file.write("InitCondFile = output/IC \n")
-        gadget_file.write("OutputDir = output \n")
     gadget_file.write("Nmesh = %d \n" % Nmesh)
     gadget_file.write("TreeCoolFile = ../test_sim/TREECOOL_P18.txt \n")
     gadget_file.write("OutputList = \"0.1,0.2,0.25,0.3,0.325\" \n")
 
     # main simulation settings (default)
+    gadget_file.write("InitCondFile = output/IC \n")
+    gadget_file.write("OutputDir = output \n")
     gadget_file.write("SnapshotFileBase = snap \n")
     gadget_file.write("TimeLimitCPU = 430000 \n")
     gadget_file.write("TimeMax = 0.3333333 \n")
@@ -165,18 +153,20 @@ def write_gadget_file(filename,cosmo,mu_He=1.0,Ngrid=256,paired=False):
     gadget_file.close()
 
 
-def write_cube_json_file(filename,param_space):
+def write_cube_json_file(simdir,param_space):
     """Write a JSON file with meta data associated to the whole cube."""
     
-    filename+='.json'
+    filename=simdir+'/latin_hypercube.json'
     json_file = open(filename,"w")
     json.dump(param_space,json_file)
     json_file.close()
 
 
-def write_sim_json_file(filename,param_space,sim_params,linP_model):
+def write_sim_json_file(simdir,param_space,sim_params,linP_model):
     """Write a JSON file with meta data associated to this simulation pair."""
     
+    filename=simdir+'/parameter.json'
+
     json_info={}
 
     # copy pivot point in parameterization (should be same in all sims)
@@ -196,7 +186,6 @@ def write_sim_json_file(filename,param_space,sim_params,linP_model):
     json_info['fit_n_star']=linP_model.get_n_star()
     json_info['fit_alpha_star']=linP_model.get_alpha_star()
 
-    filename+='.json'
     json_file = open(filename,"w")
     json.dump(json_info,json_file)
     json_file.close()

@@ -83,23 +83,32 @@ if os.path.exists(basedir):
 os.mkdir(basedir)
 
 # write file with description of the hypercube
-write_config.write_cube_json_file(basedir+'/latin_hypercube',params)
+write_config.write_cube_json_file(basedir,params)
 for sample in range(nsamples):
     sim_params=cube[sample]
     if verbose:
         print(sample,sim_params)
     cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(params,sim_params,
             linP_model_fid,verbose=verbose)
-    simdir=basedir+'/sim_'+str(sample)+'/'
-    os.mkdir(simdir)
-    file_name=simdir+'paramfile'
+
+    sim_dir=basedir+'/sim_pair_'+str(sample)+'/'
+    os.mkdir(sim_dir)
+    # make a different folder for each simulation in the pair
+    plus_dir=sim_dir+'/sim_plus/'
+    os.mkdir(plus_dir)
+    minus_dir=sim_dir+'/sim_minus/'
+    os.mkdir(minus_dir)
+
     # write GenIC and MP-Gadget parameters, for both simulations in pair
-    for paired in [False,True]:
-        write_config.write_genic_file(file_name,cosmo_sim,paired=paired)
-        write_config.write_gadget_file(file_name,cosmo_sim,paired=paired)
+    write_config.write_genic_file(plus_dir,cosmo_sim,paired=False)
+    write_config.write_gadget_file(plus_dir,cosmo_sim)
+    write_config.write_genic_file(minus_dir,cosmo_sim,paired=True)
+    write_config.write_gadget_file(minus_dir,cosmo_sim)
+
     # construct linear power model and store in JSON format
     linP_model_sim=fit_linP.LinearPowerModel(cosmo_sim,z_star=z_star,
             k_units='Mpc',kp=kp_Mpc)
-    write_config.write_sim_json_file(file_name,params,sim_params,linP_model_sim)
+
+    write_config.write_sim_json_file(sim_dir,params,sim_params,linP_model_sim)
 
 print('finished')

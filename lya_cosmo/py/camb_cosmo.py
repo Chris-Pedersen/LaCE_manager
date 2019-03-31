@@ -12,15 +12,36 @@ def get_cosmology(params=None,H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022,
 
     pars = camb.CAMBparams()
     if params is None:
-        pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk, 
+        pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk,
                 mnu=mnu,TCMB=TCMB)
         pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
     else:
-        pars.set_cosmology(H0=params['H0'], ombh2=params['ombh2'], 
-                omch2=params['omch2'], omk=params['omk'], 
-                mnu=params['mnu'],TCMB=params['TCMB'])      
-        pars.InitPower.set_params(As=params['As'], ns=params['ns'],
-                nrun=params['nrun'])
+        # use default values for those not provided
+        cosmo_fid=get_cosmology()
+        if 'H0' in params: H0=params['H0']
+        else: H0=cosmo_fid.H0
+        if 'ombh2' in params: ombh2=params['ombh2']
+        else: ombh2=cosmo_fid.ombh2
+        if 'omch2' in params: omch2=params['omch2']
+        else: omch2=cosmo_fid.omch2
+        if 'omk' in params: omk=params['omk']
+        else: omk=cosmo_fid.omk
+        if 'mnu' in params: mnu=params['mnu']
+        else: mnu=cosmo_fid.mnu
+        if 'TCMB' in params: TCMB=params['TCMB']
+        else: TCMB=cosmo_fid.TCMB
+        pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2,
+                    omk=omk, mnu=mnu, TCMB=TCMB)
+
+        # redo for primorial power
+        if 'As' in params: As=params['As']
+        else: As=cosmo_fid.InitPower.As
+        if 'ns' in params: ns=params['ns']
+        else: ns=cosmo_fid.InitPower.ns
+        if 'nrun' in params: nrun=params['nrun']
+        else: nrun=cosmo_fid.InitPower.nrun
+        pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
+
     return pars
 
 
@@ -91,24 +112,36 @@ def get_linP_kms(pars,zs=[3]):
     return k_kms, zs_out, P_kms
 
 
-def dkms_dhMpc(pars,z):
+def dkms_dMpc(cosmo,z):
     """Compute factor to translate velocity separations (in km/s) to comoving
-        separations (in Mpc/h). At z=3 it should return rouhgly 100.
+        separations (in Mpc). At z=3 it should return roughly 70.
     Inputs:
-        - cosmo: dictionary with information about cosmological model.
+        - cosmo: CAMB model object.
+        - z: redshift
+    """
+
+    h=cosmo.H0/100.0
+    return h*dkms_dhMpc(cosmo,z)
+
+
+def dkms_dhMpc(cosmo,z):
+    """Compute factor to translate velocity separations (in km/s) to comoving
+        separations (in Mpc/h). At z=3 it should return roughly 100.
+    Inputs:
+        - cosmo: CAMB model object.
         - z: redshift
     """
 
     # Check if cosmology is non-flat
-    if abs(pars.omk) > 1.e-10:
-        results = camb.get_results(pars)
+    if abs(cosmo.omk) > 1.e-10:
+        results = camb.get_results(cosmo)
         H_z=results.hubble_parameter(z)
-        dvdX=H_z/(1+z)/(pars.H0/100.0)  
+        dvdX=H_z/(1+z)/(cosmo.H0/100.0)  
         return dvdX
 
     # use flat cosmology
-    h=pars.H0/100.0
-    Om_m=(pars.omch2+pars.ombh2+pars.omnuh2)/h**2
+    h=cosmo.H0/100.0
+    Om_m=(cosmo.omch2+cosmo.ombh2+cosmo.omnuh2)/h**2
     Om_L=1.0-Om_m
     # H(z) = H0 * E(z)
     Ez = np.sqrt(Om_m*(1+z)**3+Om_L)

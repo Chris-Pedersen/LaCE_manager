@@ -1,11 +1,140 @@
 import numpy as np
 import sys
 import os
+import json
+import fake_spectra.tempdens as tdr
 import fake_spectra.griddedspectra as grid_spec 
 import read_gadget
+import camb_cosmo
 
-def write_default_skewers(basedir,skewers_dir=None,paramfile_gadget=None,
-        zmax=6.0,n_skewers=50,width_kms=10):
+def get_skewers_filename(num,n_skewers,width_Mpc,scale_T0=None,
+            scale_gamma=None):
+    """Filename storing skewers for a particular temperature model"""
+
+    filename='skewers_'+str(num)+'_Ns'+str(n_skewers)
+    filename+='_wM'+str(int(1000*width_Mpc)/1000)
+    if scale_T0:
+        filename+='_sT'+str(int(1000*scale_T0)/1000)
+    if scale_gamma:
+        filename+='_sg'+str(int(1000*scale_gamma)/1000)
+    filename+='.hdf5'
+    return filename 
+
+
+def get_snapshot_json_filename(num,n_skewers,width_Mpc):
+    """Filename describing the set of skewers for a given snapshot"""
+
+    filename='snap_skewers_'+str(num)+'_Ns'+str(n_skewers)
+    filename+='_wM'+str(int(1000*width_Mpc)/1000)
+    filename+='.json'
+    return filename 
+
+
+def dkms_dMpc_z(basedir,num):
+    """Setup cosmology from Gadget config file, and compute dv/dX"""
+
+    paramfile=basedir+'/paramfile.gadget'
+    zs=read_gadget.redshifts_from_paramfile(paramfile)
+    z=zs[num]
+    print(num,'z',z)
+    # read cosmology information from Gadget file
+    cosmo_info=read_gadget.camb_from_gadget(paramfile)
+    # setup CAMB object
+    cosmo=camb_cosmo.get_cosmology(cosmo_info)
+    # convert kms to Mpc (should be around 75 km/s/Mpc at z=3)
+    dkms_dMpc = camb_cosmo.dkms_dMpc(cosmo,z=z)
+    return dkms_dMpc,z
+
+ 
+def thermal_broadening_Mpc(T_0,dkms_dMpc):
+    """Thermal broadening RMS in comoving units, given T_0"""
+
+    sigma_T_kms=9.1 * np.sqrt(T_0/1.e4)
+    sigma_T_Mpc=sigma_T_kms/dkms_dMpc
+    print(T_0,sigma_T_kms,sigma_T_Mpc)
+    return sigma_T_Mpc
+
+
+def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
+            width_Mpc=0.1,scales_T0=[1.0],scales_gamma=[1.0]):
+    """Extract skewers for a given snapshot, for different temperatures."""
+
+    # make sure output directory exists (will write skewers there)
+    if skewers_dir is None:
+        skewers_dir=basedir+'/output/skewers/'
+    if os.path.exists(skewers_dir):
+        if not os.path.isdir(skewers_dir):
+            raise ValueError(skewers_dir+' is not a directory')
+    else:
+        print('make directory',skewers_dir)
+        os.mkdir(skewers_dir)
+
+    # figure out redshift for this snapshot, and dkms/dMpc
+    dkms_dMpc, z = dkms_dMpc_z(basedir,num)
+    print('dv/dX (z=%f) = %f' % (z,dkms_dMpc))
+    width_kms = width_Mpc * dkms_dMpc
+    print('width kms =',width_kms)
+
+    # figure out temperature-density before scalings
+    T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,basedir+'/output/',plot=False)
+    print('T_0 = %f, gamma=%f' % (T0_ini, gamma_ini))
+
+    sim_info={'basedir':basedir, 'skewers_dir':skewers_dir,
+                'z':z, 'snap_num':num, 'n_skewers':n_skewers, 
+                'width_Mpc':width_Mpc, 'width_kms':width_kms,
+                'T0_ini':T0_ini, 'gamma_ini':gamma_ini,
+                'scales_T0':scales_T0, 'scales_gamma':scales_gamma}
+
+    # will also stored measured values
+    sim_T0=[]
+    sim_gamma=[]
+    sim_sigT_Mpc=[]
+    sim_mf=[]
+    sk_files=[]
+
+    for scale_T0 in scales_T0:
+        for scale_gamma in scales_gamma:
+            print('scale',scale_T0,scale_gamma)
+            T0=T0_ini*scale_T0
+            gamma=gamma_ini*scale_gamma
+            print('use',T0,gamma)
+            sk_filename=get_skewers_filename(num,n_skewers,width_Mpc,
+                                    scale_T0,scale_gamma)
+            print('filename',sk_filename)
+
+            skewers=get_skewers_snapshot(basedir,skewers_dir,num,
+                            n_skewers=n_skewers,width_kms=width_kms,
+                            skewers_filename=sk_filename)
+
+            # call mean flux, so that the skewers are really computed
+            mf=skewers.get_mean_flux()
+            skewers.save_file()
+            sim_mf.append(mf)
+            # store temperature information
+            sim_T0.append(T0)
+            sim_gamma.append(gamma)
+            sim_sigT_Mpc.append(thermal_broadening_Mpc(T0,dkms_dMpc))
+            sk_files.append(sk_filename)
+
+    sim_info['sim_T0']=sim_T0
+    sim_info['sim_gamma']=sim_gamma
+    sim_info['sim_mf']=sim_mf
+    sim_info['sim_sigT_Mpc']=sim_sigT_Mpc
+    sim_info['sk_files']=sk_files
+
+    snapshot_filename=get_snapshot_json_filename(num,n_skewers,width_Mpc)
+    sim_info['snapshot_filename']=snapshot_filename
+    json_file = open(skewers_dir+'/'+snapshot_filename,"w")
+    json.dump(sim_info,json_file)
+    json_file.close()
+
+    print('done')
+
+    return sim_info
+
+
+def write_default_skewers(basedir,skewers_dir=None,zmax=6.0,n_skewers=50,
+            width_kms=10):
     """Extract skewers for all snapshots, default temperature."""
 
     # make sure output directory exists (will write skewers there)
@@ -38,6 +167,8 @@ def write_default_skewers(basedir,skewers_dir=None,paramfile_gadget=None,
                         n_skewers=n_skewers,width_kms=width_kms)
             # call mean flux, so that the skewers are really computed
             mf=skewers.get_mean_flux()
+            # figure out filename for skewers
+            set_skewers_filename(basedir,skewers)
             skewers.save_file()
             mf_snap.append(num)
             mf_z.append(z)
@@ -57,23 +188,24 @@ def write_default_skewers(basedir,skewers_dir=None,paramfile_gadget=None,
 
 
 def get_skewers_snapshot(basedir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
-                set_T0=None,set_gamma=None):
+                set_T0=None,set_gamma=None,skewers_filename=None):
     """Extract skewers for a particular snapshot"""
 
-    spectra_name="skewers_"+str(snap_num)+"_"+str(n_skewers)
-    spectra_name+="_"+str(width_kms)
-    if set_T0:
-        spectra_name+='_T0_'+str(set_T0)
-    if set_gamma:
-        spectra_name+='_gamma_'+str(set_gamma)
-    spectra_name+='.hdf5'
+    if not skewers_filename:
+        skewers_filename="skewers_"+str(snap_num)+"_"+str(n_skewers)
+        skewers_filename+="_"+str(width_kms)
+        if set_T0:
+            skewers_filename+='_T0_'+str(set_T0)
+        if set_gamma:
+            skewers_filename+='_gamma_'+str(set_gamma)
+        skewers_filename+='.hdf5'
 
     # check that spectra file does not exist yet (should crash)
-    if os.path.exists(skewers_dir+'/'+spectra_name):
-        print(spectra_name,'already exists in',skewers_dir)
+    if os.path.exists(skewers_dir+'/'+skewers_filename):
+        print(skewers_filename,'already exists in',skewers_dir)
 
     skewers = grid_spec.GriddedSpectra(snap_num,basedir+'/output/',
-                nspec=n_skewers,res=width_kms,savefile=spectra_name,
+                nspec=n_skewers,res=width_kms,savefile=skewers_filename,
                 savedir=skewers_dir,
                 reload_file=True,set_T0=set_T0,set_gamma=set_gamma)
 

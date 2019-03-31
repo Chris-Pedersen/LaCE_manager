@@ -5,18 +5,6 @@ import argparse
 import configobj
 import validate
 
-# define variables and default values in Gadget
-Gadget_configspec = """
-OutputList = string(default='')
-Nmesh = integer(default=1)
-    Omega0 = float(0,1)
-    OmegaLambda = float(0,1)
-    OmegaBaryon = float(0,1,default=0.0486)
-    HubbleParam = float(0,2)
-    MNue = float(min=0, default=0)
-    MNum = float(min=0, default=0)
-    MNut = float(min=0, default=0)""".split('\n') 
-
 # define variables and default values in GenIC
 GenICconfigspec = """
 Omega0 = float(0,1)

@@ -5,7 +5,7 @@ import math
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse
+import configargparse
 # our modules below
 import camb_cosmo
 import fit_linP
@@ -16,13 +16,15 @@ import write_config
 import latin_hypercube
 
 # get options from command line
-parser = argparse.ArgumentParser()
+parser = configargparse.ArgumentParser()
+parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
 parser.add_argument('--basedir', type=str, help='Base directory where all sims will be stored (crashes if it already exists)',required=True)
-parser.add_argument('--configfile', type=str, help='Configuration file for this simulation suite',required=False)
 parser.add_argument('--add_slope', action='store_true', help='Add parameter describing slope of linear power',required=False)
 parser.add_argument('--add_running', action='store_true', help='Add parameter describing running of linear power',required=False)
 parser.add_argument('--add_mu_H', action='store_true', help='Add parameter to boost heating in Hydrogen',required=False)
 parser.add_argument('--nsamples', type=int, default=10, help='Number of samples in Latin hypercube')
+parser.add_argument('--ngrid', type=int, default=64, help='Number of particles per side in simulation')
+parser.add_argument('--box_Mpc', type=float, default=50.0, help='Simulation box size (in Mpc)')
 parser.add_argument('--seed', type=int, default=123, help='Random seed to setup Latin hypercube')
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 args = parser.parse_args()
@@ -30,7 +32,7 @@ args = parser.parse_args()
 verbose=args.verbose
 
 # setup parameter space
-param_space=sim_params_space.SimulationParameterSpace(file_name=args.configfile,
+param_space=sim_params_space.SimulationParameterSpace(filename=args.config,
                     add_slope=args.add_slope,add_running=args.add_running,
                     add_mu_H=args.add_mu_H)
 params=param_space.params

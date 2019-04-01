@@ -5,11 +5,11 @@ import numpy as np
 class SimulationParameterSpace(object):
     """Describe simulation parameter space, to be used by latin hypercube."""
 
-    def __init__(self,file_name=None,add_slope=True,add_running=False,
+    def __init__(self,filename=None,add_slope=True,add_running=False,
                 add_mu_H=False):
         """Construct space from file, or using default setting"""
 
-        if file_name is None:
+        if filename is None:
             self._default_setup(add_slope,add_running,add_mu_H)
         else:
             self._setup_from_file(filename,add_slope,add_running,add_mu_H)
@@ -42,6 +42,7 @@ class SimulationParameterSpace(object):
 
 
     def _setup_from_file(self,filename,add_slope,add_running,add_mu_H):
-        print('setup from file')
-        raise ValueError('implement setup_from_file')
+        print('should implement setup from file')
+        self._default_setup(add_slope,add_running,add_mu_H)
+        #raise ValueError('implement setup_from_file')
 

@@ -13,6 +13,7 @@ import corner
 # get options from command line
 parser = argparse.ArgumentParser()
 parser.add_argument('--paramfile', type=str, help='file with parameter space',required=False)
+parser.add_argument('--add_slope', action='store_true', help='add parameter describing slope of linear power',required=False)
 parser.add_argument('--add_running', action='store_true', help='add parameter describing running of linear power',required=False)
 parser.add_argument('--add_mu_H', action='store_true', help='add parameter to boost heating in Hydrogen',required=False)
 parser.add_argument('--nsamples', type=int, default=10, help='Number of samples in Latin hypercube')
@@ -25,12 +26,13 @@ verbose=args.verbose
 
 # setup parameter space
 param_space=sim_params_space.SimulationParameterSpace(file_name=args.paramfile,
-                    add_running=args.add_running,add_mu_H=args.add_mu_H)
+                    add_slope=args.add_slope,add_running=args.add_running,
+                    add_mu_H=args.add_mu_H)
 params=param_space.params
 
 # get pivot point
 z_star=params['Om_star']['z_star']
-kp_Mpc=params['n_star']['kp_Mpc']
+kp_Mpc=params['Delta2_star']['kp_Mpc']
 
 # print parameter information
 if verbose:

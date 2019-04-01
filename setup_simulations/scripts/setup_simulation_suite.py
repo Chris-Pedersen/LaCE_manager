@@ -19,6 +19,7 @@ import latin_hypercube
 parser = argparse.ArgumentParser()
 parser.add_argument('--basedir', type=str, help='Base directory where all sims will be stored (crashes if it already exists)',required=True)
 parser.add_argument('--configfile', type=str, help='Configuration file for this simulation suite',required=False)
+parser.add_argument('--add_slope', action='store_true', help='Add parameter describing slope of linear power',required=False)
 parser.add_argument('--add_running', action='store_true', help='Add parameter describing running of linear power',required=False)
 parser.add_argument('--add_mu_H', action='store_true', help='Add parameter to boost heating in Hydrogen',required=False)
 parser.add_argument('--nsamples', type=int, default=10, help='Number of samples in Latin hypercube')
@@ -30,12 +31,13 @@ verbose=args.verbose
 
 # setup parameter space
 param_space=sim_params_space.SimulationParameterSpace(file_name=args.configfile,
-                    add_running=args.add_running,add_mu_H=args.add_mu_H)
+                    add_slope=args.add_slope,add_running=args.add_running,
+                    add_mu_H=args.add_mu_H)
 params=param_space.params
 
 # get pivot point
 z_star=params['Om_star']['z_star']
-kp_Mpc=params['n_star']['kp_Mpc']
+kp_Mpc=params['Delta2_star']['kp_Mpc']
 
 # print parameter information
 if verbose:

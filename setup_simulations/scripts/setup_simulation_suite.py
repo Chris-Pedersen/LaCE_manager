@@ -29,6 +29,14 @@ parser.add_argument('--seed', type=int, default=123, help='Random seed to setup 
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 args = parser.parse_args()
 
+print('--- print options from parser ---')
+print(args)
+print("----------")
+print(parser.format_help())
+print("----------")
+print(parser.format_values()) 
+print("----------")
+
 verbose=args.verbose
 
 # setup parameter space

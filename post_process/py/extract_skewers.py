@@ -56,8 +56,14 @@ def thermal_broadening_Mpc(T_0,dkms_dMpc):
 
 
 def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
-            width_Mpc=0.1,scales_T0=[1.0],scales_gamma=[1.0]):
+            width_Mpc=0.1,scales_T0=None,scales_gamma=None):
     """Extract skewers for a given snapshot, for different temperatures."""
+
+    # don't rescale unless asked to
+    if scales_T0 is None:
+        scales_T0=[1.0]
+    if scales_gamma is None:
+        scales_gamma=[1.0]
 
     # make sure output directory exists (will write skewers there)
     if skewers_dir is None:

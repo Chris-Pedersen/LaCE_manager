@@ -83,7 +83,19 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.close()
 
 
-def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256):
+def get_output_list(zs):
+    """Given list of (sorted) redshifts, return string with scale factors.
+        Does not include the last redshfit (will be given as TimeMax)"""
+    # make sure all redshifts are sorted from high to low redshift
+    assert np.any(np.diff(zs)>=0) == False, 'zs not sorted'+str(zs)
+    output_list=str(1.0/(1+zs[0]))
+    for z in zs[1:-1]:
+        output_list+=', '+str(1.0/(1+z))
+    return output_list
+
+
+def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
+                zs=[49.0,9.0,8.0,7.0,6.0,5.0,4.5,4.0,3.5,3.0,2.5,2.0]):
     """Write a MP-Gadget file for a given cosmology"""
 
     # make sure they are not asking what we can not deliver
@@ -100,14 +112,16 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256):
     # main simulation settings (options)
     gadget_file.write("Nmesh = %d \n" % Nmesh)
     gadget_file.write("TreeCoolFile = ../test_sim/TREECOOL_P18.txt \n")
-    gadget_file.write("OutputList = \"0.1,0.2,0.25,0.3,0.325\" \n")
+    # find list of outputs (except last one) 
+    output_list=get_output_list(zs)
+    gadget_file.write('OutputList = "'+output_list+'" \n')
+    gadget_file.write("TimeMax = "+str(1.0/(1+min(zs)))+" \n")
 
     # main simulation settings (default)
     gadget_file.write("InitCondFile = output/IC \n")
     gadget_file.write("OutputDir = output \n")
     gadget_file.write("SnapshotFileBase = snap \n")
     gadget_file.write("TimeLimitCPU = 430000 \n")
-    gadget_file.write("TimeMax = 0.3333333 \n")
     gadget_file.write("CoolingOn = 1 \n")
     gadget_file.write("StarformationOn = 1 \n")
     gadget_file.write("RadiationOn = 1 \n")
@@ -152,6 +166,9 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256):
 
     gadget_file.close()
 
+    # return list of redshifts (including last output)
+    return zs
+
 
 def write_cube_json_file(simdir,param_space):
     """Write a JSON file with meta data associated to the whole cube."""
@@ -162,7 +179,7 @@ def write_cube_json_file(simdir,param_space):
     json_file.close()
 
 
-def write_sim_json_file(simdir,param_space,sim_params,linP_model):
+def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
     """Write a JSON file with meta data associated to this simulation pair."""
     
     filename=simdir+'/parameter.json'
@@ -171,7 +188,7 @@ def write_sim_json_file(simdir,param_space,sim_params,linP_model):
 
     # copy pivot point in parameterization (should be same in all sims)
     json_info['z_star']=linP_model.z_star
-    assert linP_model.k_units is 'Mpc', 'linP_model not in Mpc units'
+    assert linP_model.k_units == 'Mpc', 'linP_model not in Mpc units'
     json_info['kp_Mpc'] = linP_model.kp
 
     # copy values of parameters for this particular simulation
@@ -186,7 +203,13 @@ def write_sim_json_file(simdir,param_space,sim_params,linP_model):
     json_info['fit_n_star']=linP_model.get_n_star()
     json_info['fit_alpha_star']=linP_model.get_alpha_star()
 
+    # write linear power in each snapshot
+    json_info['zs']=zs
+    linP_zs=linP_model.parameterize_z_Mpc(zs)
+    json_info['linP_zs']=linP_zs
+
     json_file = open(filename,"w")
     json.dump(json_info,json_file)
     json_file.close()
 
+    return linP_zs

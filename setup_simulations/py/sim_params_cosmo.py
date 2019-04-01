@@ -52,9 +52,12 @@ def cosmo_from_sim_params(param_space,sim_params,linP_model_fid,
     lnA_star=np.log(Delta2_star*(2*np.pi**2)/kp_Mpc**3)
     delta_lnA_star=lnA_star-lnA_star_temp
     # slope
-    ip_n_star=param_space['n_star']['ip']
-    n_star=sim_params[ip_n_star]
-    delta_n_star=n_star-n_star_temp
+    if 'n_star' in param_space:
+        ip_n_star=param_space['n_star']['ip']
+        n_star=sim_params[ip_n_star]
+        delta_n_star=n_star-n_star_temp
+    else:
+        delta_n_star=0.0
     # running
     if 'alpha_star' in param_space:
         ip_alpha_star=param_space['alpha_star']['ip']

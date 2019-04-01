@@ -36,7 +36,6 @@ def dkms_dMpc_z(basedir,num):
     paramfile=basedir+'/paramfile.gadget'
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     z=zs[num]
-    print(num,'z',z)
     # read cosmology information from Gadget file
     cosmo_info=read_gadget.camb_from_gadget(paramfile)
     # setup CAMB object
@@ -51,7 +50,6 @@ def thermal_broadening_Mpc(T_0,dkms_dMpc):
 
     sigma_T_kms=9.1 * np.sqrt(T_0/1.e4)
     sigma_T_Mpc=sigma_T_kms/dkms_dMpc
-    print(T_0,sigma_T_kms,sigma_T_Mpc)
     return sigma_T_Mpc
 
 
@@ -77,13 +75,10 @@ def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
 
     # figure out redshift for this snapshot, and dkms/dMpc
     dkms_dMpc, z = dkms_dMpc_z(basedir,num)
-    print('dv/dX (z=%f) = %f' % (z,dkms_dMpc))
     width_kms = width_Mpc * dkms_dMpc
-    print('width kms =',width_kms)
 
     # figure out temperature-density before scalings
     T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,basedir+'/output/',plot=False)
-    print('T_0 = %f, gamma=%f' % (T0_ini, gamma_ini))
 
     sim_info={'basedir':basedir, 'skewers_dir':skewers_dir,
                 'z':z, 'snap_num':num, 'n_skewers':n_skewers, 
@@ -100,16 +95,14 @@ def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
 
     for scale_T0 in scales_T0:
         for scale_gamma in scales_gamma:
-            print('scale',scale_T0,scale_gamma)
             T0=T0_ini*scale_T0
             gamma=gamma_ini*scale_gamma
-            print('use',T0,gamma)
             sk_filename=get_skewers_filename(num,n_skewers,width_Mpc,
                                     scale_T0,scale_gamma)
-            print('filename',sk_filename)
 
             skewers=get_skewers_snapshot(basedir,skewers_dir,num,
                             n_skewers=n_skewers,width_kms=width_kms,
+                            set_T0=T0,set_gamma=gamma,
                             skewers_filename=sk_filename)
 
             # call mean flux, so that the skewers are really computed

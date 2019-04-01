@@ -101,14 +101,15 @@ for sample in range(nsamples):
 
     # write GenIC and MP-Gadget parameters, for both simulations in pair
     write_config.write_genic_file(plus_dir,cosmo_sim,paired=False)
-    write_config.write_gadget_file(plus_dir,cosmo_sim)
+    zs=write_config.write_gadget_file(plus_dir,cosmo_sim)
     write_config.write_genic_file(minus_dir,cosmo_sim,paired=True)
-    write_config.write_gadget_file(minus_dir,cosmo_sim)
+    _=write_config.write_gadget_file(minus_dir,cosmo_sim)
 
     # construct linear power model and store in JSON format
     linP_model_sim=fit_linP.LinearPowerModel(cosmo_sim,z_star=z_star,
             k_units='Mpc',kp=kp_Mpc)
 
-    write_config.write_sim_json_file(sim_dir,params,sim_params,linP_model_sim)
+    write_config.write_sim_json_file(sim_dir,params,sim_params,linP_model_sim,
+            zs=zs)
 
 print('finished')

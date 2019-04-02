@@ -28,14 +28,14 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         raise ValueError('Implement curvature in write_genic_files')
 
     h = cosmo.H0/100.0
-    box_hMpc=box_Mpc*h
+    box_hkpc=box_Mpc*h*1000.0
 
     filename=simdir+'/paramfile.genic'
     genic_file = open(filename,"w")
 
     # main simulation settings (options)
     genic_file.write("Ngrid = %d \n" % Ngrid)
-    genic_file.write("BoxSize = %f \n" % box_hMpc)
+    genic_file.write("BoxSize = %f \n" % box_hkpc)
     genic_file.write("Redshift = %f \n" % z_ini)
     genic_file.write("Seed = %d \n" % seed)
     if paired:

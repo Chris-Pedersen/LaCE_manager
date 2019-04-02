@@ -103,7 +103,7 @@ if os.path.exists(basedir):
 os.mkdir(basedir)
 
 # write file with description of the hypercube
-write_config.write_cube_json_file(basedir,params)
+write_config.write_cube_json_file(basedir,params,cube)
 for sample in range(nsamples):
     sim_params=cube[sample]
     if verbose:

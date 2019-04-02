@@ -42,15 +42,15 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         genic_file.write("InvertedPhase = 1 \n")
 
     # main simulation settings (default)
-    genic_file.write("OutputDir = output \n")
+    genic_file.write("OutputDir = "+simdir+"/output \n")
     genic_file.write("FileBase = IC \n")
     genic_file.write("ProduceGas = 1 \n")
     genic_file.write("RadiationOn = 1 \n")
     genic_file.write("DifferentTransferFunctions = 1 \n")
     genic_file.write("ScaleDepVelocity = 1 \n")
     genic_file.write("UnitaryAmplitude = 1 \n")
-    genic_file.write("FileWithInputSpectrum = matterpow.dat \n")
-    genic_file.write("FileWithTransferFunction = transfer.dat \n")
+    genic_file.write("FileWithInputSpectrum = "+simdir+"/matterpow.dat \n")
+    genic_file.write("FileWithTransferFunction = "+simdir+"/transfer.dat \n")
             
     # cosmological parameters
     Oc=cosmo.omch2/h**2
@@ -111,15 +111,15 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
 
     # main simulation settings (options)
     gadget_file.write("Nmesh = %d \n" % Nmesh)
-    gadget_file.write("TreeCoolFile = ../test_sim/TREECOOL_P18.txt \n")
+    gadget_file.write("TreeCoolFile = "+simdir+"\TREECOOL_P18.txt \n")
+    gadget_file.write("InitCondFile = "+simdir+"/output/IC \n")
+    gadget_file.write("OutputDir = "+simdir+"/output \n")
     # find list of outputs (except last one) 
     output_list=get_output_list(zs)
     gadget_file.write('OutputList = "'+output_list+'" \n')
     gadget_file.write("TimeMax = "+str(1.0/(1+min(zs)))+" \n")
 
     # main simulation settings (default)
-    gadget_file.write("InitCondFile = output/IC \n")
-    gadget_file.write("OutputDir = output \n")
     gadget_file.write("SnapshotFileBase = snap \n")
     gadget_file.write("TimeLimitCPU = 430000 \n")
     gadget_file.write("CoolingOn = 1 \n")
@@ -152,7 +152,6 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     gadget_file.write("OmegaLambda = %f \n" % OL)
     gadget_file.write("OmegaBaryon = %f \n" % Ob)
     gadget_file.write("HubbleParam = %f \n" % h)
-    gadget_file.write("LinearTransferFunction = transfer.dat \n")
     # massless neutrinos
     gadget_file.write("MassiveNuLinRespOn = 0 \n")
     gadget_file.write("MNue = 0.0 \n")
@@ -170,12 +169,25 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     return zs
 
 
-def write_cube_json_file(simdir,param_space):
+def write_cube_json_file(simdir,param_space,cube):
     """Write a JSON file with meta data associated to the whole cube."""
     
+    # store parameter space
+    cube_info={'param_space':param_space}
+
+    # store number of samples in cube
+    nsamples=len(cube)
+    cube_info['nsamples']=nsamples
+
+    # store actual samples
+    samples={}
+    for i in range(nsamples):
+        samples[str(i)]=list(cube[i])
+    cube_info['samples']=samples
+
     filename=simdir+'/latin_hypercube.json'
     json_file = open(filename,"w")
-    json.dump(param_space,json_file)
+    json.dump(cube_info,json_file)
     json_file.close()
 
 

@@ -204,9 +204,9 @@ def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
     json_info['fit_alpha_star']=linP_model.get_alpha_star()
 
     # write linear power in each snapshot
-    json_info['zs']=zs
+    json_info['zs']=list(zs)
     linP_zs=linP_model.parameterize_z_Mpc(zs)
-    json_info['linP_zs']=linP_zs
+    json_info['linP_zs']=list(linP_zs)
 
     json_file = open(filename,"w")
     json.dump(json_info,json_file)

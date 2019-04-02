@@ -25,6 +25,7 @@ parser.add_argument('--add_mu_H', action='store_true', help='Add parameter to bo
 parser.add_argument('--nsamples', type=int, default=10, help='Number of samples in Latin hypercube')
 parser.add_argument('--ngrid', type=int, default=64, help='Number of particles per side in simulation')
 parser.add_argument('--box_Mpc', type=float, default=50.0, help='Simulation box size (in Mpc)')
+parser.add_argument('--zs', type=str, help='Comma-separated list of redshifts (including last snapshot)')
 parser.add_argument('--seed', type=int, default=123, help='Random seed to setup Latin hypercube')
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 args = parser.parse_args()
@@ -38,6 +39,13 @@ print(parser.format_values())
 print("----------")
 
 verbose=args.verbose
+
+# transform input string to list of sorted redshifts
+if args.zs:
+    zs=np.sort([float(z) for z in args.zs.split(',')])[::-1]
+    print('will use input redshifts',zs)
+else:
+    zs=None
 
 # setup parameter space
 param_space=sim_params_space.SimulationParameterSpace(filename=args.config,
@@ -112,8 +120,10 @@ for sample in range(nsamples):
     os.mkdir(minus_dir)
 
     # write GenIC and MP-Gadget parameters, for both simulations in pair
+    if verbose:
+        print('write config files for GenIC and Gadget')
     write_config.write_genic_file(plus_dir,cosmo_sim,paired=False)
-    zs=write_config.write_gadget_file(plus_dir,cosmo_sim)
+    zs=write_config.write_gadget_file(plus_dir,cosmo_sim,zs=zs)
     write_config.write_genic_file(minus_dir,cosmo_sim,paired=True)
     _=write_config.write_gadget_file(minus_dir,cosmo_sim)
 
@@ -121,6 +131,8 @@ for sample in range(nsamples):
     linP_model_sim=fit_linP.LinearPowerModel(cosmo_sim,z_star=z_star,
             k_units='Mpc',kp=kp_Mpc)
 
+    if verbose:
+        print('write JSON file for simulation pair')
     write_config.write_sim_json_file(sim_dir,params,sim_params,linP_model_sim,
             zs=zs)
 

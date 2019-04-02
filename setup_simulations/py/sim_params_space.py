@@ -21,7 +21,7 @@ class SimulationParameterSpace(object):
         z_star=3.0
         kp_Mpc=0.7
         params={}
-        params['Om_star']={'ip':len(params), 'min_val':0.950, 'max_val':0.975, 
+        params['Om_star']={'ip':len(params), 'min_val':0.955, 'max_val':0.975, 
                 'z_star':z_star, 'latex':r'$\Omega_\star$'}
         params['Delta2_star']={'ip':len(params), 'min_val':0.25, 'max_val':0.45,
                 'z_star':z_star, 'kp_Mpc':kp_Mpc, 'latex':r'$\Delta^2_\star$'}

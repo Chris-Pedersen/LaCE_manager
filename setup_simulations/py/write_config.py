@@ -111,7 +111,7 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
 
     # main simulation settings (options)
     gadget_file.write("Nmesh = %d \n" % Nmesh)
-    gadget_file.write("TreeCoolFile = "+simdir+"\TREECOOL_P18.txt \n")
+    gadget_file.write("TreeCoolFile = "+simdir+"/TREECOOL_P18.txt \n")
     gadget_file.write("InitCondFile = "+simdir+"/output/IC \n")
     gadget_file.write("OutputDir = "+simdir+"/output \n")
     # find list of outputs (except last one) 
@@ -132,7 +132,6 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     gadget_file.write("InitGasTemp = 270. \n")
     gadget_file.write("MinGasTemp = 100 \n")
     gadget_file.write("PartAllocFactor = 4 \n")
-    gadget_file.write("BufferSize = 100 \n")
     gadget_file.write("BlackHoleOn=0 \n")
     gadget_file.write("CritPhysDensity = 0 \n")
     gadget_file.write("CritOverDensity = 1000 \n")

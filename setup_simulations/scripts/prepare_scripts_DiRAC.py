@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import configargparse
@@ -13,6 +14,7 @@ parser.add_argument('-c', '--config', required=False, is_config_file=True, help=
 parser.add_argument('--basedir', type=str, help='Base directory where all sims will be stored (crashes if it does not exist)',required=True)
 parser.add_argument('--nodes', type=int, default=2, help='Number of nodes to use to run GenIC and MP-Gadget')
 parser.add_argument('--time', type=str, default='01:00:00', help='String formatted time to pass to SLURM script')
+parser.add_argument('--run', action='store_true', help='Actually submit the SLURM scripts (for now, only possible if total nodes < 100)')
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 
 args = parser.parse_args()
@@ -66,9 +68,20 @@ for sample in range(nsamples):
     copy(treecool_file, minus_dir)
 
     # write submission script to both simulations
-    plus_submit=plus_dir+'/simulation.submit'
+    plus_submit=plus_dir+'/simulation.sub'
     wsd.write_simulation_script(script_name=plus_submit,
                     simdir=plus_dir,nodes=nodes,time=time)
-    minus_submit=minus_dir+'/simulation.submit'
+    minus_submit=minus_dir+'/simulation.sub'
     wsd.write_simulation_script(script_name=minus_submit,
                     simdir=minus_dir,nodes=nodes,time=time)
+    if args.run:
+        total_nodes=2*args.nodes*nsamples
+        if total_nodes < 100:
+            print('will submit scripts, for a total of {} nodes'.format(total_nodes))
+            cmd_plus='sbatch '+plus_submit+' > info_plus'
+            os.system(cmd_plus)
+            cmd_minus='sbatch '+minus_submit+' > info_minus'
+            os.system(cmd_minus)
+        else:
+            print('will NOT submit scripts, too many nodes = {}'.format(total_nodes))
+

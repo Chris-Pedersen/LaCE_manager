@@ -1,12 +1,14 @@
 import numpy as np
 
-def get_submit_string(simdir='blah',nodes=4,time='08:00:00'):
+def get_submit_string(simdir,nodes,time,root_output='slurm'):
     submit_string='''#!/bin/bash
 #! Example SLURM job script for Peta4-Skylake (Skylake CPUs, OPA)
 #! sbatch directives begin here ###############################
 #! Name of the job:
 #SBATCH -J MP-gadget
 #SBATCH -A dirac-dp132-cpu
+#SBATCH -o %s/%s.out
+#SBATCH -e %s/%s.err
 #SBATCH --nodes=%d
 #SBATCH --ntasks=64
 #SBATCH --time=%s 
@@ -79,15 +81,15 @@ echo -e "\nnumtasks=$numtasks, numnodes=$numnodes, mpi_tasks_per_node=$mpi_tasks
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 
 eval $CMD 
-'''%(nodes,time,simdir,simdir)
+'''%(simdir,root_output,simdir,root_output,nodes,time,simdir,simdir)
     return submit_string
     
 
 def write_simulation_script(script_name='test.submit',simdir='test_script',
-            nodes=2,time='01:00:00'):
+            nodes=2,time='01:00:00',root_output='slurm'):
     """ Generate a SLURM file to run both GenIC and MP-Gadget for a sim."""
 
-    submit_string=get_submit_string(simdir,nodes,time)
+    submit_string=get_submit_string(simdir,nodes,time,root_output)
 
     submit_script = open(script_name,'w')
     for line in submit_string:

@@ -4,7 +4,7 @@ import configargparse
 from shutil import copy
 sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Stable/tools/')
 import make_class_power
-import write_submit_darwin
+import write_submit_darwin as wsd
 
 
 # get options from command line
@@ -67,8 +67,8 @@ for sample in range(nsamples):
 
     # write submission script to both simulations
     plus_submit=plus_dir+'/simulation.submit'
-    write_submit.write_simulation_script(script_name=plus_submit,
+    wsd.write_simulation_script(script_name=plus_submit,
                     simdir=plus_dir,nodes=nodes,time=time)
     minus_submit=minus_dir+'/simulation.submit'
-    write_submit.write_simulation_script(script_name=minus_submit,
+    wsd.write_simulation_script(script_name=minus_submit,
                     simdir=minus_dir,nodes=nodes,time=time)

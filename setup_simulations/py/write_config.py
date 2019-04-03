@@ -39,7 +39,7 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.write("Redshift = %f \n" % z_ini)
     genic_file.write("Seed = %d \n" % seed)
     if paired:
-        genic_file.write("InvertedPhase = 1 \n")
+        genic_file.write("InvertPhase = 1 \n")
 
     # main simulation settings (default)
     genic_file.write("OutputDir = "+simdir+"/output \n")

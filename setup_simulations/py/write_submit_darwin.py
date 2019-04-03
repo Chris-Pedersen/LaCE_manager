@@ -16,7 +16,7 @@ def get_submit_string(simdir='blah',nodes=4,time='08:00:00'):
 #! Number of nodes and tasks per node allocated by SLURM (do not change):
 numnodes=$SLURM_JOB_NUM_NODES
 numtasks=$SLURM_NTASKS
-mpi_tasks_per_node=$(echo "$SLURM_TASKS_PER_NODE" | sed -e  's/^\([0-9][0-9]*\).*$/\1/')
+mpi_tasks_per_node=$(echo "$SLURM_TASKS_PER_NODE" | sed -e  's/^\([0-9][0-9]*\).*$/\\1/')
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
 module purge                               # Removes all modules still loaded
 module load rhel7/default-peta4            # REQUIRED - loads the basic environment
@@ -24,7 +24,7 @@ module load gsl/2.4
 
 ## Gen ICs
 application="/home/dc-pede1/Codes/MP-Gadget-Stable/genic/MP-GenIC"
-options=%s
+options=%s/paramfile.genic
 
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
                              # in which sbatch is run.
@@ -62,7 +62,7 @@ eval $CMD
 
 ## Now run sim
 application="/home/dc-pede1/Codes/MP-Gadget-Stable/gadget/MP-Gadget"
-options=%s
+options=%s/paramfile.gadget
 
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
                              # in which sbatch is run.

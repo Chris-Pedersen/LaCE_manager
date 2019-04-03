@@ -11,6 +11,7 @@ Omega0 = float(0,1)
 OmegaLambda = float(0,1)
 OmegaBaryon = float(0,1,default=0.0486)
 HubbleParam = float(0,2)
+BoxSize = float(0,10000000)
 Sigma8 = float(default=-1)
 InputPowerRedshift = float(default=-1)
 DifferentTransferFunctions = integer(0,1, default=1)
@@ -25,6 +26,28 @@ PrimordialIndex = float(default=0.971)
 PrimordialAmp = float(default=2.215e-9)
 PrimordialRunning = float(default=0.0)
 CMBTemperature = float(default=2.7255)""".split('\n')
+
+
+def L_Mpc_from_paramfile(paramfile, verbose=False):
+    config=read_genic_paramfile(paramfile, verbose)
+    L_hkpc=config['BoxSize']
+    h=config['HubbleParam']
+    L_Mpc=L_hkpc/1000/h
+    if verbose:
+        print('in L_Mpc,',L_hkpc,h,L_Mpc)
+    return L_Mpc
+
+
+def read_genic_paramfile(paramfile, verbose=False):
+    """Parse a GenIC parameter file and returns a dictionary"""
+
+    config = configobj.ConfigObj(infile=paramfile,configspec=GenICconfigspec,
+                    file_error=True)
+    # check file is healthy
+    _check_genic_config(config)
+    if verbose:
+        print('successfully read healthy configuration file')
+    return config
 
 
 def _check_genic_config(config):
@@ -106,12 +129,7 @@ def class_from_genic(paramfile, verbose=False):
     """Parse a GenIC parameter file and returns a dictionary to setup CLASS"""
 
     # read GenIC configuration file, and store information
-    config = configobj.ConfigObj(infile=paramfile, configspec=GenICconfigspec, 
-            file_error=True)
-    # check file is healthy
-    _check_genic_config(config)
-    if verbose:
-        print('successfully read healthy configuration file')
+    config = read_genic_paramfile(paramfile,verbose)
 
     # rename parameters to be used in CLASS
     params = _build_cosmology_params_class(config)
@@ -128,12 +146,7 @@ def camb_from_genic(paramfile, verbose=False):
     """Parse a GenIC parameter file and returns a dictionary to setup CAMB"""
 
     # read GenIC configuration file, and store information
-    config = configobj.ConfigObj(infile=paramfile, configspec=GenICconfigspec, 
-            file_error=True)
-    # check file is healthy
-    _check_genic_config(config)
-    if verbose:
-        print('successfully read healthy configuration file')
+    config = read_genic_paramfile(paramfile,verbose)
 
     # rename parameters to be used in CAMB
     params = _build_cosmology_params_camb(config)

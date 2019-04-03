@@ -19,13 +19,13 @@ def measure_p1d_Mpc(field,L_Mpc):
     fourier = np.fft.rfft(field, axis=1)
 
     # compute amplitude of Fourier modes
-    power_skewer = np.abs(fourier)**2    
+    power_skewer = np.abs(fourier)**2
 
     # compute mean of power in all spectra
     mean_power = np.sum(power_skewer, axis=0)/nspec
     assert np.shape(mean_power) == (npix//2+1,), 'wrong dimensions in p1d'
 
-    # normalize power spectrum using cosmology convention 
+    # normalize power spectrum using cosmology convention
     # white noise power should be P=sigma^2*dx
     p1d_Mpc = mean_power * L_Mpc / npix**2
 
@@ -39,16 +39,15 @@ def measure_p1d_Mpc(field,L_Mpc):
 
 
 def measure_F_p1D_Mpc(skewers,scale_tau,L_Mpc):
-    """ Measure 1D power spectrum of F, after rescaling optical depth. """
+    """ Measure 1D power spectrum of delta_F, after rescaling optical depth. """
 
     # obtain transmitted flux fraction, after rescaling
     F = get_transmitted_flux_fraction(skewers,scale_tau)
-
-    # compute power spectrum of F (not delta_F), in units of Mpc
-    k_Mpc, p1d_Mpc = measure_p1d_Mpc(F, L_Mpc)
-
-    # return also mean flux (to later on compute power of delta_F)
     mF = np.mean(F)
+    delta_F = F / mF - 1.0
+
+    # compute power spectrum of delta_F, in units of Mpc
+    k_Mpc, p1d_Mpc = measure_p1d_Mpc(delta_F, L_Mpc)
 
     return k_Mpc, p1d_Mpc, mF
 

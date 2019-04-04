@@ -7,7 +7,6 @@ sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Stable/tools/')
 import make_class_power
 import write_submit_simulation_darwin as wsd
 
-
 # get options from command line
 parser = configargparse.ArgumentParser()
 parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')

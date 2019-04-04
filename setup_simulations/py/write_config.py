@@ -120,6 +120,8 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     gadget_file.write("TimeMax = "+str(1.0/(1+min(zs)))+" \n")
 
     # main simulation settings (default)
+    gadget_file.write("SnapshotWithFOF = 0 \n")
+    gadget_file.write("TimeLimitCPU = 430000 \n")
     gadget_file.write("CoolingOn = 1 \n")
     gadget_file.write("StarformationOn = 1 \n")
     gadget_file.write("RadiationOn = 1 \n")

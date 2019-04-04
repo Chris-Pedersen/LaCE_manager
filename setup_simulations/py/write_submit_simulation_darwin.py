@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_submit_string(simdir,nodes,time,root_output='slurm'):
+def get_submit_string(simdir,nodes,time,root_output='slurm_simulation'):
     submit_string='''#!/bin/bash
 #! Example SLURM job script for Peta4-Skylake (Skylake CPUs, OPA)
 #! sbatch directives begin here ###############################
@@ -10,7 +10,7 @@ def get_submit_string(simdir,nodes,time,root_output='slurm'):
 #SBATCH -o %s/%s.out
 #SBATCH -e %s/%s.err
 #SBATCH --nodes=%d
-#SBATCH --ntasks=64
+#SBATCH --ntasks=%d
 #SBATCH --time=%s 
 #SBATCH --mail-type=NONE
 #SBATCH -p skylake-himem
@@ -81,7 +81,7 @@ echo -e "\nnumtasks=$numtasks, numnodes=$numnodes, mpi_tasks_per_node=$mpi_tasks
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 
 eval $CMD 
-'''%(simdir,root_output,simdir,root_output,nodes,time,simdir,simdir)
+'''%(simdir,root_output,simdir,root_output,nodes,32*nodes,time,simdir,simdir)
     return submit_string
     
 

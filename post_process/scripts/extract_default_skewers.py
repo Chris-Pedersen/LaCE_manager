@@ -9,7 +9,7 @@ import json
 
 # get options from command line
 parser = argparse.ArgumentParser()
-parser.add_argument('--basedir', type=str, help='Base simulation directory',required=True)
+parser.add_argument('--simdir', type=str, help='Base simulation directory',required=True)
 parser.add_argument('--skewers_dir', type=str, help='Store skewers in this folder',required=False)
 parser.add_argument('--zmax', type=float, default=6.0, help='Extract skewers only for z < zmax',required=False)
 parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers per side',required=False)
@@ -18,14 +18,14 @@ parser.add_argument('--verbose', action='store_true', help='Print runtime inform
 args = parser.parse_args()
 
 # main simulation folder 
-basedir=args.basedir
+simdir=args.simdir
 if args.skewers_dir:
     skewers_dir=args.skewers_dir
 else:
     skewers_dir=None
 
 # extract skewers for all snapshots, and return info about mean flux
-sk_info=extract_skewers.write_default_skewers(basedir=basedir,
+sk_info=extract_skewers.write_default_skewers(simdir=simdir,
             skewers_dir=skewers_dir,zmax=args.zmax,
             n_skewers=args.n_skewers,width_kms=args.width_kms)
 

@@ -30,10 +30,10 @@ def get_snapshot_json_filename(num,n_skewers,width_Mpc):
     return filename 
 
 
-def dkms_dMpc_z(basedir,num):
+def dkms_dMpc_z(simdir,num):
     """Setup cosmology from Gadget config file, and compute dv/dX"""
 
-    paramfile=basedir+'/paramfile.gadget'
+    paramfile=simdir+'/paramfile.gadget'
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     z=zs[num]
     # read cosmology information from Gadget file
@@ -53,7 +53,7 @@ def thermal_broadening_Mpc(T_0,dkms_dMpc):
     return sigma_T_Mpc
 
 
-def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
+def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
             width_Mpc=0.1,scales_T0=None,scales_gamma=None):
     """Extract skewers for a given snapshot, for different temperatures."""
 
@@ -65,7 +65,7 @@ def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
 
     # make sure output directory exists (will write skewers there)
     if skewers_dir is None:
-        skewers_dir=basedir+'/output/skewers/'
+        skewers_dir=simdir+'/output/skewers/'
     if os.path.exists(skewers_dir):
         if not os.path.isdir(skewers_dir):
             raise ValueError(skewers_dir+' is not a directory')
@@ -74,13 +74,13 @@ def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
         os.mkdir(skewers_dir)
 
     # figure out redshift for this snapshot, and dkms/dMpc
-    dkms_dMpc, z = dkms_dMpc_z(basedir,num)
+    dkms_dMpc, z = dkms_dMpc_z(simdir,num)
     width_kms = width_Mpc * dkms_dMpc
 
     # figure out temperature-density before scalings
-    T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,basedir+'/output/',plot=False)
+    T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,simdir+'/output/',plot=False)
 
-    sim_info={'basedir':basedir, 'skewers_dir':skewers_dir,
+    sim_info={'simdir':simdir, 'skewers_dir':skewers_dir,
                 'z':z, 'snap_num':num, 'n_skewers':n_skewers, 
                 'width_Mpc':width_Mpc, 'width_kms':width_kms,
                 'T0_ini':T0_ini, 'gamma_ini':gamma_ini,
@@ -100,7 +100,7 @@ def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
             sk_filename=get_skewers_filename(num,n_skewers,width_Mpc,
                                     scale_T0,scale_gamma)
 
-            skewers=get_skewers_snapshot(basedir,skewers_dir,num,
+            skewers=get_skewers_snapshot(simdir,skewers_dir,num,
                             n_skewers=n_skewers,width_kms=width_kms,
                             set_T0=T0,set_gamma=gamma,
                             skewers_filename=sk_filename)
@@ -132,13 +132,13 @@ def rescale_write_skewers_z(basedir,num,skewers_dir=None,n_skewers=50,
     return sim_info
 
 
-def write_default_skewers(basedir,skewers_dir=None,zmax=6.0,n_skewers=50,
+def write_default_skewers(simdir,skewers_dir=None,zmax=6.0,n_skewers=50,
             width_kms=10):
     """Extract skewers for all snapshots, default temperature."""
 
     # make sure output directory exists (will write skewers there)
     if skewers_dir is None:
-        skewers_dir=basedir+'/output/skewers/'
+        skewers_dir=simdir+'/output/skewers/'
     if os.path.exists(skewers_dir):
         if not os.path.isdir(skewers_dir):
             raise ValueError(skewers_dir+' is not a directory')
@@ -147,7 +147,7 @@ def write_default_skewers(basedir,skewers_dir=None,zmax=6.0,n_skewers=50,
         os.mkdir(skewers_dir)
 
     # figure out number of snapshots and redshifts
-    paramfile=basedir+'/paramfile.gadget'
+    paramfile=simdir+'/paramfile.gadget'
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     Nsnap=len(zs)
 
@@ -162,12 +162,12 @@ def write_default_skewers(basedir,skewers_dir=None,zmax=6.0,n_skewers=50,
         z=zs[num]
         if z < zmax:
             # extract skewers
-            skewers=get_skewers_snapshot(basedir,skewers_dir,num,
+            skewers=get_skewers_snapshot(simdir,skewers_dir,num,
                         n_skewers=n_skewers,width_kms=width_kms)
             # call mean flux, so that the skewers are really computed
             mf=skewers.get_mean_flux()
             # figure out filename for skewers
-            set_skewers_filename(basedir,skewers)
+            set_skewers_filename(simdir,skewers)
             skewers.save_file()
             mf_snap.append(num)
             mf_z.append(z)
@@ -177,7 +177,7 @@ def write_default_skewers(basedir,skewers_dir=None,zmax=6.0,n_skewers=50,
     # dictionary for mean flux in default settings
     mf_info={'number':mf_snap,'z':mf_z,'mean_flux':mf}
     mf_info['skewer_files']=sk_files
-    mf_info['basedir']=basedir
+    mf_info['simdir']=simdir
     mf_info['skewers_dir']=skewers_dir
     mf_info['zmax']=zmax
     mf_info['n_skewers']=n_skewers
@@ -186,7 +186,7 @@ def write_default_skewers(basedir,skewers_dir=None,zmax=6.0,n_skewers=50,
     return mf_info
 
 
-def get_skewers_snapshot(basedir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
+def get_skewers_snapshot(simdir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
                 set_T0=None,set_gamma=None,skewers_filename=None):
     """Extract skewers for a particular snapshot"""
 
@@ -203,7 +203,7 @@ def get_skewers_snapshot(basedir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
     if os.path.exists(skewers_dir+'/'+skewers_filename):
         print(skewers_filename,'already exists in',skewers_dir)
 
-    skewers = grid_spec.GriddedSpectra(snap_num,basedir+'/output/',
+    skewers = grid_spec.GriddedSpectra(snap_num,simdir+'/output/',
                 nspec=n_skewers,res=width_kms,savefile=skewers_filename,
                 savedir=skewers_dir,
                 reload_file=True,set_T0=set_T0,set_gamma=set_gamma)

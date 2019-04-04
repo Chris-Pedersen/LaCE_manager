@@ -5,7 +5,7 @@ import configargparse
 from shutil import copy
 sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Stable/tools/')
 import make_class_power
-import write_submit_darwin as wsd
+import write_submit_simulation_darwin as wsd
 
 
 # get options from command line
@@ -78,9 +78,9 @@ for sample in range(nsamples):
         total_nodes=2*args.nodes*nsamples
         if total_nodes < 100:
             print('will submit scripts, for a total of {} nodes'.format(total_nodes))
-            cmd_plus='sbatch '+plus_submit+' > info_plus'
+            cmd_plus='sbatch '+plus_submit+' > '+plus_dir+'/info_sim_sub'
             os.system(cmd_plus)
-            cmd_minus='sbatch '+minus_submit+' > info_minus'
+            cmd_minus='sbatch '+minus_submit+' > '+minus_dir+'/info_sim_sub'
             os.system(cmd_minus)
         else:
             print('will NOT submit scripts, too many nodes = {}'.format(total_nodes))

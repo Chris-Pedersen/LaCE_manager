@@ -8,30 +8,30 @@ import json
 
 # get options from command line
 parser = argparse.ArgumentParser()
-parser.add_argument('--basedir', type=str, help='Base simulation directory (crashes if it does not exists)',required=True)
+parser.add_argument('--simdir', type=str, help='Base simulation directory (crashes if it does not exists)',required=True)
 parser.add_argument('--tdr_filename', type=str, default='default_tdr',help='Filename for TDR information',required=False)
-parser.add_argument('--tdr_basedir', type=str, help='Base directory where the TDR file will be stored',required=False)
+parser.add_argument('--tdr_dir', type=str, help='Base directory where the TDR file will be stored',required=False)
 parser.add_argument('--zmax', type=float, default=20.0, help='Compute temperature-density relation only for z < zmax',required=False)
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 args = parser.parse_args()
 
-basedir=args.basedir
+simdir=args.simdir
 tdr_filename=args.tdr_filename
 
 # compute TDR for all snapshots
-thermal_info=temperature_density.compute_TDR(basedir=basedir,zmax=args.zmax)
+thermal_info=temperature_density.compute_TDR(simdir=simdir,zmax=args.zmax)
 if args.verbose:
     print('got temperature-density relations')
     print(thermal_info)
 
-if args.tdr_basedir:
-    tdr_basedir=args.tdr_basedir
-    if not os.path.exists(tdr_basedir):
-        raise ValueError(tdr_basedir+' does not exist')
+if args.tdr_dir:
+    tdr_dir=args.tdr_dir
+    if not os.path.exists(tdr_dir):
+        raise ValueError(tdr_dir+' does not exist')
 else:
-    tdr_basedir=basedir
+    tdr_dir=simdir
 
-filename=tdr_basedir+'/'+tdr_filename+'.json'
+filename=tdr_dir+'/'+tdr_filename+'.json'
 if args.verbose:
     print('will print TDR to',filename)
 json_file = open(filename,"w")

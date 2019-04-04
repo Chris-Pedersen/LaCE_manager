@@ -32,10 +32,10 @@ class SnapshotAdmin(object):
         """Loop over all skewers, and return flux power for each"""
 
         # get box size from GenIC file, to normalize power
-        genic_file=self.data['basedir']+'/paramfile.genic'
+        genic_file=self.data['simdir']+'/paramfile.genic'
         L_Mpc=read_genic.L_Mpc_from_paramfile(genic_file,verbose=True)
 
-        basedir=self.data['basedir']
+        simdir=self.data['simdir']
         skewers_dir=self.data['skewers_dir']
         snap_num=self.data['snap_num']
 
@@ -47,7 +47,7 @@ class SnapshotAdmin(object):
         for isk in range(Nsk):
             sk_file=self.data['sk_files'][isk]
             # read skewers from HDF5 file
-            skewers=grid_spec.GriddedSpectra(snap_num, basedir+'/output/',
+            skewers=grid_spec.GriddedSpectra(snap_num, simdir+'/output/',
                     savedir=skewers_dir, savefile=sk_file, reload_file=False)
 
             # loop over tau scalings

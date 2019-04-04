@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_submit_string(simdir,nodes,time,root_output='slurm_simulation'):
+def get_submit_string(simdir,nodes,time,root_output):
     submit_string='''#!/bin/bash
 #! Example SLURM job script for Peta4-Skylake (Skylake CPUs, OPA)
 #! sbatch directives begin here ###############################
@@ -85,8 +85,8 @@ eval $CMD
     return submit_string
     
 
-def write_simulation_script(script_name='test.submit',simdir='test_script',
-            nodes=2,time='01:00:00',root_output='slurm'):
+def write_simulation_script(script_name,simdir,nodes,time,
+                root_output='slurm_simulation'):
     """ Generate a SLURM file to run both GenIC and MP-Gadget for a sim."""
 
     submit_string=get_submit_string(simdir,nodes,time,root_output)

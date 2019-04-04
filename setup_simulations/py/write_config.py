@@ -120,8 +120,6 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     gadget_file.write("TimeMax = "+str(1.0/(1+min(zs)))+" \n")
 
     # main simulation settings (default)
-    gadget_file.write("SnapshotFileBase = snap \n")
-    gadget_file.write("TimeLimitCPU = 430000 \n")
     gadget_file.write("CoolingOn = 1 \n")
     gadget_file.write("StarformationOn = 1 \n")
     gadget_file.write("RadiationOn = 1 \n")
@@ -131,14 +129,11 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     gadget_file.write("DensityKernelType = cubic \n")
     gadget_file.write("InitGasTemp = 270. \n")
     gadget_file.write("MinGasTemp = 100 \n")
-    gadget_file.write("PartAllocFactor = 4 \n")
+    gadget_file.write("PartAllocFactor = 2 \n")
     gadget_file.write("BlackHoleOn=0 \n")
     gadget_file.write("CritPhysDensity = 0 \n")
     gadget_file.write("CritOverDensity = 1000 \n")
     gadget_file.write("QuickLymanAlphaProbability = 1 \n")
-    gadget_file.write("SnapshotWithFOF = 1 \n")
-    gadget_file.write("FOFHaloLinkingLength = 0.2 \n")
-    gadget_file.write("FOFHaloMinLength = 32 \n")
     gadget_file.write("WindModel = nowind \n")
 
     # cosmological parameters

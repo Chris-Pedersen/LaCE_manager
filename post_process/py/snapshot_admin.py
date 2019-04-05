@@ -32,20 +32,28 @@ class SnapshotAdmin(object):
         """Loop over all skewers, and return flux power for each"""
 
         # get box size from GenIC file, to normalize power
-        genic_file=self.data['simdir']+'/paramfile.genic'
+        if 'simdir' in self.data:
+            simdir = self.data['simdir']
+        elif 'basedir' in self.data:
+            simdir = self.data['basedir']
+
+        genic_file=simdir+'/paramfile.genic'
         L_Mpc=read_genic.L_Mpc_from_paramfile(genic_file,verbose=True)
 
-        simdir=self.data['simdir']
         skewers_dir=self.data['skewers_dir']
         snap_num=self.data['snap_num']
 
-        # loop over all temperature models in snapshot
+        # will loop over all temperature models in snapshot
         Nsk=len(self.data['sk_files'])
         # collect all measured powers, with information about skewers
-        arxiv_p1d=[]
+        p1d_data=[]
 
         for isk in range(Nsk):
             sk_file=self.data['sk_files'][isk]
+            sim_T0=self.data['sim_T0'][isk]
+            sim_gamma=self.data['sim_gamma'][isk]
+            sim_sigT_Mpc=self.data['sim_sigT_Mpc'][isk]
+
             # read skewers from HDF5 file
             skewers=grid_spec.GriddedSpectra(snap_num, simdir+'/output/',
                     savedir=skewers_dir, savefile=sk_file, reload_file=False)
@@ -53,10 +61,48 @@ class SnapshotAdmin(object):
             # loop over tau scalings
             for scale_tau in self.scales_tau:
                 k,p1d,mF=powF.measure_F_p1D_Mpc(skewers,scale_tau,L_Mpc=L_Mpc)
-                info_p1d={'k_Mpc':k,'p1d_Mpc':p1d,'mF':mF}
+                info_p1d={'k_Mpc':list(k),'p1d_Mpc':list(p1d),'mF':mF}
                 info_p1d['scale_tau']=scale_tau
+                # add information about skewers and temperature rescaling
                 info_p1d['sk_file']=sk_file
-                arxiv_p1d.append(info_p1d)
+                info_p1d['sim_T0']=sim_T0
+                info_p1d['sim_gamma']=sim_gamma
+                info_p1d['sim_sigT_Mpc']=sim_sigT_Mpc
+                p1d_data.append(info_p1d)
 
-        return arxiv_p1d
+        self.p1d_data=p1d_data
+        return p1d_data
+
+
+    def get_p1d_json_filename(self):
+        """Use metadata information to figure filename for JSON with P1D"""
+
+        num=self.data['snap_num']
+        n_skewers=self.data['n_skewers']
+        width_Mpc=self.data['width_Mpc']
+        
+        filename='p1d_'+str(num)+'_Ns'+str(n_skewers)
+        filename+='_wM'+str(int(1000*width_Mpc)/1000)
+        filename+='.json'
+
+        return filename
+
+
+    def write_p1d_json(self,filename=None):
+        """ Write JSON file with P1D measured in all post-processing"""
+
+        if filename is None:
+            filename=self.data['simdir']+'/'+self.get_p1d_json_filename()
+
+        # make sure we have already computed P1D
+        if not self.p1d_data:
+            print('computing P1D before writing JSON file')
+            self.get_all_flux_power()
+
+        p1d_info={'snapshot_data':self.data, 'scales_tau':self.scales_tau,
+                    'p1d_data': self.p1d_data}
+
+        json_file = open(filename,"w")
+        json.dump(p1d_info,json_file)
+        json_file.close()
 

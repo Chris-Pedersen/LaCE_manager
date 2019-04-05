@@ -25,7 +25,7 @@ module load rhel7/default-peta4            # REQUIRED - loads the basic environm
 module load gsl/2.4
 
 ## Gen ICs
-application="/home/dc-pede1/Codes/MP-Gadget-Stable/genic/MP-GenIC"
+application="/home/dc-font1/Codes/MP-Gadget/genic/MP-GenIC"
 options=%s/paramfile.genic
 
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
@@ -63,7 +63,7 @@ echo -e "\nExecuting command:\n==================\n$CMD\n"
 eval $CMD
 
 ## Now run sim
-application="/home/dc-pede1/Codes/MP-Gadget-Stable/gadget/MP-Gadget"
+application="/home/dc-font1/Codes/MP-Gadget/gadget/MP-Gadget"
 options=%s/paramfile.gadget
 
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory

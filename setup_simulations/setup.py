@@ -11,6 +11,6 @@ setup(name="setup_sims",
     author="Andreu Font-Ribera, Chris Pedersen, Keir Rogers",
     py_modules=['read_genic','read_gadget','write_config',
                 'latin_hypercube','sim_params_cosmo',
-                'sim_params_space','write_submit_simulation_darwin'],
+                'sim_params_space','write_submit_simulation_dirac'],
     package_dir={'': 'py'})
 

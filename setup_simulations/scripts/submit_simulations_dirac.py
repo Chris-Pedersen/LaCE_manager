@@ -5,7 +5,7 @@ import configargparse
 from shutil import copy
 sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Stable/tools/')
 import make_class_power
-import write_submit_simulation_darwin as wsd
+import write_submit_simulation_dirac as wsd
 
 # get options from command line
 parser = configargparse.ArgumentParser()

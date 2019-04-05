@@ -11,6 +11,6 @@ setup(name="post_process",
     author="Andreu Font-Ribera, Chris Pedersen",
     py_modules=['extract_skewers','temperature_density',
                 'snapshot_admin','measure_flux_power',
-                'write_submit_skewers_darwin'],
+                'write_submit_skewers_dirac','write_submit_p1d_dirac'],
     package_dir={'': 'py'})
 

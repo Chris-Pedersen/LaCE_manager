@@ -4,19 +4,18 @@ import json
 import configargparse
 from shutil import copy
 import read_gadget
-import write_submit_skewers_darwin as wsd
+import write_submit_p1d_dirac as wsd
 
 # get options from command line
 parser = configargparse.ArgumentParser()
 parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
-parser.add_argument('--basedir', type=str, help='Base directory to simulation, simulation pair, or simulation suite (crashes if it does not exist)', required=True)
+parser.add_argument('--basedir', type=str, help='Base directory to simulation suite (crashes if it does not exist)', required=True)
 parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers per side',required=False)
 parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
-parser.add_argument('--scales_T0', type=str, default='1.0', help='Comma-separated list of T0 scalings to use.',required=False)
-parser.add_argument('--scales_gamma', type=str, default='1.0', help='Comma-separated list of gamma scalings to use.',required=False)
+parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separated list of optical depth scalings to use.',required=False)
 parser.add_argument('--time', type=str, default='01:00:00', help='String formatted time to pass to SLURM script')
-parser.add_argument('--zmax', type=float, default=5.5, help='Extract skewers for snapshots below this redshift')
-parser.add_argument('--run', action='store_true', help='Actually submit the SLURM scripts (for now, only possible if total jobs < 100)')
+parser.add_argument('--zmax', type=float, default=5.5, help='Measure p1d for snapshots below this redshift')
+parser.add_argument('--run', action='store_true', help='Actually submit the SLURM scripts')
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 
 args = parser.parse_args()
@@ -54,9 +53,9 @@ for sample in range(nsamples):
         print('writing scripts for pair in',pair_dir)
 
     for sim in ['sim_plus','sim_minus']:
-        wsd.write_skewer_scripts_in_sim(simdir=pair_dir+'/'+sim,
+        wsd.write_p1d_scripts_in_sim(simdir=pair_dir+'/'+sim,
                 n_skewers=args.n_skewers,width_Mpc=args.width_Mpc,
-                scales_T0=args.scales_T0,scales_gamma=args.scales_gamma,
+                scales_tau=args.scales_tau,
                 time=args.time,zmax=args.zmax,
                 verbose=verbose,run=args.run)
 

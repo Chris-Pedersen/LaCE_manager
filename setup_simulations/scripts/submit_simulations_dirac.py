@@ -3,7 +3,7 @@ import sys
 import json
 import configargparse
 from shutil import copy
-sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Stable/tools/')
+sys.path.append('/home/dc-font1/Codes/MP-Gadget/tools/')
 import make_class_power
 import write_submit_simulation_dirac as wsd
 

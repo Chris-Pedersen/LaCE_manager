@@ -8,7 +8,7 @@ setup(name="lya_nuisance",
     version="0.1.0",
     description=description,
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/lya_nuisance",
-    author="Andreu Font-Ribera, Chris Pedersen, Keir Rogers",
+    author="Andreu Font-Ribera",
     py_modules=['mean_flux_model','thermal_model','pressure_model'],
     package_dir={'': 'py'})
 

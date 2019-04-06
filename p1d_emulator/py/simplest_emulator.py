@@ -25,8 +25,8 @@ class SimplestEmulator(object):
         """Set parameter uncertainties used to compute distances"""
 
         # completely made up for now
-        metric={'mF':0.02,'kF_Mpc':0.1,'sigT_Mpc':0.01,'gamma':0.1,
-                'Delta2_p':0.02,'n_p':0.001,'alpha_p':0.001,'f_p':0.002}
+        metric={'mF':0.02,'kF_Mpc':0.1,'sigT_Mpc':0.002,'gamma':0.02,
+                'Delta2_p':0.01,'n_p':0.001,'alpha_p':0.001,'f_p':0.002}
 
         if self.verbose:
             print('will use metric',metric)

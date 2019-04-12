@@ -9,6 +9,6 @@ setup(name="lya_cosmo",
     description=description,
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/lya_cosmo",
     author="Andreu Font-Ribera",
-    py_modules=['camb_cosmo','fit_linP'],
+    py_modules=['camb_cosmo','fit_linP','recons_cosmo'],
     package_dir={'': 'py'})
 

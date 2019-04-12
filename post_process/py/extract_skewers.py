@@ -4,8 +4,10 @@ import os
 import json
 import fake_spectra.tempdens as tdr
 import fake_spectra.griddedspectra as grid_spec 
+# our modules
 import read_gadget
 import camb_cosmo
+import thermal_model
 
 def get_skewers_filename(num,n_skewers,width_Mpc,scale_T0=None,
             scale_gamma=None):
@@ -48,7 +50,7 @@ def dkms_dMpc_z(simdir,num):
 def thermal_broadening_Mpc(T_0,dkms_dMpc):
     """Thermal broadening RMS in comoving units, given T_0"""
 
-    sigma_T_kms=9.1 * np.sqrt(T_0/1.e4)
+    sigma_T_kms=thermal_model.thermal_broadening_kms(T_0)
     sigma_T_Mpc=sigma_T_kms/dkms_dMpc
     return sigma_T_Mpc
 

@@ -5,8 +5,8 @@ import camb_cosmo
 
 
 class LinearPowerModel(object):
-    """Parameterize linear power spectrum around z_star, kp.
-        It can work with velocity or comoving units."""
+    """Given input cosmology, parameterize its linear power spectrum around
+        z_star, kp. It can work with velocity or comoving units."""
 
     def __init__(self,cosmo,z_star=3.0,k_units='kms',kp=None):
         """Setup model, specifying units (kms or Mpc) and pivot point"""
@@ -76,7 +76,7 @@ class LinearPowerModel(object):
         return self.linP_params['alpha_star']
 
     def parameterize_z_Mpc(self,zs):
-        """For each redshift, fit linear power parameters"""
+        """For each redshift, fit linear power parameters (in Mpc)"""
 
         # make sure object is setup in Mpc units
         assert self.k_units is 'Mpc', 'parameterize_z_Mpc can only work in Mpc'
@@ -93,6 +93,7 @@ class LinearPowerModel(object):
 def compute_g_star(cosmo,z_star):
     """ Compute logarithmic derivative of Hubble expansion, normalized to EdS:
         g(z) = dln H(z) / dln(1+z)^3/2 = 3/2 (1+z)/H(z) dH/dz """
+
     results = camb.get_results(cosmo)
     # compute derivative of Hubble
     dz=z_star/100.0
@@ -107,25 +108,26 @@ def compute_g_star(cosmo,z_star):
     return g_star
 
 
-def compute_f_star(cosmo,z_star=3.0,k_p_hMpc=1.0):
+def compute_f_star(cosmo,z_star=3.0,kp_Mpc=1.0):
     """Given cosmology, compute logarithmic growth rate (f) at z_star, around
-        pivot point k_p (in h/Mpc):
+        pivot point k_p (in 1/Mpc):
         f(z) = d lnD / d lna = - 1/2 * (1+z)/P(z) dP/dz """
+
     # will compute derivative of linear power at z_star
     dz=z_star/100.0
     zs=[z_star+dz,z_star,z_star-dz]
-    k_hMpc, zs_out, P_hMpc = camb_cosmo.get_linP_hMpc(cosmo,zs)
+    k_Mpc, zs_out, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,zs)
     z_minus=zs_out[0]
     z_star=zs_out[1]
     z_plus=zs_out[2]
-    P_minus=P_hMpc[0]
-    P_star=P_hMpc[1]
-    P_plus=P_hMpc[2]
+    P_minus=P_Mpc[0]
+    P_star=P_Mpc[1]
+    P_plus=P_Mpc[2]
     dPdz=(P_plus-P_minus)/(z_plus-z_minus)
     # compute logarithmic growth rate
     f_star_k = -0.5*dPdz/P_star*(1+z_star)
     # compute mean around k_p
-    mask=(k_hMpc > 0.5*k_p_hMpc) & (k_hMpc < 2.0*k_p_hMpc)
+    mask=(k_Mpc > 0.5*kp_Mpc) & (k_Mpc < 2.0*kp_Mpc)
     f_star = np.mean(f_star_k[mask])
     return f_star
 
@@ -167,9 +169,8 @@ def fit_linP_kms(cosmo,z_star,kp_kms,deg=2):
 def parameterize_cosmology_Mpc(cosmo,z_star=3,kp_Mpc=0.7):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in Mpc)."""
-    # get logarithmic growth rate at z_star, around k_p_hMpc
-    k_p_hMpc=1.0
-    f_star = compute_f_star(cosmo,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    # get logarithmic growth rate at z_star, around kp_Mpc
+    f_star = compute_f_star(cosmo,z_star=z_star,kp_Mpc=kp_Mpc)
     # compute deviation from EdS expansion
     g_star = compute_g_star(cosmo,z_star=z_star)
     # compute linear power, in Mpc, at z_star
@@ -190,9 +191,9 @@ def parameterize_cosmology_Mpc(cosmo,z_star=3,kp_Mpc=0.7):
 def parameterize_cosmology_kms(cosmo,z_star=3,kp_kms=0.009):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in km/s)."""
-    # get logarithmic growth rate at z_star, around k_p_hMpc
-    k_p_hMpc=1.0
-    f_star = compute_f_star(cosmo,z_star=z_star,k_p_hMpc=k_p_hMpc)
+    # get logarithmic growth rate at z_star, around kp_Mpc
+    kp_Mpc=kp_kms*camb_cosmo.dkms_dMpc(cosmo,z_star)
+    f_star = compute_f_star(cosmo,z_star=z_star,kp_Mpc=kp_Mpc)
     # compute deviation from EdS expansion
     g_star = compute_g_star(cosmo,z_star=z_star)
     # compute linear power, in km/s, at z_star

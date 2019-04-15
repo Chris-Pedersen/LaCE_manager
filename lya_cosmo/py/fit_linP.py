@@ -84,7 +84,7 @@ class LinearPowerModel(object):
         for z in zs:
             pars=parameterize_cosmology_Mpc(self.cosmo,z_star=z,kp_Mpc=self.kp)
             # _star is only for parameters at z_star
-            linP_z={'f':pars['f_star'], 'Delta2_p':pars['Delta2_star'], 
+            linP_z={'f_p':pars['f_star'], 'Delta2_p':pars['Delta2_star'],
                     'n_p':pars['n_star'], 'alpha_p':pars['alpha_star']}
             linP_zs.append(linP_z)
         return linP_zs

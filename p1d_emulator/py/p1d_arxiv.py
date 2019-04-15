@@ -6,10 +6,10 @@ import json
 class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
 
-    def __init__(self,basedir='../mini_sim_suite/',skewers_label='Ns50_wM0.1',
+    def __init__(self,basedir='../mini_sim_suite/',skewers_label=None,
                 verbose=True):
-        """Load arxiv from base sim directory and label identifying skewer
-            configuration (number, width)"""
+        """Load arxiv from base sim directory and (optional) label
+            identifyingskewer configuration (number, width)"""
 
         self.basedir=basedir
         self.skewers_label=skewers_label
@@ -23,6 +23,9 @@ class ArxivP1D(object):
 
         # each measured power will have a dictionary, stored here
         self.data=[]
+
+        # if we didn't provide skewers label, read only general sim info
+        no_skewers=(self.skewers_label is None)
 
         # read file containing information about latin hyper-cube
         cube_json=self.basedir+'/latin_hypercube.json'
@@ -53,6 +56,23 @@ class ArxivP1D(object):
             print('simulation has %d redshifts'%Nz) 
 
             for snap in range(Nz):        
+                # get linear power parameters describing snapshot
+                linP_params = pair_data['linP_zs'][snap]
+                snap_p1d_data = {}
+                snap_p1d_data['Delta2_p'] = linP_params['Delta2_p']
+                snap_p1d_data['n_p'] = linP_params['n_p']
+                snap_p1d_data['alpha_p'] = linP_params['alpha_p']
+                if 'f' in linP_params:
+                    snap_p1d_data['f_p'] = linP_params['f']
+                else:
+                    snap_p1d_data['f_p'] = linP_params['f_p']
+                snap_p1d_data['z']=zs[snap]
+
+                # check if we have extracted skewers yet
+                if no_skewers:
+                    self.data.append(snap_p1d_data)
+                    continue
+
                 # make sure that we have skewers for this snapshot (z < zmax)
                 plus_p1d_json=pair_dir+'/sim_plus/p1d_{}_{}.json'.format(
                                 snap,self.skewers_label)
@@ -60,16 +80,6 @@ class ArxivP1D(object):
                     if self.verbose:
                         print(pair_dir,'does not have this snapshot',snap)
                     continue
-
-                # get linear power parameters describing snapshot
-                linP_params = pair_data['linP_zs'][snap]
-                snap_p1d_data = {}
-                snap_p1d_data['Delta2_p'] = linP_params['Delta2_p']
-                snap_p1d_data['n_p'] = linP_params['n_p']
-                snap_p1d_data['alpha_p'] = linP_params['alpha_p']
-                snap_p1d_data['f_p'] = linP_params['f']
-                snap_p1d_data['z']=zs[snap]
-        
                 # open file with 1D power measured in snapshot for sim_plus
                 with open(plus_p1d_json) as json_file:
                     plus_data = json.load(json_file)
@@ -108,18 +118,20 @@ class ArxivP1D(object):
                     self.data.append(p1d_data)                
         
         if self.verbose:
-            print('Arxiv setup, containing %d measured P1D'%len(self.data))
+            print('Arxiv setup, containing %d entries'%len(self.data))
+
+        N=len(self.data)
+
+        # store linear power parameters
+        self.Delta2_p=np.array([self.data[i]['Delta2_p'] for i in range(N)])
+        self.n_p=np.array([self.data[i]['n_p'] for i in range(N)])
+        self.alpha_p=np.array([self.data[i]['alpha_p'] for i in range(N)])
+        self.f_p=np.array([self.data[i]['f_p'] for i in range(N)])
+        self.z=np.array([self.data[i]['z'] for i in range(N)])
 
         # store IGM parameters
-        Ntot=len(self.data)
-        self.mF=np.array([self.data[i]['mF'] for i in range(Ntot)])
-        self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(Ntot)])
-        self.gamma=np.array([self.data[i]['gamma'] for i in range(Ntot)])
-
-        # store linear power parameters 
-        self.Delta2_p=np.array([self.data[i]['Delta2_p'] for i in range(Ntot)])
-        self.n_p=np.array([self.data[i]['n_p'] for i in range(Ntot)])
-        self.alpha_p=np.array([self.data[i]['alpha_p'] for i in range(Ntot)])
-        self.f_p=np.array([self.data[i]['f_p'] for i in range(Ntot)])
-        
+        if not no_skewers:
+            self.mF=np.array([self.data[i]['mF'] for i in range(N)])
+            self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
+            self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
 

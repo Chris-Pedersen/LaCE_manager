@@ -94,7 +94,7 @@ def get_output_list(zs):
     return output_list
 
 
-def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
+def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
                 zs=[49.0,9.0,8.0,7.0,6.0,5.0,4.5,4.0,3.5,3.0,2.5,2.0]):
     """Write a MP-Gadget file for a given cosmology"""
 
@@ -157,7 +157,7 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,Ngrid=256,
     # thermal history parameters
     gadget_file.write("HeliumHeatOn = 1 \n")
     gadget_file.write("HeliumHeatAmp = %f \n" % mu_He)
-    #gadget_file.write("HydrogenHeatAmp = %f \n" % mu_H)
+    gadget_file.write("HydrogenHeatAmp = %f \n" % mu_H)
 
     gadget_file.close()
 

@@ -111,6 +111,18 @@ for sample in range(nsamples):
     cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(params,sim_params,
             linP_model_fid,verbose=verbose)
 
+    # figure out heating amplitude for Helium and Hydrogen
+    if 'mu_He' in params:
+        ip_He=params['mu_He']['ip']
+        mu_He=sim_params[ip_He]
+    else:
+        mu_He=1.0
+    if 'mu_H' in params:
+        ip_H=params['mu_H']['ip']
+        mu_H=sim_params[ip_H]
+    else:
+        mu_H=1.0
+
     sim_dir=basedir+'/sim_pair_'+str(sample)+'/'
     os.mkdir(sim_dir)
     # make a different folder for each simulation in the pair
@@ -124,11 +136,11 @@ for sample in range(nsamples):
         print('write config files for GenIC and Gadget')
     write_config.write_genic_file(plus_dir,cosmo_sim,
             Ngrid=args.ngrid,box_Mpc=args.box_Mpc,paired=False)
-    zs=write_config.write_gadget_file(plus_dir,cosmo_sim,
+    zs=write_config.write_gadget_file(plus_dir,cosmo_sim,mu_H=mu_H,mu_He=mu_He,
             Ngrid=args.ngrid,zs=zs)
     write_config.write_genic_file(minus_dir,cosmo_sim,
             Ngrid=args.ngrid,box_Mpc=args.box_Mpc,paired=True)
-    _=write_config.write_gadget_file(minus_dir,cosmo_sim,
+    _=write_config.write_gadget_file(minus_dir,cosmo_sim,mu_H=mu_H,mu_He=mu_He,
             Ngrid=args.ngrid,zs=zs)
 
     # construct linear power model and store in JSON format

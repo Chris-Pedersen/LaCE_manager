@@ -15,6 +15,7 @@ parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in
 parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separated list of optical depth scalings to use.',required=False)
 parser.add_argument('--time', type=str, default='01:00:00', help='String formatted time to pass to SLURM script')
 parser.add_argument('--zmax', type=float, default=5.5, help='Measure p1d for snapshots below this redshift')
+parser.add_argument('--p1d_label', type=str, default=None, help='String identifying P1D measurement and / or tau scaling.',required=False)
 parser.add_argument('--run', action='store_true', help='Actually submit the SLURM scripts')
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 
@@ -57,5 +58,5 @@ for sample in range(nsamples):
                 n_skewers=args.n_skewers,width_Mpc=args.width_Mpc,
                 scales_tau=args.scales_tau,
                 time=args.time,zmax=args.zmax,
-                verbose=verbose,run=args.run)
+                verbose=verbose,p1d_label=args.p1d_label,run=args.run)
 

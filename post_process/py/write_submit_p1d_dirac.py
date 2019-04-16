@@ -97,7 +97,7 @@ def string_from_list(in_list):
 
 
 def get_options_string(simdir,snap_num,n_skewers,width_Mpc,
-                scales_tau,verbose):
+                scales_tau,p1d_label,verbose):
     """ Option string to pass to python script in SLURM"""
 
     # make sure scales are comma-separated string (and not lists)
@@ -109,6 +109,8 @@ def get_options_string(simdir,snap_num,n_skewers,width_Mpc,
     options='--simdir {} --snap_num {} '.format(simdir,snap_num)
     options+='--n_skewers {} --width_Mpc {} '.format(n_skewers,width_Mpc)
     options+='--scales_tau {} '.format(str_scales_tau)
+    if p1d_label is not None:
+        options+='--p1d_label {} '.format(p1d_label)
     if verbose:
         options+='--verbose'
 
@@ -116,12 +118,12 @@ def get_options_string(simdir,snap_num,n_skewers,width_Mpc,
 
 
 def write_p1d_script(script_name,simdir,snap_num,n_skewers,width_Mpc,
-                scales_tau,time,verbose):
+                scales_tau,time,p1d_label,verbose):
     """ Generate a SLURM file to measure p1d for a given snapshot."""
 
     # construct string with options to be passed to python script
     options=get_options_string(simdir,snap_num,n_skewers,width_Mpc,
-                scales_tau,verbose)
+                scales_tau,p1d_label,verbose)
 
     if verbose:
         print('print options: '+options)
@@ -139,7 +141,7 @@ def write_p1d_script(script_name,simdir,snap_num,n_skewers,width_Mpc,
 
 
 def write_p1d_scripts_in_sim(simdir,n_skewers,width_Mpc,
-                scales_tau,time,zmax,verbose,run=False):
+                scales_tau,time,zmax,verbose,p1d_label=None,run=False):
     """ Generate a SLURM file for each snapshot in the simulation, to read
         skewers for different thermal histories and measure p1d."""
     
@@ -159,7 +161,8 @@ def write_p1d_scripts_in_sim(simdir,n_skewers,width_Mpc,
             slurm_script=simdir+'/p1d_%s.sub'%snap
             write_p1d_script(script_name=slurm_script,simdir=simdir,
                         snap_num=snap,n_skewers=n_skewers,width_Mpc=width_Mpc,
-                        scales_tau=scales_tau,time=time,verbose=verbose)
+                        scales_tau=scales_tau,time=time,
+                        p1d_label=p1d_label,verbose=verbose)
             if run:
                 info_file=simdir+'/info_sub_p1d_'+str(snap)
                 if verbose:

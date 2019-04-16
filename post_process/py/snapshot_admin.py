@@ -74,25 +74,28 @@ class SnapshotAdmin(object):
         return p1d_data
 
 
-    def get_p1d_json_filename(self):
+    def get_p1d_json_filename(self,p1d_label):
         """Use metadata information to figure filename for JSON with P1D"""
 
         num=self.data['snap_num']
         n_skewers=self.data['n_skewers']
         width_Mpc=self.data['width_Mpc']
         
-        filename='p1d_'+str(num)+'_Ns'+str(n_skewers)
+        filename=p1d_label+'_'+str(num)+'_Ns'+str(n_skewers)
         filename+='_wM'+str(int(1000*width_Mpc)/1000)
         filename+='.json'
 
         return filename
 
 
-    def write_p1d_json(self,filename=None):
+    def write_p1d_json(self,p1d_label='p1d'):
         """ Write JSON file with P1D measured in all post-processing"""
 
-        if filename is None:
-            filename=self.data['simdir']+'/'+self.get_p1d_json_filename()
+        if p1d_label is None:
+            p1d_label='p1d'
+
+        filename=self.data['simdir']+'/'+self.get_p1d_json_filename(p1d_label)
+        print('will print P1d to file',filename)
 
         # make sure we have already computed P1D
         if not self.p1d_data:

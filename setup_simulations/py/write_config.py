@@ -4,18 +4,6 @@ import numpy as np
 import os
 import json
 
-def mkdir_if_not_exists(dirname,verbose=False):
-    """Check if directory exists, and create otherwise."""
-    if os.path.exists(dirname):
-        if not os.path.isdir(dirname):
-            raise ValueError(dirname+' exists but it is not a directory')
-        if verbose:
-        	print(dirname,'exists')
-    else:
-        if verbose:
-        	print('mkdir',dirname)
-        os.mkdir(dirname)
-
 
 def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):

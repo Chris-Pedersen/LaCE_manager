@@ -68,12 +68,7 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
     # make sure output directory exists (will write skewers there)
     if skewers_dir is None:
         skewers_dir=simdir+'/output/skewers/'
-    if os.path.exists(skewers_dir):
-        if not os.path.isdir(skewers_dir):
-            raise ValueError(skewers_dir+' is not a directory')
-    else:
-        print('make directory',skewers_dir)
-        os.mkdir(skewers_dir)
+    os.makedirs(skewers_dir,exist_ok=True)
 
     # figure out redshift for this snapshot, and dkms/dMpc
     dkms_dMpc, z = dkms_dMpc_z(simdir,num)
@@ -141,12 +136,7 @@ def write_default_skewers(simdir,skewers_dir=None,zmax=6.0,n_skewers=50,
     # make sure output directory exists (will write skewers there)
     if skewers_dir is None:
         skewers_dir=simdir+'/output/skewers/'
-    if os.path.exists(skewers_dir):
-        if not os.path.isdir(skewers_dir):
-            raise ValueError(skewers_dir+' is not a directory')
-    else:
-        print('make directory',skewers_dir)
-        os.mkdir(skewers_dir)
+    os.makedirs(skewers_dir,exist_ok=True)
 
     # figure out number of snapshots and redshifts
     paramfile=simdir+'/paramfile.gadget'

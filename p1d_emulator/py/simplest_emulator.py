@@ -7,15 +7,15 @@ import p1d_arxiv
 class SimplestEmulator(object):
     """Nearest-grid point emulator for flux P1D."""
 
-    def __init__(self,basedir='../mini_sim_suite/',skewers_label='Ns50_wM0.1',
-                verbose=True):
+    def __init__(self,basedir='../mini_sim_suite/',
+                p1d_label='p1d',skewers_label='Ns50_wM0.1',verbose=True):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
 
         self.verbose=verbose
 
         # read all files with P1D measured in simulation suite
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir,skewers_label,verbose) 
+        self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,verbose)
 
         # define metric to compute distances between models
         self.metric=self.set_distance_metric()

@@ -6,12 +6,13 @@ import json
 class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
 
-    def __init__(self,basedir='../mini_sim_suite/',skewers_label=None,
-                verbose=True):
+    def __init__(self,basedir='../mini_sim_suite/',
+                p1d_label='p1d_',skewers_label=None,verbose=True):
         """Load arxiv from base sim directory and (optional) label
             identifyingskewer configuration (number, width)"""
 
         self.basedir=basedir
+        self.p1d_label=p1d_label
         self.skewers_label=skewers_label
         self.verbose=verbose
 
@@ -74,18 +75,18 @@ class ArxivP1D(object):
                     continue
 
                 # make sure that we have skewers for this snapshot (z < zmax)
-                plus_p1d_json=pair_dir+'/sim_plus/p1d_{}_{}.json'.format(
-                                snap,self.skewers_label)
+                plus_p1d_json=pair_dir+'/sim_plus/{}_{}_{}.json'.format(
+                                self.p1d_label,snap,self.skewers_label)
                 if not os.path.isfile(plus_p1d_json):
                     if self.verbose:
-                        print(pair_dir,'does not have this snapshot',snap)
+                        print(plus_p1d_json,'snapshot does not have p1d')
                     continue
                 # open file with 1D power measured in snapshot for sim_plus
                 with open(plus_p1d_json) as json_file:
                     plus_data = json.load(json_file)
                 # open file with 1D power measured in snapshot for sim_minus
-                minus_p1d_json=pair_dir+'/sim_minus/p1d_{}_{}.json'.format(
-                                snap,self.skewers_label)
+                minus_p1d_json=pair_dir+'/sim_minus/{}_{}_{}.json'.format(
+                                self.p1d_label,snap,self.skewers_label)
                 with open(minus_p1d_json) as json_file: 
                     minus_data = json.load(json_file)
 

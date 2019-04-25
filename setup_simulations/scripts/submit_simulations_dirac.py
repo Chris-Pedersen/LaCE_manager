@@ -56,12 +56,20 @@ for sample in range(nsamples):
 
     # full path to one of teh simulations in the pair
     plus_dir=pair_dir+'/sim_plus/'
+
     # run make_class_power to generate matterpow.dat and transfer.dat
-    make_class_power.make_class_power(paramfile=plus_dir+'/paramfile.genic')
-    # copy to the other simulation in the pair
-    minus_dir=pair_dir+'/sim_minus/'
-    copy(plus_dir+'/matterpow.dat', minus_dir)
-    copy(plus_dir+'/transfer.dat', minus_dir)
+    try:
+        failed=False
+        make_class_power.make_class_power(paramfile=plus_dir+'/paramfile.genic')
+        # copy to the other simulation in the pair
+        minus_dir=pair_dir+'/sim_minus/'
+        copy(plus_dir+'/matterpow.dat', minus_dir)
+        copy(plus_dir+'/transfer.dat', minus_dir)
+    except:
+        failed=True
+        print('you will have to run make_class manually for',sample)
+        continue
+
     # copy treecool file to both folders
     copy(treecool_file, plus_dir)
     copy(treecool_file, minus_dir)
@@ -74,6 +82,8 @@ for sample in range(nsamples):
     wsd.write_simulation_script(script_name=minus_submit,
                     simdir=minus_dir,nodes=nodes,time=time)
     if args.run:
+        if failed:
+            print('will NOT submit scripts, we need to run make_class')
         total_nodes=2*args.nodes*nsamples
         if total_nodes < 100:
             print('will submit scripts, for a total of {} nodes'.format(total_nodes))

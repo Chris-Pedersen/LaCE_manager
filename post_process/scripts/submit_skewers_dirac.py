@@ -46,7 +46,7 @@ if verbose:
 # get number of samples in the hyper-cube
 nsamples=cube_data['nsamples']
 
-# for each sample, run make_class_power and copy the files to the right path
+# for each sample, extract skewers for each snapshot
 for sample in range(nsamples):
     # full path to folder for this particular simulation pair
     pair_dir=basedir+'/sim_pair_'+str(sample)

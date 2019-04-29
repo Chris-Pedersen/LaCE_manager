@@ -82,17 +82,11 @@ class ReconstructedCosmology(object):
         f_star=self.linP_model.get_f_star()
         g_star=self.linP_model.get_g_star()
         linP_kms=self.linP_model.linP_params['linP_kms']
-        #Delta2_star=self.linP_model.get_Delta2_star()
-        #n_star=self.linP_model.get_n_star()
-        #alpha_star=self.linP_model.get_alpha_star()
 
         # get parameters describing linear power for fiducial cosmology
         f_star_fid=self.linP_model_fid.get_f_star()
         g_star_fid=self.linP_model_fid.get_g_star()
         linP_kms_fid=self.linP_model_fid.linP_params['linP_kms']
-        #Delta2_star_fid=self.linP_model_fid.get_Delta2_star()
-        #n_star_fid=self.linP_model_fid.get_n_star()
-        #alpha_star_fid=self.linP_model_fid.get_alpha_star()
 
         # get relative parameters
         df_star=f_star-f_star_fid
@@ -165,9 +159,10 @@ class ReconstructedCosmology(object):
             linP_fit=fit_linP.fit_polynomial(xmin,xmax,x,linP_Mpc_rec[iz],deg=2)
             # compute parameters used in emulator
             lnA_p=linP_fit[0]
-            n_p=linP_fit[1]
-            alpha_p=linP_fit[2]
             Delta2_p=np.exp(lnA_p)*kp_Mpc**3/(2*np.pi**2)
+            n_p=linP_fit[1]
+            # note that the curvature is alpha/2
+            alpha_p=2.0*linP_fit[2]
             # reconstruct logarithmic growth rate at the redshift
             f_p=self.reconstruct_f_p(zs[iz])
             params={'Delta2_p':Delta2_p,'n_p':n_p,'alpha_p':alpha_p,'f_p':f_p}

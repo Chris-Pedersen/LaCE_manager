@@ -54,7 +54,8 @@ class ArxivP1D(object):
             #print(sample,'pair data',pair_data)
             zs=pair_data['zs']
             Nz=len(zs)
-            print('simulation has %d redshifts'%Nz) 
+            if self.verbose:
+                print('simulation has %d redshifts'%Nz) 
 
             for snap in range(Nz):        
                 # get linear power parameters describing snapshot
@@ -135,4 +136,18 @@ class ArxivP1D(object):
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
+ 
+
+    def print_entry(self,entry,keys=['z','Delta2_p','n_p','alpha_p','f_p',
+                                    'mF','sigT_Mpc','gamma']):
+        """Print basic information about a particular entry in the arxiv"""
+
+        if entry >= len(self.data):
+            raise ValueError('{} entry does not exist in arxiv'.format(entry))
+
+        data = self.data[entry]
+        info='entry = {}'.format(entry)
+        for key in keys:
+            info += ', {} = {:.4f}'.format(key,data[key])
+        print(info)
 

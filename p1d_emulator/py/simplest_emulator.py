@@ -4,6 +4,7 @@ import os
 import json
 import p1d_arxiv
 
+
 class SimplestEmulator(object):
     """Nearest-grid point emulator for flux P1D."""
 
@@ -25,11 +26,10 @@ class SimplestEmulator(object):
         """Set parameter uncertainties used to compute distances"""
 
         # completely made up for now
-        metric={'mF':0.02,'kF_Mpc':0.1,'sigT_Mpc':0.002,'gamma':0.02,
-                'Delta2_p':0.01,'n_p':0.001,'alpha_p':0.001,'f_p':0.002}
+        metric={'mF':0.01,'kF_Mpc':0.1,'sigT_Mpc':0.02,'gamma':0.02,
+                'Delta2_p':0.01,'n_p':0.01,'alpha_p':0.01,'f_p':0.005}
 
-        if self.verbose:
-            print('will use metric',metric)
+        if self.verbose: print('will use metric',metric)
 
         return metric
 
@@ -58,7 +58,7 @@ class SimplestEmulator(object):
         return distances
 
 
-    def get_nearest_model(self,model):
+    def find_nearest_model(self,model):
         """Given input model, find nearest model in arxiv"""
 
         # compute distance to all models in arxiv
@@ -66,11 +66,22 @@ class SimplestEmulator(object):
         # identify nearest model
         nearest = np.argmin(distances)
 
+        return nearest
+        
+
+    def get_nearest_model(self,model):
+        """Given input model, return earest model in arxiv"""
+
+        nearest = self.find_nearest_model(model)
+        if self.verbose: self.arxiv.print_entry(nearest)
+
         return self.arxiv.data[nearest]
         
 
     def emulate_p1d(self,model):
         """Return (k,p1d) for nearest model in arxiv"""
+
+        if self.verbose: print('asked to emulate model',model)
 
         nearest_model = self.get_nearest_model(model)
 

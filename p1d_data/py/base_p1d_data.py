@@ -10,6 +10,8 @@ class BaseDataP1D(object):
 
 
     def get_Pk_iz(self,iz):
+        if self.Pk is None:
+            raise ValueError('power spectrum is blinded')
         return self.Pk[iz]
 
 

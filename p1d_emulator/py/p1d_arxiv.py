@@ -7,7 +7,8 @@ class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
 
     def __init__(self,basedir='../mini_sim_suite/',
-                p1d_label='p1d_',skewers_label=None,verbose=True):
+                p1d_label='p1d',skewers_label=None,
+                max_arxiv_size=None,verbose=True):
         """Load arxiv from base sim directory and (optional) label
             identifyingskewer configuration (number, width)"""
 
@@ -16,10 +17,10 @@ class ArxivP1D(object):
         self.skewers_label=skewers_label
         self.verbose=verbose
 
-        self._load_data()
+        self._load_data(max_arxiv_size)
 
 
-    def _load_data(self):
+    def _load_data(self,max_arxiv_size):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -119,6 +120,13 @@ class ArxivP1D(object):
                     p1d_data['p1d_Mpc'] = pair_p1d
                     self.data.append(p1d_data)                
         
+        if max_arxiv_size is not None:
+            Ndata=len(self.data)
+            if Ndata > max_arxiv_size:
+                keep=np.random.randint(0,Ndata,max_arxiv_size)
+                keep_data=[self.data[i] for i in keep]
+                self.data=keep_data
+
         if self.verbose:
             print('Arxiv setup, containing %d entries'%len(self.data))
 

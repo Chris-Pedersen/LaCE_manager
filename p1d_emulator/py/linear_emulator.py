@@ -12,6 +12,7 @@ class LinearEmulator(object):
 
     def __init__(self,basedir='../mini_sim_suite/',
             p1d_label='p1d',skewers_label='Ns50_wM0.1',
+            emulate_running=False,emulate_growth=False,
             deg=4,kmax_Mpc=10.0,max_arxiv_size=None,verbose=True):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
@@ -24,6 +25,9 @@ class LinearEmulator(object):
 
         # for each model in arxiv, fit smooth function to P1D
         self._fit_p1d_in_arxiv(deg,kmax_Mpc)
+
+        # setup parameter space to be used in emulator
+        self._setup_param_space(emulate_running,emulate_growth)
 
         # for each order in polynomial, setup interpolation object
         self._setup_interp(deg)
@@ -40,18 +44,28 @@ class LinearEmulator(object):
             entry['fit_p1d'] = fit_p1d
 
 
+    def _setup_param_space(self,emulate_running,emulate_growth):
+        """Set order of parameters in emulator"""
+
+        self.params=['Delta2_p','n_p']
+        if emulate_running:
+            self.params.append('alpha_p')
+        if emulate_growth:
+            self.params.append('growht')
+        self.params += ['mF','sigT_Mpc','gamma']
+        if self.verbose:
+            print('parameter names in emulator',self.params)
+
+
     def _setup_interp(self,deg):
         """For each order in polynomial, setup interpolation object"""
 
-        # First setup arrays of parameters to be used in interpolation
-        # We should do something smart about ordering
-        self.points=np.vstack([self.arxiv.Delta2_p,
-                               self.arxiv.n_p,
-                               self.arxiv.alpha_p,
-                               self.arxiv.f_p,
-                               self.arxiv.mF,
-                               self.arxiv.sigT_Mpc,
-                               self.arxiv.gamma]).transpose()
+        # for each parameter in params, get values from arxiv
+        point_params=[]
+        for par in self.params:
+            values = np.array([entry[par] for entry in self.arxiv.data])
+            point_params.append(values)
+        self.points=np.vstack(point_params).transpose()
 
         N=len(self.arxiv.data)
         self.linterps=[]
@@ -69,8 +83,11 @@ class LinearEmulator(object):
     def _point_from_model(self,model):
         """Extract model parameters from dictionary in the right order"""
 
-        return np.array([model['Delta2_p'],model['n_p'],model['alpha_p'],
-                    model['f_p'],model['mF'],model['sigT_Mpc'],model['gamma']])
+        point=[]
+        for par in self.params:
+            point.append(model[par])
+
+        return np.array(point)
 
 
     def emulate_p1d_Mpc(self,model,k_Mpc):

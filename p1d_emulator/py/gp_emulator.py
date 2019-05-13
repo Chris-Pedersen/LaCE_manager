@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 class GPEmulator:
     """
     Gaussian process emulator to emulate P1D from a simulation suite.
+    This will train on the data in an 'arxiv' object, and will return
+    a given P_1D(k) for the same k-bins used in training.
+    GPEmulator.predict takes models in a dictionary format currently.
     """
     def __init__(self,basedir='../mini_sim_suite/',
 		p1d_label='p1d',skewers_label='Ns50_wM0.1',
@@ -58,7 +61,6 @@ class GPEmulator:
         ## Rescaling to unit volume
         for cc in range(len(self.arxiv.data)):
             params[cc]=self._rescale_params(params[cc],self.paramLimits)
-        print(params)
         print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
@@ -107,7 +109,7 @@ class GPEmulator:
         '''
         self._build_interp(spects,self.paramList)
 
-    def crossValidation(self,testSample=0.25):
+    def crossValidation(self,testSample=0.25,plotIndividual=False):
         paramList=self.paramList
         arxiv=self.arxiv
         ''' Code to cross validate. testSample determines the proportion
@@ -158,6 +160,21 @@ class GPEmulator:
         std=np.sqrt(std)
         error=(mean-P1D_k_test)/std
         error=np.hstack(error)
+
+        if plotIndividual==True:
+            ## Take a random model and plot the true P(k)
+            ## along with the predicted P(k)
+            sample=np.random.randint(trainingLen,trainingLen+testLen)
+            predictedP,err=self.gp.predict(params[sample].reshape(1,-1))
+            predictedP=np.hstack(predictedP)
+            predictedP=(predictedP+1)*self.scalefactors
+            truek=self.arxiv.data[sample]["k_Mpc"][1:]
+            trueP=self.arxiv.data[sample]["p1d_Mpc"][1:]
+            plt.figure()
+            plt.title("Truth and predicted for a random model")
+            plt.semilogx(truek,truek*trueP,label="True")
+            plt.semilogx(truek[:len(predictedP)],predictedP*truek[:len(predictedP)],label="Predicted",linestyle="dashed")
+            plt.legend()
 
         ## Generate mock Gaussian to overlay
         x=np.linspace(-6,6,200)
@@ -313,58 +330,3 @@ class GP_k_Emulator:
 
     def train(self,spects):
         self._build_interp(spects,self.paramList)
-
-'''
-basedir='../../p1d_emulator/sim_suites/emulator_04052019/'
-p1d_label='mf_p1d'
-skewers_label='Ns100_wM0.1'
-
-## Full list is ["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
-#Params=["mF","Delta2_p","sigT_Mpc","f_p","gamma"]
-GP_EMU=GPEmulator(basedir,p1d_label,skewers_label,max_arxiv_size=2000,verbose=True,paramList=None,kmax_Mpc=3)
-
-#GP_EMU=GP_k_Emulator(basedir,p1d_label,skewers_label,max_arxiv_size=50,verbose=True,paramList=None,kmax_Mpc=2)
-
-#GP_EMU.train(GP_EMU.arxiv)
-
-
-
-# identify mean model
-median_mF=np.median(GP_EMU.arxiv.mF)
-median_sigT_Mpc=np.median(GP_EMU.arxiv.sigT_Mpc)
-median_gamma=np.median(GP_EMU.arxiv.gamma)
-median_Delta2_p=np.median(GP_EMU.arxiv.Delta2_p)
-median_n_p=np.median(GP_EMU.arxiv.n_p)
-median_alpha_p=np.median(GP_EMU.arxiv.alpha_p)
-median_f_p=np.median(GP_EMU.arxiv.f_p)
-
-median_model={'mF':median_mF,'sigT_Mpc':median_sigT_Mpc,'gamma':median_gamma,
-            'Delta2_p':median_Delta2_p,'n_p':median_n_p,'alpha_p':median_alpha_p,'f_p':median_f_p}
-
-print('mean model =',median_model)
-
-## Plot a range of linear powers
-model=median_model
-delta_ps=np.linspace(median_Delta2_p-0.01,median_Delta2_p+0.01,100)
-k=GP_EMU.arxiv.data[1]["k_Mpc"][1:] ## Ignore the 0th value
-plt.figure()
-for aa in range(len(delta_ps)):
-    model["Delta2_p"]=delta_ps[aa]
-    col = plt.cm.jet((aa)/(len(delta_ps)))
-    pred,err=GP_EMU.predict(model)
-    pred=np.hstack(pred)
-    plt.semilogx(k[:len(pred)],pred*k[:len(pred)],color=col)
-plt.show()
-k_Mpc=np.logspace(-1,0.2,100)
-predP=np.empty(len(k_Mpc))
-
-for aa in range(len(k_Mpc)):
-    median_model["k_Mpc"]=k_Mpc[aa]
-    pred,err=GP_EMU.predict(median_model)
-    print(pred)
-'''
-
-GP_EMU.crossValidation(testSample=0.1)
-#GP_EMU.predict()
-#archive=GP_EMU.arxiv
-#print(archive[1])

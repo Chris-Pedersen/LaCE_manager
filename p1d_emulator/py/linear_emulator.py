@@ -109,7 +109,6 @@ class LinearEmulator(object):
         # set P1D object
         kmin_Mpc=self.arxiv.data[0]['fit_p1d'].kmin_Mpc
         smooth_p1d = poly_p1d.PolyP1D(lnP_fit=coeffs,kmin_Mpc=kmin_Mpc)
-        if self.verbose: print('got poly_p1d',smooth_p1d)
 
         return smooth_p1d.P_Mpc(k_Mpc)
 

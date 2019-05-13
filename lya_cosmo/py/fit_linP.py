@@ -5,16 +5,18 @@ import camb_cosmo
 
 
 class LinearPowerModel(object):
-    """Given input cosmology, parameterize its linear power spectrum around
-        z_star, kp. It can work with velocity or comoving units."""
+    """Store parameters describing the linear power in a cosmology.
+        It can work in two modes:
+            - given CAMB object, parameterize cosmology and store parameters
+            - construct with set of parameters, and store them
+        It can work in velocity or comoving units."""
 
-    def __init__(self,cosmo,z_star=3.0,k_units='kms',kp=None):
+    def __init__(self,params=None,cosmo=None,z_star=3.0,k_units='kms',kp=None):
         """Setup model, specifying units (kms or Mpc) and pivot point"""
 
-        self.cosmo=cosmo
+        # choose suitable pivot point, depending on units
         self.z_star=z_star
         self.k_units=k_units
-        # choose suitable pivot point, depending on units
         if kp is None:
             if self.k_units is 'kms':
                 self.kp=0.009
@@ -24,12 +26,39 @@ class LinearPowerModel(object):
                 raise ValueError('k_units not recognized '+self.k_units)
         else:
             self.kp=kp
-        # parameterize cosmology and store values
-        self.params=self._setup_cosmo_params()
+
+        # store (or compute) parameters and / or cosmology
+        if params:
+            assert cosmo is None, 'can not pass both cosmo and params'
+            self.cosmo=None
+            self._setup_from_parameters(params)
+        else:
+            self.cosmo=cosmo
+            # parameterize cosmology and store parameters
+            self._setup_from_cosmology()
 
 
-    def _setup_cosmo_params(self):
+    def _setup_from_parameters(self,params):
+        """Setup object from dictionary with parameters."""
+
+        assert self.k_units is 'kms', '_setup_from_parameters works in kms'
+        kp_kms=self.kp
+
+        # copy input dictionary
+        self.linP_params=params.copy()
+        # will add polynomial describing the log power, around kp_kms
+        linP_kms_2=0.5*params['alpha_star']
+        linP_kms_1=params['n_star']
+        A_star=(2*np.pi**2)*params['Delta2_star']/kp_kms**3
+        linP_kms_0=np.log(A_star)
+        linP_kms = np.poly1d([linP_kms_2,linP_kms_1,linP_kms_0])
+        self.linP_params['linP_kms']=linP_kms
+
+
+    def _setup_from_cosmology(self):
         """Compute and store parameters describing the linear power."""
+
+        if not self.cosmo: raise ValueError('no cosmology in LinearPowerModel')
 
         if self.k_units is 'kms':
             self.linP_params=parameterize_cosmology_kms(self.cosmo,
@@ -78,8 +107,11 @@ class LinearPowerModel(object):
     def parameterize_z_Mpc(self,zs):
         """For each redshift, fit linear power parameters (in Mpc)"""
 
+        # check that you actually hold a CAMB cosmology object
+        if not self.cosmo: raise ValueError('no cosmology in LinearPowerModel')
         # make sure object is setup in Mpc units
         assert self.k_units is 'Mpc', 'parameterize_z_Mpc can only work in Mpc'
+
         linP_zs=[]
         for z in zs:
             pars=parameterize_cosmology_Mpc(self.cosmo,z_star=z,kp_Mpc=self.kp)
@@ -166,7 +198,7 @@ def fit_linP_kms(cosmo,z_star,kp_kms,deg=2):
     return P_fit
 
 
-def parameterize_cosmology_Mpc(cosmo,z_star=3,kp_Mpc=0.7):
+def parameterize_cosmology_Mpc(cosmo,z_star,kp_Mpc):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in Mpc)."""
     # get logarithmic growth rate at z_star, around kp_Mpc
@@ -188,7 +220,7 @@ def parameterize_cosmology_Mpc(cosmo,z_star=3,kp_Mpc=0.7):
     return results
 
 
-def parameterize_cosmology_kms(cosmo,z_star=3,kp_kms=0.009):
+def parameterize_cosmology_kms(cosmo,z_star,kp_kms):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in km/s)."""
     # get logarithmic growth rate at z_star, around kp_Mpc

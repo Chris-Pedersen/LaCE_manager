@@ -3,7 +3,7 @@ import base_p1d_data
 
 class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,basedir='../data_files/PD2013/',use_FFT=True,
+    def __init__(self,basedir='../../p1d_data/data_files/PD2013/',use_FFT=True,
                 add_syst=True,blind_data=False):
         """Read measured P1D from files, either FFT or likelihood version.
             If blind_data=True, use analytical formula instead."""

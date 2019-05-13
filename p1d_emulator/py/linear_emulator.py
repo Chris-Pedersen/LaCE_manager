@@ -10,8 +10,9 @@ import poly_p1d
 class LinearEmulator(object):
     """Linear interpolation emulator for flux P1D."""
 
-    def __init__(self,basedir='../mini_sim_suite/',
-            p1d_label='p1d',skewers_label='Ns50_wM0.1',
+    def __init__(self,
+            basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
+            p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
             emulate_running=False,emulate_growth=False,
             deg=4,kmax_Mpc=10.0,max_arxiv_size=None,verbose=True):
         """Setup emulator from base sim directory and label identifying skewer

@@ -2,12 +2,15 @@ import numpy as np
 import camb_cosmo
 import fit_linP
 import recons_cosmo
+import mean_flux_model
 import thermal_model
+import linear_emulator
 
 class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
-    def __init__(self,zs,emulator,cosmo_fid=None,verbose=True): 
+    def __init__(self,zs,emulator=None,cosmo_fid=None,
+            mf_model=None,T_model=None,verbose=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -17,13 +20,27 @@ class LyaTheory(object):
 
         self.verbose=verbose
         self.zs=zs
-        self.emulator=emulator
+        if emulator:
+            self.emulator=emulator
+        else:
+            self.emulator=linear_emulator.LinearEmulator(verbose=verbose)
+
         # setup object to compute linear power for any cosmology
         self.cosmo=recons_cosmo.ReconstructedCosmology(zs,cosmo_fid=cosmo_fid)
 
-        # at this point we do not know the models to evaluate
-        self.mf_model = None
-        self.T_model = None
+        # setup mean flux model
+        if mf_model:
+            self.mf_model = mf_model
+        else:
+            if self.verbose: print('use default mean flux model')
+            self.mf_model = mean_flux_model.MeanFluxModel()
+
+        # setup thermal model
+        if T_model:
+            self.T_model = T_model
+        else:
+            if self.verbose: print('use default thermal model')
+            self.T_model = thermal_model.ThermalModel()
 
 
     def set_mf_model(self,mf_model):
@@ -83,4 +100,33 @@ class LyaTheory(object):
             p1d_kms.append(p1d_Mpc * dkms_dMpc)
 
         return p1d_kms
+
+
+    def get_parameters(self):
+        """Return parameters in models, even if not free parameters"""
+
+        params=self.mf_model.get_parameters()
+        for par in self.T_model.get_T0_parameters():
+            params.append(par)
+        for par in self.T_model.get_gamma_parameters():
+            params.append(par)
+
+        if self.verbose:
+            print('got parameters')
+            for par in params:
+                print(par.info_str())
+
+        return params
+
+
+    def update_parameters(self,parameters):
+        """Update internal theories with input list of parameters"""
+
+        # count how many have been updated
+        counts=self.mf_model.update_parameters(parameters)
+        if self.verbose: print('updated',counts,'mean flux parameters')
+        counts+=self.T_model.update_parameters(parameters)
+        if self.verbose: print('updated',counts,'IGM parameters')
+
+        return
 

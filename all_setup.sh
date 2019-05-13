@@ -1,4 +1,5 @@
-for DIR in lya_cosmo lya_likelihood lya_nuisance p1d_data p1d_emulator post_process setup_simulations user_interface
+#for DIR in lya_sampler post_process setup_simulations lya_cosmo p1d_data lya_likelihood p1d_emulator user_interface lya_nuisance
+for DIR in post_process setup_simulations lya_cosmo p1d_data lya_likelihood p1d_emulator user_interface lya_nuisance
 do
     cd $DIR
     python setup.py install

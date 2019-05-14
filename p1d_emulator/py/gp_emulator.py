@@ -3,6 +3,7 @@ import numpy as np
 import p1d_arxiv
 import pickle
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 class GPEmulator:
     """
@@ -11,8 +12,8 @@ class GPEmulator:
     a given P_1D(k) for the same k-bins used in training.
     GPEmulator.predict takes models in a dictionary format currently.
     """
-    def __init__(self,basedir='../mini_sim_suite/',
-		p1d_label='p1d',skewers_label='Ns50_wM0.1',
+    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
+		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None):
 
@@ -24,6 +25,7 @@ class GPEmulator:
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
+        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
         	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
@@ -34,9 +36,9 @@ class GPEmulator:
         ## Grid that will contain all training params
         params=np.empty([len(self.arxiv.data),len(paramList)])
         ## Array to contain our training data
-        P1D_k=np.empty([len(self.arxiv.data),self.k_bin-1]) ## -1 as we ignore the 0th k bin
+        P1D_k=np.empty([len(self.arxiv.data),self.k_bin]) ## -1 as we ignore the 0th k bin
         for aa in range(len(self.arxiv.data)):
-            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin] ## Collect P1D data for all k bins
+            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin] ## Collect P1D data for all k bins
             for bb in range(len(paramList)):
                 params[aa][bb]=arxiv.data[aa][paramList[bb]] ## Populate parameter grid
         return params,P1D_k
@@ -85,29 +87,17 @@ class GPEmulator:
             paramLimits[aa,0]=min(paramGrid[:,aa])
             paramLimits[aa,1]=max(paramGrid[:,aa])
         return paramLimits
-            
-    def predict(self,model):
-        ## Method to return P1D for a given parameter set
-        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
-        param=[]
-        for par in self.paramList:
-            ## Rescale input parameters
-            param.append(model[par])
-        for aa in range(len(self.paramList)):
-            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
-        pred,err=self.gp.predict(np.array(param).reshape(1,-1))
-        return (pred+1)*self.scalefactors,np.sqrt(err)*self.scalefactors
 
     def saveEmulator(self,saveName):
         pickle.dump(self.gp,open(saveName+".p", "wb" ))
         print("GP emulator object saved as:" + saveName + ".p")
 
-    def train(self,spects):
+    def train(self):
         '''
         Train the emulator.
         spects is the arxiv object to train on
         '''
-        self._build_interp(spects,self.paramList)
+        self._build_interp(self.arxiv,self.paramList)
 
     def crossValidation(self,testSample=0.25,plotIndividual=False):
         paramList=self.paramList
@@ -155,6 +145,7 @@ class GPEmulator:
         ## Now predict from the remaining test values
         ## Mean comes out in shape (# of models, # of k bins)
         ## Std comes out with # of models
+        print("test params shape",np.shape(params_test))
         mean,std=self.gp.predict(params_test)
 
         std=np.sqrt(std)
@@ -166,14 +157,17 @@ class GPEmulator:
             ## along with the predicted P(k)
             sample=np.random.randint(trainingLen,trainingLen+testLen)
             predictedP,err=self.gp.predict(params[sample].reshape(1,-1))
+            #err=np.full(len(predictedP),np.sqrt(err)*self.scalefactors)
             predictedP=np.hstack(predictedP)
             predictedP=(predictedP+1)*self.scalefactors
-            truek=self.arxiv.data[sample]["k_Mpc"][1:]
-            trueP=self.arxiv.data[sample]["p1d_Mpc"][1:]
+            truek=self.arxiv.data[sample]["k_Mpc"][1:self.k_bin]
+            trueP=self.arxiv.data[sample]["p1d_Mpc"][1:self.k_bin]
             plt.figure()
-            plt.title("Truth and predicted for a random model")
-            plt.semilogx(truek,truek*trueP,label="True")
-            plt.semilogx(truek[:len(predictedP)],predictedP*truek[:len(predictedP)],label="Predicted",linestyle="dashed")
+            plt.title("Truth and predicted for a random test model #%d" % sample)
+            plt.plot(np.log10(truek),truek*trueP,label="True")
+            plt.plot(np.log10(truek[:len(predictedP)]),predictedP*truek[:len(predictedP)],label="Predicted",linestyle="dashed")
+            #plt.errorbar(np.log10(truek[:len(predictedP)]),predictedP*truek[:len(predictedP)],yerr=np.sqrt(err),label="Predicted",linestyle="dashed")
+            plt.xlabel("log k")
             plt.legend()
 
         ## Generate mock Gaussian to overlay
@@ -186,6 +180,37 @@ class GPEmulator:
         plt.xlim(-6,6)
         plt.xlabel("(predicted-truth)/std")
         plt.show()
+
+    def predict(self,model):
+        ## Method to return P1D for a given parameter set
+        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+        param=[]
+        for par in self.paramList:
+            ## Rescale input parameters
+            param.append(model[par])
+        for aa in range(len(self.paramList)):
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        pred,err=self.gp.predict(np.array(param).reshape(1,-1))
+        return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+
+    def emulate_p1d_Mpc(self,model,k_Mpc,returnErrors=False):
+        '''
+        Method to return the trained P(k) for an arbitrary set of k bins
+        by interpolating the trained data
+        '''
+        if min(k_Mpc)<self.training_k_bins[1]:
+            print("Warning! Your requested k bins contain values lower than k_box")
+        if max(k_Mpc)>max(self.training_k_bins):
+            print("Warning! Your requested k bins are higher than the training values.")
+        pred,err=self.predict(model)
+        interpolator=interp1d(self.training_k_bins,pred, "cubic")
+        interpolated_P=interpolator(k_Mpc)
+        if returnErrors==True:
+            error_interp=interp1d(self.training_k_bins,err, "cubic")
+            error=error_interp(k_Mpc)
+            return interpolated_P, error
+        else:
+            return interpolated_P
 
 
 class PolyfitGPEmulator:
@@ -218,7 +243,7 @@ class GP_k_Emulator:
     """ This GP emulator will also train on the k values themselves.
     """
     def __init__(self,basedir='../mini_sim_suite/',
-		p1d_label='p1d',skewers_label='Ns50_wM0.1',
+		p1d_label='p1d',skewers_label='Ns50_wM0.1', num_k_bins=None,
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None):
         self.kmax_Mpc=kmax_Mpc
@@ -278,13 +303,6 @@ class GP_k_Emulator:
             bb+=1
                   
         
-        '''
-        for aa in range(len(self.arxiv.data)):
-            for bb in range(1,self.k_bin):
-            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin] ## Collect P1D data for all k bins
-            for bb in range(len(paramList)):
-                params[aa][bb]=arxiv.data[aa][paramList[bb]] ## Populate parameter grid
-        '''
         ## Rescaling to unit volume
         self.maxParams=np.empty(len(paramList))
         self.minParams=np.empty(len(paramList))

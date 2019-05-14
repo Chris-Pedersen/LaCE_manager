@@ -12,8 +12,8 @@ class GPEmulator:
     a given P_1D(k) for the same k-bins used in training.
     GPEmulator.predict takes models in a dictionary format currently.
     """
-    def __init__(self,basedir='../mini_sim_suite/',
-		p1d_label='p1d',skewers_label='Ns50_wM0.1',
+    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
+		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None):
 
@@ -348,3 +348,4 @@ class GP_k_Emulator:
 
     def train(self,spects):
         self._build_interp(spects,self.paramList)
+        

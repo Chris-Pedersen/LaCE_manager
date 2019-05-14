@@ -48,12 +48,8 @@ class Likelihood(object):
 
         # select parameters using input list of names
         for par in params:
-            print('par',par.info_str())
             if par.name in free_parameter_names:
-                print('free')
                 self.free_params.append(par)
-            else:
-                print('fixed')
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)
@@ -114,7 +110,7 @@ class Likelihood(object):
         return chi2
 
 
-    def log_prob(self,values,linP_Mpc_params):
+    def log_prob(self,values,linP_Mpc_params=None):
 
         # for now priors are top hats in 0 < x < 1
         if max(values) > 1.0:

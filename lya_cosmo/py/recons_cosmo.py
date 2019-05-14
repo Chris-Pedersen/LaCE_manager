@@ -1,5 +1,5 @@
-import os
 import numpy as np
+import os
 import camb
 import camb_cosmo
 import fit_linP
@@ -40,12 +40,12 @@ class ReconstructedCosmology(object):
                             z_star=self.z_star,k_units='kms',kp=self.kp_kms)
         else:
             if self.verbose: print('no input linear power model')
-            self.linP_model=None
             # compute linear power model for fiducial cosmology
             self.linP_model_fid=fit_linP.LinearPowerModel(cosmo=self.cosmo_fid)
             self.z_star=self.linP_model_fid.z_star
             self.kp_kms=self.linP_model_fid.kp
-
+            linP_fid_params=self.linP_model_fid.get_params()
+            self.linP_model=fit_linP.LinearPowerModel(params=linP_fid_params)
 
         # whether to model z-evolution of logarithmic growth rate with fiducial
         self.use_constant_f=use_constant_f

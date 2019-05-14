@@ -28,7 +28,7 @@ class ThermalModel(object):
     def get_sigT_kms(self,z):
         """Thermal broadening at the input redshift, in km/s"""
         T0=self.get_T0(z)
-        return thermal_broadening_kms(T_0)
+        return thermal_broadening_kms(T0)
 
     def get_gamma(self,z):
         """gamma at the input redshift"""

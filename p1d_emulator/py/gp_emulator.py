@@ -348,4 +348,3 @@ class GP_k_Emulator:
 
     def train(self,spects):
         self._build_interp(spects,self.paramList)
-        

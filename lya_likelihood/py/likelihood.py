@@ -48,8 +48,12 @@ class Likelihood(object):
 
         # select parameters using input list of names
         for par in params:
+            print('par',par.info_str())
             if par.name in free_parameter_names:
+                print('free')
                 self.free_params.append(par)
+            else:
+                print('fixed')
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)

@@ -105,7 +105,9 @@ class LyaTheory(object):
     def get_parameters(self):
         """Return parameters in models, even if not free parameters"""
 
-        params=self.mf_model.get_parameters()
+        params=self.cosmo.linP_model.get_likelihood_parameters()
+        for par in self.mf_model.get_parameters():
+            params.append(par)
         for par in self.T_model.get_T0_parameters():
             params.append(par)
         for par in self.T_model.get_gamma_parameters():
@@ -123,10 +125,12 @@ class LyaTheory(object):
         """Update internal theories with input list of parameters"""
 
         # count how many have been updated
-        counts=self.mf_model.update_parameters(parameters)
-        if self.verbose: print('updated',counts,'mean flux parameters')
+        counts=self.cosmo.linP_model.update_parameters(parameters)
+        if self.verbose: print('updated',counts,'linP parameters')
+        counts+=self.mf_model.update_parameters(parameters)
+        if self.verbose: print('updated',counts,'after mean flux parameters')
         counts+=self.T_model.update_parameters(parameters)
-        if self.verbose: print('updated',counts,'IGM parameters')
+        if self.verbose: print('updated',counts,'after thermal parameters')
 
         return
 

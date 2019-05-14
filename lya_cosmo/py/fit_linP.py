@@ -1,7 +1,8 @@
-import os
 import numpy as np
+import os
 import camb
 import camb_cosmo
+import likelihood_parameter
 
 
 class LinearPowerModel(object):
@@ -87,6 +88,48 @@ class LinearPowerModel(object):
             else:
                 raise ValueError('k_units not recognized '+self.k_units)
         return params
+
+
+    def get_likelihood_parameters(self):
+        """Tell likelihood about the linear power parameters"""
+
+        params=[]
+        params.append(likelihood_parameter.LikelihoodParameter(
+                        name='g_star',min_value=0.95,max_value=0.99,
+                        value=self.linP_params['g_star']))
+        params.append(likelihood_parameter.LikelihoodParameter(
+                        name='f_star',min_value=0.95,max_value=0.99,
+                        value=self.linP_params['f_star']))
+        params.append(likelihood_parameter.LikelihoodParameter(
+                        name='Delta2_star',min_value=0.3,max_value=0.5,
+                        value=self.linP_params['Delta2_star']))
+        params.append(likelihood_parameter.LikelihoodParameter(
+                        name='n_star',min_value=-2.35,max_value=-2.25,
+                        value=self.linP_params['n_star']))
+        params.append(likelihood_parameter.LikelihoodParameter(
+                        name='alpha_star',min_value=-0.27,max_value=-0.16,
+                        value=self.linP_params['alpha_star']))
+
+        return params
+
+
+    def update_parameters(self,parameters):
+        """Update linear power parameters, if present in input list"""
+
+        # get current dictionary with parameters, update and setup again
+        params=self.get_params()
+
+        # count how many parameters were updated
+        counts=0
+        for par in parameters:
+            if par.name in params:
+                params[par.name]=par.value
+                #print(par.info_str(),'updated',params[par.name])
+                counts+=1
+
+        self._setup_from_parameters(params)
+
+        return counts
 
 
     def get_f_star(self):

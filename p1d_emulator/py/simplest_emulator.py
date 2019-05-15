@@ -10,6 +10,7 @@ class SimplestEmulator(object):
 
     def __init__(self,basedir='../mini_sim_suite/',
                 p1d_label='p1d',skewers_label='Ns50_wM0.1',
+                drop_tau_rescalings=False,drop_temp_rescalings=False,
                 max_arxiv_size=None,verbose=True):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
@@ -18,7 +19,9 @@ class SimplestEmulator(object):
 
         # read all files with P1D measured in simulation suite
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-                    max_arxiv_size,verbose)
+                        drop_tau_rescalings=drop_tau_rescalings,
+                        drop_temp_rescalings=drop_temp_rescalings,
+                        max_arxiv_size=max_arxiv_size,verbose=verbose)
 
         # define metric to compute distances between models
         self.metric=self.set_distance_metric()

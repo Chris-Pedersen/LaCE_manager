@@ -21,7 +21,7 @@ class GPEmulator:
         self.basedir=basedir
         # read all files with P1D measured in simulation suite
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-        	max_arxiv_size,verbose)
+                                max_arxiv_size=max_arxiv_size,verbose=verbose)
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))

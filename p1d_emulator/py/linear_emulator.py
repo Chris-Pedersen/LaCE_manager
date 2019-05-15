@@ -14,6 +14,7 @@ class LinearEmulator(object):
             basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
             p1d_label='p1d',skewers_label='Ns110_wM0.1',
             emulate_running=False,emulate_growth=False,
+            drop_tau_rescalings=False,drop_temp_rescalings=False,
             deg=4,kmax_Mpc=10.0,max_arxiv_size=None,verbose=True):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
@@ -22,7 +23,9 @@ class LinearEmulator(object):
 
         # read all files with P1D measured in simulation suite
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-                    max_arxiv_size,verbose)
+                    drop_tau_rescalings=drop_tau_rescalings,
+                    drop_temp_rescalings=drop_temp_rescalings,
+                    max_arxiv_size=max_arxiv_size,verbose=verbose)
 
         # for each model in arxiv, fit smooth function to P1D
         self._fit_p1d_in_arxiv(deg,kmax_Mpc)

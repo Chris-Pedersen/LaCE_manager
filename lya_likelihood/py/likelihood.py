@@ -183,26 +183,40 @@ class Likelihood(object):
         return
 
 
-    def overplot_emulator_calls(self,param_1,param_2,linP_Mpc_params=None):
+    def overplot_emulator_calls(self,param_1,param_2,tau_scalings=True,
+                                    temp_scalings=True,linP_Mpc_params=None):
         """For parameter pair (param1,param2), overplot emulator calls
             with values stored in arxiv, color coded by redshift"""
 
+        # mask post-process scalings (optional)
+        emu_data=self.theory.emulator.arxiv.data
+        Nemu=len(emu_data)
+        if not tau_scalings:
+            mask_tau=[x['scale_tau']==1.0 for x in emu_data]
+        else:
+            mask_tau=[True]*Nemu
+        if not temp_scalings:
+            mask_temp=[(x['scale_T0']==1.0) 
+                        & (x['scale_gamma']==1.0) for x in emu_data]
+        else:
+            mask_temp=[True]*Nemu
+
+        # figure out values of param_1,param_2 in arxiv
+        emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+        emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+
         # get emulator calls
         emu_calls=self.theory.get_emulator_calls(linP_Mpc_params)
-
         # figure out values of param_1,param_2 called
         call_1=[emu_call[param_1] for emu_call in emu_calls]
         call_2=[emu_call[param_2] for emu_call in emu_calls]
 
-        # figure out values of param_1,param_2 in arxiv
-        emu_data=self.theory.emulator.arxiv.data
-        Nemu=len(emu_data)
-        emu_1=np.array([emu_data[i][param_1] for i in range(Nemu)])
-        emu_2=np.array([emu_data[i][param_2] for i in range(Nemu)])
-
         # overplot
         zs=self.data.z
-        emu_z=np.array([emu_data[i]['z'] for i in range(Nemu)])
+        emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
         zmin=min(min(emu_z),min(zs))
         zmax=max(max(emu_z),max(zs))
         plt.scatter(emu_1,emu_2,c=emu_z,s=1,vmin=zmin, vmax=zmax)

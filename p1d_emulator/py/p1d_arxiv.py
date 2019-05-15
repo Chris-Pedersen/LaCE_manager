@@ -8,19 +8,20 @@ class ArxivP1D(object):
 
     def __init__(self,basedir='../mini_sim_suite/',
                 p1d_label='p1d',skewers_label=None,
+                drop_tau_rescalings=False,drop_temp_rescalings=False,
                 max_arxiv_size=None,verbose=True):
         """Load arxiv from base sim directory and (optional) label
-            identifyingskewer configuration (number, width)"""
+            identifying skewer configuration (number, width)"""
 
         self.basedir=basedir
         self.p1d_label=p1d_label
         self.skewers_label=skewers_label
         self.verbose=verbose
 
-        self._load_data(max_arxiv_size)
+        self._load_data(drop_tau_rescalings,drop_temp_rescalings,max_arxiv_size)
 
 
-    def _load_data(self,max_arxiv_size):
+    def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,max_arxiv_size):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -105,30 +106,49 @@ class ArxivP1D(object):
                                     len(minus_data['p1d_data'][pp]['k_Mpc']))
                         raise ValueError('different k_Mpc in minus/plus')
                     # average plus + minus stats
-                    plus_mF = plus_data['p1d_data'][pp]['mF']
-                    minus_mF = minus_data['p1d_data'][pp]['mF']
+                    plus_pp=plus_data['p1d_data'][pp]
+                    minus_pp=minus_data['p1d_data'][pp]
+                    plus_mF = plus_pp['mF']
+                    minus_mF = minus_pp['mF']
                     pair_mF = 0.5*(plus_mF+minus_mF)
                     p1d_data['mF'] = pair_mF 
-                    p1d_data['T0'] = 0.5*(plus_data['p1d_data'][pp]['sim_T0']+minus_data['p1d_data'][pp]['sim_T0'])
-                    p1d_data['gamma'] = 0.5*(plus_data['p1d_data'][pp]['sim_gamma']+minus_data['p1d_data'][pp]['sim_gamma'])
-                    p1d_data['sigT_Mpc'] = 0.5*(plus_data['p1d_data'][pp]['sim_sigT_Mpc']+minus_data['p1d_data'][pp]['sim_sigT_Mpc'])
+                    p1d_data['T0'] = 0.5*(plus_pp['sim_T0']+minus_pp['sim_T0'])
+                    p1d_data['gamma'] = 0.5*(plus_pp['sim_gamma']
+                                            +minus_pp['sim_gamma'])
+                    p1d_data['sigT_Mpc'] = 0.5*(plus_pp['sim_sigT_Mpc']
+                                            +minus_pp['sim_sigT_Mpc'])
+                    # store also scalings used
+                    p1d_data['scale_T0'] = plus_pp['sim_scale_T0']
+                    p1d_data['scale_gamma'] = plus_pp['sim_scale_gamma']
+                    p1d_data['scale_tau'] = plus_pp['scale_tau']
                     # compute average of < F F >, not <delta delta> 
-                    plus_p1d = np.array(plus_data['p1d_data'][pp]['p1d_Mpc'])
-                    minus_p1d = np.array(minus_data['p1d_data'][pp]['p1d_Mpc'])
-                    pair_p1d = (plus_p1d * plus_mF**2 + minus_p1d * minus_mF**2) / pair_mF
+                    plus_p1d = np.array(plus_pp['p1d_Mpc'])
+                    minus_p1d = np.array(minus_pp['p1d_Mpc'])
+                    pair_p1d = (plus_p1d * plus_mF**2
+                                + minus_p1d * minus_mF**2) / pair_mF
                     p1d_data['k_Mpc'] = k_Mpc
                     p1d_data['p1d_Mpc'] = pair_p1d
                     self.data.append(p1d_data)                
-        
+
+        if drop_tau_rescalings:
+            if self.verbose: print('will drop tau scalings from arxiv')
+            self._drop_tau_rescalings()
+        if drop_temp_rescalings:
+            if self.verbose: print('will drop temperature scalings from arxiv')
+            self._drop_temperature_rescalings()
+
         if max_arxiv_size is not None:
             Ndata=len(self.data)
             if Ndata > max_arxiv_size:
+                if self.verbose: print('will keep only',max_arxiv_size,'entries')
                 keep=np.random.randint(0,Ndata,max_arxiv_size)
                 keep_data=[self.data[i] for i in keep]
                 self.data=keep_data
 
         if self.verbose:
             print('Arxiv setup, containing %d entries'%len(self.data))
+
+        
 
         N=len(self.data)
 
@@ -144,7 +164,26 @@ class ArxivP1D(object):
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
- 
+
+        return
+
+
+    def _drop_tau_rescalings(self):
+        """Keep only entries with scale_tau=1"""
+
+        data = [x for x in self.data if x['scale_tau']==1.0]
+        self.data = data
+        return
+
+
+    def _drop_temperature_rescalings(self):
+        """Keep only entries with scale_T0=1 and scale_gamma=1"""
+
+        data = [x for x in self.data if ((x['scale_T0']==1.0)
+                                                & (x['scale_gamma']==1.0))]
+        self.data = data
+        return
+
 
     def print_entry(self,entry,keys=['z','Delta2_p','n_p','alpha_p','f_p',
                                     'mF','sigT_Mpc','gamma']):
@@ -158,4 +197,5 @@ class ArxivP1D(object):
         for key in keys:
             info += ', {} = {:.4f}'.format(key,data[key])
         print(info)
+
 

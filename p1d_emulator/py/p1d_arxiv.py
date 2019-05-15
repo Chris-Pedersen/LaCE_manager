@@ -117,9 +117,11 @@ class ArxivP1D(object):
                                             +minus_pp['sim_gamma'])
                     p1d_data['sigT_Mpc'] = 0.5*(plus_pp['sim_sigT_Mpc']
                                             +minus_pp['sim_sigT_Mpc'])
-                    # store also scalings used
-                    p1d_data['scale_T0'] = plus_pp['sim_scale_T0']
-                    p1d_data['scale_gamma'] = plus_pp['sim_scale_gamma']
+                    # store also scalings used (not present in old versions)
+                    if 'sim_scale_T0' in plus_pp:
+                        p1d_data['scale_T0'] = plus_pp['sim_scale_T0']
+                    if 'sim_scale_gamma' in plus_pp:
+                        p1d_data['scale_gamma'] = plus_pp['sim_scale_gamma']
                     p1d_data['scale_tau'] = plus_pp['scale_tau']
                     # compute average of < F F >, not <delta delta> 
                     plus_p1d = np.array(plus_pp['p1d_Mpc'])

@@ -15,7 +15,7 @@ class GPEmulator:
     def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
 		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
-                paramList=None):
+                paramList=None,train=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -31,6 +31,10 @@ class GPEmulator:
         	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
         else:
         	self.paramList=paramList
+
+        if train:
+            if verbose: print('will train GP emulator')
+            self.train()
 
     def _buildTrainingSets(self,arxiv,paramList):
         ## Grid that will contain all training params

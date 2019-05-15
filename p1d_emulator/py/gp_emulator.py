@@ -93,10 +93,6 @@ class GPEmulator:
         print("GP emulator object saved as:" + saveName + ".p")
 
     def train(self):
-        '''
-        Train the emulator.
-        spects is the arxiv object to train on
-        '''
         self._build_interp(self.arxiv,self.paramList)
 
     def crossValidation(self,testSample=0.25,plotIndividual=False):
@@ -160,8 +156,8 @@ class GPEmulator:
             #err=np.full(len(predictedP),np.sqrt(err)*self.scalefactors)
             predictedP=np.hstack(predictedP)
             predictedP=(predictedP+1)*self.scalefactors
-            truek=self.arxiv.data[sample]["k_Mpc"][1:self.k_bin]
-            trueP=self.arxiv.data[sample]["p1d_Mpc"][1:self.k_bin]
+            truek=self.arxiv.data[sample]["k_Mpc"][:self.k_bin]
+            trueP=self.arxiv.data[sample]["p1d_Mpc"][:self.k_bin]
             plt.figure()
             plt.title("Truth and predicted for a random test model #%d" % sample)
             plt.plot(np.log10(truek),truek*trueP,label="True")
@@ -201,6 +197,8 @@ class GPEmulator:
         if min(k_Mpc)<self.training_k_bins[1]:
             print("Warning! Your requested k bins contain values lower than k_box")
         if max(k_Mpc)>max(self.training_k_bins):
+            print(max(k_Mpc))
+            print(max(self.training_k_bins))
             print("Warning! Your requested k bins are higher than the training values.")
         pred,err=self.predict(model)
         interpolator=interp1d(self.training_k_bins,pred, "cubic")
@@ -240,12 +238,13 @@ class PolyfitGPEmulator:
             p1d_Mpc = entry['p1d_Mpc']
 
 class GP_k_Emulator:
-    """ This GP emulator will also train on the k values themselves.
+    """ 
+    This GP emulator will also train on the k values themselves.
     """
-    def __init__(self,basedir='../mini_sim_suite/',
-		p1d_label='p1d',skewers_label='Ns50_wM0.1', num_k_bins=None,
+    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
+		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
-                paramList=None):
+                paramList=None,binSampling=None,binsPerModel=5):
         self.kmax_Mpc=kmax_Mpc
         # read all files with P1D measured in simulation suite
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
@@ -253,11 +252,32 @@ class GP_k_Emulator:
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
+
         ## If none, take all parameters
         if paramList==None:
         	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","k_Mpc"]
         else:
         	self.paramList=paramList
+
+        if binSampling==None:
+            self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
+        else:
+            self.training_k_bins=self.arxiv.data[0]["k_Mpc"][0:self.k_bin:self.binSampling]
+
+        self.binsPerModel=binsPerModel
+
+    def _get_param_limits(self,paramGrid):
+        paramLimits=np.empty((np.shape(paramGrid)[1],2))
+        for aa in range(len(paramLimits)):
+            paramLimits[aa,0]=min(paramGrid[:,aa])
+            paramLimits[aa,1]=max(paramGrid[:,aa])
+        return paramLimits
+
+    def _rescale_params(self,params,paramLimits):
+        ''' Rescale a set of parameters to have a unit volume '''
+        for aa in range(len(params)):
+            params[aa]=((params[aa]-paramLimits[aa,0])/(paramLimits[aa,1]-paramLimits[aa,0]))
+        return params
 
     def _build_interp(self,arxiv,paramList):
         ''' Method to build an GP object from a spectra archive and list of parameters
@@ -268,50 +288,39 @@ class GP_k_Emulator:
         ## Determine size of our parameter grid
         ## each model will have n k bins
         ## so we have n*k models
-        numModels=len(self.arxiv.data)*(self.k_bin)
+        numModels=len(self.arxiv.data)*(self.binsPerModel)
 
         ## Grid that will contain all training params
         params=np.empty((numModels,len(paramList)))
 
         ## Array to contain our training data
         P1D_k=np.empty(numModels) ## -1 as we ignore the 0th k bin
-        print(len(arxiv.data))
-        print(self.k_bin)
-        print(numModels)
 
         ## Populate parameter grid except k column
         for aa in range(len(paramList)-1):
             cc=0
             for bb in range(numModels):
                 params[bb][aa]=arxiv.data[cc][paramList[aa]] 
-                if bb%(self.k_bin)==0 and bb!=0:
+                if bb%(self.binsPerModel)==0 and bb!=0:
                     cc+=1
-        print(bb)
-
 
         ## Now populate param grid with k values
         bb=1
         cc=0
         for aa in range(numModels):
-            if aa%self.k_bin==0 and aa!=0:
+            if aa%self.binsPerModel==0 and aa!=0:
                 bb=1
                 cc+=1
             ## cc needs to increase one time every time aa reaches %k_bin
             ## bb needs to restart from 0 at this point
-            P1D_k[aa]=arxiv.data[cc]["p1d_Mpc"][bb]
-            params[aa][-1]=arxiv.data[cc]["k_Mpc"][bb]
+            randModel=np.random.randint(self.k_bin)
+            P1D_k[aa]=arxiv.data[cc]["p1d_Mpc"][randModel]
+            params[aa][-1]=arxiv.data[cc]["k_Mpc"][randModel]
             bb+=1
                   
-        
-        ## Rescaling to unit volume
-        self.maxParams=np.empty(len(paramList))
-        self.minParams=np.empty(len(paramList))
-        for aa in range(len(paramList)):
-            self.maxParams[aa]=max(params[:,aa])
-            self.minParams[aa]=min(params[:,aa])
-        for cc in range(len(self.arxiv.data)):
-            for dd in range(len(paramList)):
-                params[cc][dd]=((params[cc][dd]-self.minParams[dd])/(self.maxParams[dd]-self.minParams[dd]))
+        self.paramLimits=self._get_param_limits(params)
+        for aa in range(numModels):
+            params[aa]=self._rescale_params(params[aa],self.paramLimits)
         print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
@@ -325,26 +334,26 @@ class GP_k_Emulator:
         kernel = GPy.kern.Linear(len(paramList))
         kernel += GPy.kern.RBF(len(paramList))
 
-        print("Training GP")
+        print("Training GP on %d models" % numModels)
         self.gp = GPy.models.GPRegression(params,normspectra.reshape(-1,1),kernel=kernel, noise_var=1e-10)
         status = self.gp.optimize(messages=False) #True
         print("Optimised")
 
     def predict(self,model):
+        ## Method to return P1D for a given parameter set
         assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
         param=[]
-        ## Method to return P1D for a given parameter set
         for par in self.paramList:
             ## Rescale input parameters
             param.append(model[par])
         for aa in range(len(self.paramList)):
-            param[aa]=(param[aa]-self.minParams[aa])/(self.maxParams[aa]-self.minParams[aa])
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
-        return (pred+1)*self.scalefactors,np.sqrt(err)*self.scalefactors
+        return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
     def saveEmulator(self,saveName):
         pickle.dump(self.gp,open(saveName+".p", "wb" ))
         print("GP emulator object saved as:" + saveName + ".p")
 
-    def train(self,spects):
-        self._build_interp(spects,self.paramList)
+    def train(self):
+        self._build_interp(self.arxiv,self.paramList)

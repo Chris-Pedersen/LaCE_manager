@@ -88,6 +88,8 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
     sim_gamma=[]
     sim_sigT_Mpc=[]
     sim_mf=[]
+    sim_scale_T0=[]
+    sim_scale_gamma=[]
     sk_files=[]
 
     for scale_T0 in scales_T0:
@@ -110,12 +112,17 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
             sim_T0.append(T0)
             sim_gamma.append(gamma)
             sim_sigT_Mpc.append(thermal_broadening_Mpc(T0,dkms_dMpc))
+            sim_scale_T0.append(scale_T0)
+            sim_scale_gamma.append(scale_gamma)
+            # store file name
             sk_files.append(sk_filename)
 
     sim_info['sim_T0']=sim_T0
     sim_info['sim_gamma']=sim_gamma
     sim_info['sim_mf']=sim_mf
     sim_info['sim_sigT_Mpc']=sim_sigT_Mpc
+    sim_info['sim_scale_T0']=sim_scale_T0
+    sim_info['sim_scale_gamma']=sim_scale_gamma
     sim_info['sk_files']=sk_files
 
     snapshot_filename=get_snapshot_json_filename(num,n_skewers,width_Mpc)

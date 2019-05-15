@@ -53,6 +53,8 @@ class SnapshotAdmin(object):
             sim_T0=self.data['sim_T0'][isk]
             sim_gamma=self.data['sim_gamma'][isk]
             sim_sigT_Mpc=self.data['sim_sigT_Mpc'][isk]
+            sim_scale_T0=self.data['sim_scale_T0'][isk]
+            sim_scale_gamma=self.data['sim_scale_gamma'][isk]
 
             # read skewers from HDF5 file
             skewers=grid_spec.GriddedSpectra(snap_num, simdir+'/output/',
@@ -68,6 +70,8 @@ class SnapshotAdmin(object):
                 info_p1d['sim_T0']=sim_T0
                 info_p1d['sim_gamma']=sim_gamma
                 info_p1d['sim_sigT_Mpc']=sim_sigT_Mpc
+                info_p1d['sim_scale_T0']=sim_scale_T0
+                info_p1d['sim_scale_gamma']=sim_scale_gamma
                 p1d_data.append(info_p1d)
 
         self.p1d_data=p1d_data

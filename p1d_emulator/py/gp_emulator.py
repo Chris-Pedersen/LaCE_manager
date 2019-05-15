@@ -198,7 +198,7 @@ class GPEmulator:
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
         '''
-        if min(k_Mpc)<self.training_k_bins[1]:
+        if False: # min(k_Mpc)<self.training_k_bins[1]:
             print("Warning! Your requested k bins contain values lower than k_box")
         if max(k_Mpc)>max(self.training_k_bins):
             print(max(k_Mpc))

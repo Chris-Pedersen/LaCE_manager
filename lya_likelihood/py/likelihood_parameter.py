@@ -27,7 +27,7 @@ class LikelihoodParameter(object):
     def set_from_cube(self,x):
         """Set parameter value from value in cube [0,1]."""
 
-        value=self.min_value+x*(self.max_value-self.min_value)
+        value=self.value_from_cube(x)
         self.value=value
         return
 
@@ -39,3 +39,9 @@ class LikelihoodParameter(object):
             info+=' , '+str(self.min_value)+' , '+str(self.max_value)
 
         return info
+
+
+    def value_from_cube(self,x):
+        """Given the value in range (xmin,xmax), return absolute value"""
+
+        return self.min_value+x*(self.max_value-self.min_value)

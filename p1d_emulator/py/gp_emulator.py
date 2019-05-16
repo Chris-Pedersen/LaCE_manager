@@ -12,16 +12,19 @@ class GPEmulator:
     a given P_1D(k) for the same k-bins used in training.
     GPEmulator.predict takes models in a dictionary format currently.
     """
-    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
-		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
+    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
+		p1d_label='p1d',skewers_label='Ns110_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
-                paramList=None,train=False):
+                paramList=None,train=False,drop_tau_rescalings=False,
+                drop_temp_rescalings=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
         # read all files with P1D measured in simulation suite
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-                                max_arxiv_size=max_arxiv_size,verbose=verbose)
+                                max_arxiv_size=max_arxiv_size,verbose=verbose,
+                                drop_tau_rescalings=drop_tau_rescalings,
+                                drop_temp_rescalings=drop_temp_rescalings)
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))

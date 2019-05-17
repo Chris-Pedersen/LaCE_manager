@@ -30,14 +30,14 @@ class Likelihood(object):
         # setup parameters
         if not free_parameters:
             free_parameters=['ln_tau_0']
-        self._setup_free_parameters(free_parameters)
+        self.set_free_parameters(free_parameters)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
         return
 
 
-    def _setup_free_parameters(self,free_parameter_names):
+    def set_free_parameters(self,free_parameter_names):
         """Setup likelihood parameters that we want to vary"""
 
         # setup list of likelihood free parameters
@@ -78,7 +78,7 @@ class Likelihood(object):
         return
 
 
-    def get_chi2(self,linP_Mpc_params=None):
+    def get_chi2(self):
         """Compute chi2 using data and theory"""
 
         # get measured bins from data
@@ -87,7 +87,7 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.theory.get_p1d_kms(k_kms,linP_Mpc_params)
+        emu_p1d = self.theory.get_p1d_kms(k_kms)
         if self.verbose: print('got P1D from emulator')
 
         # compute chi2 contribution from each redshift bin
@@ -100,6 +100,10 @@ class Likelihood(object):
             # get data
             p1d=self.data.get_Pk_iz(iz)
             cov=self.data.get_cov_iz(iz)
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
             # compute chi2 for this redshift bin
             icov = np.linalg.inv(cov)
             diff = (p1d-emu_p1d[iz])
@@ -110,7 +114,7 @@ class Likelihood(object):
         return chi2
 
 
-    def log_prob(self,values,linP_Mpc_params=None):
+    def log_prob(self,values):
 
         # for now priors are top hats in 0 < x < 1
         if max(values) > 1.0:
@@ -122,7 +126,11 @@ class Likelihood(object):
         self.update_parameters(values)
 
         # compute chi2
-        chi2=self.get_chi2(linP_Mpc_params=linP_Mpc_params)
+        chi2=self.get_chi2()
+        if chi2 is None:
+            if self.verbose: print('was not able to emulate at least on P1D')
+            return -np.inf
+
         loglike=-0.5*chi2
 
         return loglike
@@ -148,7 +156,7 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,linP_Mpc_params=None,plot_only_few_bins=False):
+    def plot_p1d(self,plot_only_few_bins=False):
         """Plot P1D in theory vs data. If plot_only_iz is set,
             plot only few redshift bins"""
 
@@ -158,7 +166,7 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.theory.get_p1d_kms(k_kms,linP_Mpc_params)
+        emu_p1d = self.theory.get_p1d_kms(k_kms)
         if self.verbose: print('got P1D from emulator')
 
         # plot only few redshifts for clarity
@@ -168,6 +176,9 @@ class Likelihood(object):
             p1d_data=self.data.get_Pk_iz(iz)
             p1d_cov=self.data.get_cov_iz(iz)
             p1d_theory=emu_p1d[iz]
+            if p1d_theory is None:
+                if self.verbose: print(z,'emulator did not provide P1D')
+                continue
             # plot everything
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
@@ -184,7 +195,7 @@ class Likelihood(object):
 
 
     def overplot_emulator_calls(self,param_1,param_2,tau_scalings=True,
-                                    temp_scalings=True,linP_Mpc_params=None):
+                                                    temp_scalings=True):
         """For parameter pair (param1,param2), overplot emulator calls
             with values stored in arxiv, color coded by redshift"""
 
@@ -208,7 +219,7 @@ class Likelihood(object):
                                                     mask_tau[i] & mask_temp[i])])
 
         # get emulator calls
-        emu_calls=self.theory.get_emulator_calls(linP_Mpc_params)
+        emu_calls=self.theory.get_emulator_calls()
         # figure out values of param_1,param_2 called
         call_1=[emu_call[param_1] for emu_call in emu_calls]
         call_2=[emu_call[param_2] for emu_call in emu_calls]

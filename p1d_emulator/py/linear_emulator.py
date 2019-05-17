@@ -108,6 +108,11 @@ class LinearEmulator(object):
         coeffs=np.empty(Npar)
         for i in range(Npar):
             coeffs[Npar-i-1] = self.linterps[i](point)
+            # linear interpolation can not extrapolate
+            if np.isnan(coeffs[Npar-i-1]):
+                if self.verbose:
+                    print('linear emulator failed',point)
+                    return None
         if self.verbose: print('got coefficients',coeffs)
 
         # set P1D object

@@ -63,6 +63,11 @@ class ReconstructedCosmology(object):
 
         # store linear power at all redshifts for fiducial cosmology
         self._compute_linP_Mpc_fid()
+    
+        # when running with fixed cosmology it is useful to keep this
+        self.linP_Mpc_params_fid=None
+
+        return
 
 
     def _compute_Hz_fid(self):
@@ -96,6 +101,21 @@ class ReconstructedCosmology(object):
         self.linP_Mpc_fid = P_Mpc
 
 
+    def linP_model_is_fiducial(self):
+        """Check if input linP model is same than fiducial"""
+
+        in_params=self.linP_model.get_params()
+        fid_params=self.linP_model_fid.get_params()
+
+        for key,value in in_params.items():
+            if value is not fid_params[key]:
+                if self.verbose: print('not using fiducial linP_model')
+                return False
+        
+        if self.verbose: print('using fiducial linP_model')
+        return True
+        
+
     def get_linP_Mpc_params(self,linP_model=None):
         """Reconstruct linear power (in Mpc) for input linP_model and fit
             linear power parameters at each redshift. """
@@ -105,8 +125,16 @@ class ReconstructedCosmology(object):
             self.linP_model=linP_model
         else:
             if self.verbose: print('use stored linP_model')
-            if not self.linP_model:
-                raise ValueError('we need a model in get_linP_Mpc_Params')
+
+        # check if we are asking for the fiducial model
+        if self.linP_model_is_fiducial():
+            if self.linP_Mpc_params_fid:
+                if self.verbose:
+                    print('return pre-computed linP for fiducial cosmo')
+                return self.linP_Mpc_params_fid
+            else:
+                if self.verbose:
+                    print('will compute linP for fiducial cosmo')
 
         # wavenumbers that will be used in fit
         kp_Mpc=self.kp_Mpc
@@ -134,6 +162,11 @@ class ReconstructedCosmology(object):
             alpha_p=2.0*linP_fit[2]
             params={'Delta2_p':Delta2_p,'n_p':n_p,'alpha_p':alpha_p,'f_p':f_p}
             linP_Mpc_params.append(params)
+
+        if self.linP_model_is_fiducial():
+            self.linP_Mpc_params_fid=linP_Mpc_params
+            if self.verbose:
+                print('stored computed linP for fiducial cosmo')
 
         return linP_Mpc_params
 

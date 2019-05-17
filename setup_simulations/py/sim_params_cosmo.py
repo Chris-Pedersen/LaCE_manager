@@ -39,7 +39,8 @@ def cosmo_from_sim_params(param_space,sim_params,linP_model_fid,
     # get temporary cosmology to tune primordial power spectrum
     cosmo_temp=camb_cosmo.get_cosmology(H0=100.0*h)
     # get linear power parameters, in comoving units
-    linP_model_temp=fit_linP.LinearPowerModel(cosmo_temp,z_star,'Mpc',kp_Mpc)
+    linP_model_temp=fit_linP.LinearPowerModel(cosmo=cosmo_temp,z_star=z_star,
+                                                    k_units='Mpc',kp=kp_Mpc)
     Delta2_star_temp=linP_model_temp.get_Delta2_star()
     n_star_temp=linP_model_temp.get_n_star()
     alpha_star_temp=linP_model_temp.get_alpha_star()

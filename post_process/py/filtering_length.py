@@ -12,10 +12,11 @@ def fit_filtering_length(simdir, kmax_Mpc=15.0,
     print('read GADGET config file',paramfile)
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     Nsnap=len(zs)
+    outdir=simdir+'/output/'
 
     for num in range(Nsnap):
         z=zs[num]
-        snap=absn.AbstractSnapshotFactory(num,simdir,Tscale=1.0,gammascale=1.0)
+        snap=absn.AbstractSnapshotFactory(num,outdir,Tscale=1.0,gammascale=1.0)
         # sanity check
         z_snap= 1./snap.get_header_attr("Time") - 1.0
         print(num,'z =',z,'z_snap =',z_snap)
@@ -23,12 +24,12 @@ def fit_filtering_length(simdir, kmax_Mpc=15.0,
         print('HubbleParam =',hubble)
 
         snap_tag=str(num).rjust(3,'0')
-        snap_dir=os.path.join(simdir,"PART_"+snap_tag)
+        snap_dir=os.path.join(outdir,"PART_"+snap_tag)
         print(snap_tag,'snap dir =',snap_dir)
 
         cmd=genpk_full_path+' -i '+snap_dir+' -o '+simdir
         cmd+=' > info_'+snap_tag
         print('cmd =',cmd)
-        #os.system(cmd)
+        os.system(cmd)
 
         print('done')

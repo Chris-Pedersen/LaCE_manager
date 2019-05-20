@@ -3,7 +3,7 @@ import sys
 import json
 import configargparse
 from shutil import copy
-sys.path.append('/home/dc-font1/Codes/MP-Gadget/tools/')
+sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Master/tools/')
 import make_class_power
 import write_submit_simulation_dirac as wsd
 
@@ -54,21 +54,9 @@ for sample in range(nsamples):
     if verbose:
         print('writing scripts for pair in',pair_dir)
 
-    # full path to one of teh simulations in the pair
+    # full path to one each simulation in the pair
     plus_dir=pair_dir+'/sim_plus/'
-
-    # run make_class_power to generate matterpow.dat and transfer.dat
-    try:
-        failed=False
-        make_class_power.make_class_power(paramfile=plus_dir+'/paramfile.genic')
-        # copy to the other simulation in the pair
-        minus_dir=pair_dir+'/sim_minus/'
-        copy(plus_dir+'/matterpow.dat', minus_dir)
-        copy(plus_dir+'/transfer.dat', minus_dir)
-    except:
-        failed=True
-        print('you will have to run make_class manually for',sample)
-        continue
+    minus_dir=pair_dir+'/sim_minus/'
 
     # copy treecool file to both folders
     copy(treecool_file, plus_dir)
@@ -81,9 +69,22 @@ for sample in range(nsamples):
     minus_submit=minus_dir+'/simulation.sub'
     wsd.write_simulation_script(script_name=minus_submit,
                     simdir=minus_dir,nodes=nodes,time=time)
+
+    # run make_class_power to generate matterpow.dat and transfer.dat
+    try:
+        failed=False
+        make_class_power.make_class_power(paramfile=plus_dir+'/paramfile.genic')
+        # copy to the other simulation in the pair
+        copy(plus_dir+'/matterpow.dat', minus_dir)
+        copy(plus_dir+'/transfer.dat', minus_dir)
+    except:
+        failed=True
+        print('you will have to run make_class manually for',sample)
+
     if args.run:
         if failed:
             print('will NOT submit scripts, we need to run make_class')
+            continue
         total_nodes=2*args.nodes*nsamples
         if total_nodes < 100:
             print('will submit scripts, for a total of {} nodes'.format(total_nodes))

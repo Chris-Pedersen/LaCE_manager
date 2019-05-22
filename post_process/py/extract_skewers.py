@@ -83,7 +83,7 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
                 'T0_ini':T0_ini, 'gamma_ini':gamma_ini,
                 'scales_T0':scales_T0, 'scales_gamma':scales_gamma}
 
-    # will also stored measured values
+    # will also store measured values
     sim_T0=[]
     sim_gamma=[]
     sim_sigT_Mpc=[]

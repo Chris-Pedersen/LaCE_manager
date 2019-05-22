@@ -10,7 +10,8 @@ setup(name="post_process",
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/post_process",
     author="Andreu Font-Ribera",
     py_modules=['extract_skewers','temperature_density','filtering_length',
-                'snapshot_admin','measure_flux_power',
+                'flux_real_genpk','snapshot_admin','measure_flux_power',
+                'write_submit_genpk_dirac',
                 'write_submit_skewers_dirac','write_submit_p1d_dirac'],
     package_dir={'': 'py'})
 

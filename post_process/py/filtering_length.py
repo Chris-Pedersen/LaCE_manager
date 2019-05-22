@@ -7,16 +7,17 @@ import matplotlib.pyplot as plt
 import scipy.optimize as spo
 import fake_spectra.abstractsnapshot as absn
 import read_gadget
+import flux_real_genpk
 
 
 def power_spectrum_model(k, A, n, kF):
     return A * (k ** n) * np.exp(-1. * ((k /kF) ** 2))
 
 
-def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,
+def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,run_genpk=False,
                 genpk_full_path='/home/dc-font1/Codes/GenPK_Keir/gen-pk',
                 write_json=True,show_plots=False,store_plots=False):
-    """For each snapshot, measure "real flux" power and fit filtering length"""
+    """For each snapshot fit filtering length from measured "flux real" power"""
 
     # figure out snapshots in simulation
     paramfile=simdir+'/paramfile.gadget'
@@ -24,7 +25,7 @@ def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     Nsnap=len(zs)
 
-    # will store measured "real flux" power here
+    # measured "flux real" power stored here
     genpkdir=simdir+'/genpk/'
     os.makedirs(genpkdir,exist_ok=True)
 
@@ -35,7 +36,19 @@ def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,
     kF_Mpc=[]
 
     for num in range(Nsnap):
+        # make sure that GenPk has been run for this snapshot
+        genpk_filename=flux_real_genpk.flux_real_genpk_filename(simdir,num)
+        if not os.path.exists(genpk_filename):
+            if verbose: print('genpk not ran yet',genpk_filename)
+            if run_genpk:
+                flux_real_genpk.compute_flux_real_power(simdir,snap_num,num,
+                            verbose=False,genpk_full_path=genpk_full_path)
+        else:
+            if verbose: print('genpk already ran',genpk_filename)
+
+        # snapshot redshift
         z=zs[num]
+        # extra information from snapshot
         snap=absn.AbstractSnapshotFactory(num,outdir,Tscale=1.0,gammascale=1.0)
         # normalized Hubble parameter h ~ 0.7)
         hubble = snap.get_header_attr("HubbleParam")
@@ -43,19 +56,7 @@ def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,
         L_hkpc= snap.get_header_attr("BoxSize")
         L_Mpc=L_hkpc/1000.0/hubble
 
-        snap_tag=str(num).rjust(3,'0')
-        genpk_filename=genpkdir+'/PK-by-PART_'+snap_tag
-        if os.path.exists(genpk_filename):
-            if verbose: print('read pre-computed power from',genpk_filename)
-        else:
-            snap_dir=os.path.join(outdir,"PART_"+snap_tag)
-            info_file=genpkdir+'/info_genpk_'+snap_tag
-            cmd=genpk_full_path+' -i '+snap_dir+' -o '+genpkdir
-            cmd+=' > '+info_file
-            if verbose: print('run genpk, cmd =',cmd)
-            os.system(cmd)
-
-        # fit filtering length from measured "real flux" power
+        # fit filtering length from measured "flux real" power
         genpk_file = np.loadtxt(genpk_filename)
         k_box_units = genpk_file[:, 0]
         # dimensionless power spectrum (P*k**3)
@@ -98,8 +99,9 @@ def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,
             plt.ylabel(r'Dimensionless power')
             plt.title(r'Real-space flux, z = %.3f'%z)
             if store_plots:
-                genpk_plot=genpkdir+'kF_'+snap_tag+'.png'
+                genpk_plot=genpkdir+'kF_'+str(num)+'.png'
                 plt.savefig(genpk_plot)
+
     if show_plots: 
         plt.show()
 

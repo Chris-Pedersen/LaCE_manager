@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import fake_spectra.abstractsnapshot as absn
 
 
 def flux_real_genpk_filename(simdir, snap_num):
@@ -13,19 +12,12 @@ def compute_flux_real_power(simdir, snap_num,verbose=False,
                 genpk_full_path='/home/dc-font1/Codes/GenPK_Keir/gen-pk'):
     """Measure power spectrum of exp(-tau_noRSD), using GenPk"""
 
-    # will store measured "real flux" power here
+    # will store measured "flux real" power here
     genpkdir=simdir+'/genpk/'
     os.makedirs(genpkdir,exist_ok=True)
 
     # snapshot outputs are here
     outdir=simdir+'/output/'
-
-    snap=absn.AbstractSnapshotFactory(snap_num,outdir,Tscale=1.0,gammascale=1.0)
-    # normalized Hubble parameter h ~ 0.7)
-    hubble = snap.get_header_attr("HubbleParam")
-    # box size in kpc/h
-    L_hkpc= snap.get_header_attr("BoxSize")
-    L_Mpc=L_hkpc/1000.0/hubble
 
     snap_tag=str(snap_num).rjust(3,'0')
     genpk_filename=flux_real_genpk_filename(simdir,snap_num)

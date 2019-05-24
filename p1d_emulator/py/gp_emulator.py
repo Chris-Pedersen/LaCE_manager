@@ -216,7 +216,6 @@ class GPEmulator:
         else:
             return interpolated_P
 
-
 class PolyfitGPEmulator:
     """ Gaussian process emulator which learns the nth degree polynomial fit
     as a function of model as opposed to training on the P(k)s themselves. """
@@ -350,29 +349,6 @@ class PolyfitGPEmulator:
             return np.exp(poly(np.log(k_Mpc))), error
         else:
             return np.exp(poly(np.log(k_Mpc)))
-
-
-PolyTest=PolyfitGPEmulator(max_arxiv_size=100)
-PolyTest._fit_p1d_in_arxiv(4,5)
-PolyTest.train()
-
-k=PolyTest.arxiv.data[0]["k_Mpc"][1:40]
-median_Delta2_p=np.median(PolyTest.arxiv.Delta2_p)
-medModel = {'mF': 0.6872913943088312, 'sigT_Mpc': 0.14329094780392893, 'gamma': 1.4820858544542124, 'Delta2_p': 0.3490971202144054, 'n_p': -2.3049998986911167, 'alpha_p': -0.21000060546375335, 'f_p': 0.9795245944938553}
-
-## Plot a range of linear powers
-model=medModel
-delta_ps=np.linspace(median_Delta2_p-0.15,median_Delta2_p+0.15,200)
-plt.figure()
-for aa in range(len(delta_ps)):
-    model["Delta2_p"]=delta_ps[aa]
-    col = plt.cm.jet((aa)/(len(delta_ps)))
-    pred=PolyTest.emulate_p1d_Mpc(model,k)
-    plt.semilogx(k,pred*k,color=col)
-    plt.xlabel("k 1/Mpc")
-    plt.ylabel("kP(k)")
-
-plt.show()
 
 class GP_k_Emulator:
     """ 

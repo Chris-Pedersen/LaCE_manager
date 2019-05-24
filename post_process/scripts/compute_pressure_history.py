@@ -10,7 +10,7 @@ import filtering_length
 parser = configargparse.ArgumentParser()
 parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
 parser.add_argument('--basedir', type=str, help='Base directory to simulation suite (crashes if it does not exist)', required=True)
-parser.add_argument('--kmax_Mpc', type=float,default=-1, help='Fit pressure smoothing for k < kmax_Mpc', required=False)
+parser.add_argument('--kmax_Mpc', type=float,default=15.0, help='Fit pressure smoothing for k < kmax_Mpc', required=False)
 parser.add_argument('--show_plots', action='store_true', help='Plot measured power and best fit filtering length',required=False)
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 

@@ -10,13 +10,19 @@ class SnapshotAdmin(object):
     """Book-keeping of all elements related to a snapshot.
         For now, it reads pre-computed skewers, for different temperatures."""
 
-    def __init__(self,snap_json, scales_tau=None):
+    def __init__(self,snap_json,scales_tau=None,kF_Mpc=None):
         """Setup from JSON file with information about skewers extracted.
-            One can also specify tau rescalings. """
+            One can also specify tau rescalings, and (optionally) provide
+            the measured filtering length."""
 
         # read snapshot information from file (including temperature scalings)
         with open(snap_json) as json_data:
             self.data = json.load(json_data)
+
+        # see if you have access filtering length information
+        if kF_Mpc:
+            print('received kF_Mpc =',kF_Mpc)
+            self.data['kF_Mpc']=kF_Mpc
 
         # number of temperature models present in file
         self.NT = len(self.data['sim_T0'])
@@ -72,6 +78,8 @@ class SnapshotAdmin(object):
                 info_p1d['sim_sigT_Mpc']=sim_sigT_Mpc
                 info_p1d['sim_scale_T0']=sim_scale_T0
                 info_p1d['sim_scale_gamma']=sim_scale_gamma
+                if 'kF_Mpc' in self.data:
+                    info_p1d['kF_Mpc'] = self.data['kF_Mpc']
                 p1d_data.append(info_p1d)
 
         self.p1d_data=p1d_data

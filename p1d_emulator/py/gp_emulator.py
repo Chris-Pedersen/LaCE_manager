@@ -31,7 +31,7 @@ class GPEmulator:
         self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
+        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 
@@ -234,7 +234,7 @@ class PolyfitGPEmulator:
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
+        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 
@@ -262,7 +262,7 @@ class GP_k_Emulator:
 
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","k_Mpc"]
+        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc","k_Mpc"]
         else:
         	self.paramList=paramList
 

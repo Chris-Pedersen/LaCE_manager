@@ -122,6 +122,9 @@ class ArxivP1D(object):
                         p1d_data['scale_T0'] = plus_pp['sim_scale_T0']
                     if 'sim_scale_gamma' in plus_pp:
                         p1d_data['scale_gamma'] = plus_pp['sim_scale_gamma']
+                    # store also filtering length (not present in old versions)
+                    if 'kF_Mpc' in plus_pp:
+                        p1d_data['kF_Mpc'] = plus_pp['kF_Mpc']
                     p1d_data['scale_tau'] = plus_pp['scale_tau']
                     # compute average of < F F >, not <delta delta> 
                     plus_p1d = np.array(plus_pp['p1d_Mpc'])
@@ -147,12 +150,9 @@ class ArxivP1D(object):
                 keep_data=[self.data[i] for i in keep]
                 self.data=keep_data
 
+        N=len(self.data)
         if self.verbose:
             print('Arxiv setup, containing %d entries'%len(self.data))
-
-        
-
-        N=len(self.data)
 
         # store linear power parameters
         self.Delta2_p=np.array([self.data[i]['Delta2_p'] for i in range(N)])
@@ -166,6 +166,8 @@ class ArxivP1D(object):
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
+            if self.data[0]['kF_Mpc']:
+                self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
 
         return
 

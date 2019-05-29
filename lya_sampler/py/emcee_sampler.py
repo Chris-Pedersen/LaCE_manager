@@ -22,8 +22,9 @@ class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
     def __init__(self,like=None,emulator=None,free_parameters=None,
-        									nwalkers=None,verbose=True):
-        """Setup sampler from likelihood, or use default"""
+                        nwalkers=None,read_chain_file=None,verbose=True):
+        """Setup sampler from likelihood, or use default.
+            If read_chain_file is provided, read pre-computed chain."""
 
         self.verbose=verbose
 
@@ -42,18 +43,26 @@ class EmceeSampler(object):
 
         # number of free parameters to sample
         self.ndim=len(self.like.free_params)
-        # number of walkers
-        if nwalkers:
-            self.nwalkers=nwalkers
+
+        if read_chain_file:
+            if self.verbose: print('will read chain from file',read_chain_file)
+            self.chain_from_file=np.loadtxt(read_chain_file,unpack=False)
+            self.nwalkers=None
+            self.sampler=None
+            self.p0=None
         else:
-            self.nwalkers=10*self.ndim
-
-        # setup sampler
-        self.sampler = emcee.EnsembleSampler(self.nwalkers,self.ndim,
+            self.chain_from_file=None
+            # number of walkers
+            if nwalkers:
+                self.nwalkers=nwalkers
+            else:
+                self.nwalkers=10*self.ndim
+            if self.verbose: print('setup with',self.nwalkers,'walkers')
+            # setup sampler
+            self.sampler = emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                             self.log_prob)
-
-        # setup walkers
-        self.p0=self.get_initial_walkers()
+            # setup walkers
+            self.p0=self.get_initial_walkers()
 
         if self.verbose:
             print('done setting up sampler')
@@ -61,6 +70,8 @@ class EmceeSampler(object):
 
     def run_burn_in(self,nsteps):
         """Start sample from initial points, for nsteps"""
+
+        if not self.sampler: raise ValueError('sampler not properly setup')
 
         if self.verbose: print('start burn-in, will do',nsteps,'steps')
         pos, prob, state = self.sampler.run_mcmc(self.p0,nsteps)
@@ -76,6 +87,8 @@ class EmceeSampler(object):
     def run_chains(self,nsteps,nprint=20):
         """Run actual chains, starting from end of burn-in"""
 
+        if not self.sampler: raise ValueError('sampler not properly setup')
+
         # reset and run actual chains
         self.sampler.reset()
 
@@ -89,6 +102,8 @@ class EmceeSampler(object):
 
     def get_initial_walkers(self):
         """Setup initial states of walkers in sensible points"""
+
+        if not self.sampler: raise ValueError('sampler not properly setup')
 
         ndim=self.ndim
         nwalkers=self.nwalkers
@@ -130,17 +145,38 @@ class EmceeSampler(object):
         self.like.go_silent()
 
 
+    def get_chain(self):
+        """Figure out whether chain has been read from file, or computed"""
+
+        if not self.chain_from_file is None:
+            return self.chain_from_file
+        else:
+            if not self.sampler: raise ValueError('sampler not properly setup')
+            return self.sampler.flatchain
+
+
+    def write_chain_to_file(self,filename):
+        """Write flat chain to file"""
+
+        if self.verbose: print('will write chain to file',filename)
+        np.savetxt(filename,self.sampler.flatchain)
+        return
+
+
     def plot_histograms(self,cube=False):
         """Make histograms for all dimensions, using re-normalized values if
             cube=True"""
 
+        # get chain (from sampler or from file)
+        chain=self.get_chain()
+
         for ip in range(self.ndim):
             param=self.like.free_params[ip]
             if cube:
-                values=self.sampler.flatchain[:,ip]
+                values=chain[:,ip]
                 title=param.name+' in cube'
             else:
-                cube_values=self.sampler.flatchain[:,ip]
+                cube_values=chain[:,ip]
                 values=param.value_from_cube(cube_values)
                 title=param.name
 
@@ -154,6 +190,9 @@ class EmceeSampler(object):
     def plot_corner(self,cube=False):
         """Make corner plot, using re-normalized values if cube=True"""
 
+        # get chain (from sampler or from file)
+        chain=self.get_chain()
+
         labels=[]
         for p in self.like.free_params:
             if cube:
@@ -162,9 +201,9 @@ class EmceeSampler(object):
                 labels.append(p.name)
 
         if cube:
-            values=self.sampler.flatchain
+            values=chain
         else:
-            cube_values=self.sampler.flatchain
+            cube_values=chain
             list_values=[self.like.free_params[ip].value_from_cube(
                                 cube_values[:,ip]) for ip in range(self.ndim)]
             values=np.array(list_values).transpose()

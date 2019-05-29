@@ -11,7 +11,7 @@ class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
     def __init__(self,zs,emulator=None,cosmo_fid=None,
-            mf_model=None,T_model=None,kF_model=None,verbose=True):
+            mf_model=None,T_model=None,kF_model=None,verbose=False):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated

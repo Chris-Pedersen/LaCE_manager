@@ -9,7 +9,7 @@ class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
     def __init__(self,data=None,theory=None,emulator=None,
-                    free_parameters=None,verbose=True):
+                    free_parameters=None,verbose=False):
         """Setup likelihood from theory and data"""
 
         self.verbose=verbose

@@ -52,14 +52,10 @@ class LikelihoodParameter(object):
             It checks name and range, not actual value."""
 
         if self.name != param.name:
-            print('different parameter name')
             return False
         if self.min_value != param.min_value:
-            print('different minimum value')
             return False
         if self.max_value != param.max_value:
-            print('different maximum value')
             return False
 
-        print('same paramter')
         return True

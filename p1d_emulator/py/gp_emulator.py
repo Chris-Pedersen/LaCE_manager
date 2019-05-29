@@ -14,7 +14,7 @@ class GPEmulator:
     """
     def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
 		p1d_label='p1d',skewers_label='Ns110_wM0.1',
-                max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
+                max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False):
 

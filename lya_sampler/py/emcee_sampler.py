@@ -16,13 +16,14 @@ import mean_flux_model
 import thermal_model
 import lya_theory
 import likelihood
+import likelihood_parameter
 
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
     def __init__(self,like=None,emulator=None,free_parameters=None,
-                        nwalkers=None,read_chain_file=None,verbose=True):
+                        nwalkers=None,read_chain_file=None,verbose=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
 
@@ -39,14 +40,14 @@ class EmceeSampler(object):
             zs=data.z
             theory=lya_theory.LyaTheory(zs,emulator=emulator)
             self.like=likelihood.Likelihood(data=data,theory=theory,
-                            free_parameters=free_parameters,verbose=verbose)
+                            free_parameters=free_parameters,verbose=False)
 
         # number of free parameters to sample
         self.ndim=len(self.like.free_params)
 
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
-            self.chain_from_file=np.loadtxt(read_chain_file,unpack=False)
+            self.read_chain_from_file(read_chain_file)
             self.nwalkers=None
             self.sampler=None
             self.p0=None
@@ -68,18 +69,22 @@ class EmceeSampler(object):
             print('done setting up sampler')
         
 
-    def run_burn_in(self,nsteps):
+    def run_burn_in(self,nsteps,nprint=20):
         """Start sample from initial points, for nsteps"""
 
         if not self.sampler: raise ValueError('sampler not properly setup')
 
         if self.verbose: print('start burn-in, will do',nsteps,'steps')
-        pos, prob, state = self.sampler.run_mcmc(self.p0,nsteps)
+
+        pos=self.p0
+        for i,result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
+            if self.verbose and (i % nprint == 0):
+                print(i,np.mean(result[0],axis=0))
+
         if self.verbose: print('finished burn-in')
 
         self.burnin_nsteps=nsteps
         self.burnin_pos=pos
-        self.burnin_prob=prob
     
         return
 
@@ -95,7 +100,7 @@ class EmceeSampler(object):
         pos=self.burnin_pos
         for i, result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
             if i % nprint == 0:
-                print(i,result[0][0])
+                print(i,np.mean(result[0],axis=0))
 
         return
 
@@ -116,14 +121,10 @@ class EmceeSampler(object):
         # make sure that all walkers are within the convex hull
         for iw in range(nwalkers):
             walker=p0[iw]
-            if self.verbose: print(iw,'walker',walker)
             test=self.log_prob(walker)
             while (test == -np.inf):
-                if self.verbose: print(iw,'bad walker',walker)
                 walker = np.random.rand(ndim)
-                if self.verbose: print(iw,'try walker',walker)
                 test=self.log_prob(walker)
-            if self.verbose: print(iw,'good walker',walker,' log_prob=',test)
             p0[iw]=walker
 
         return p0
@@ -155,11 +156,52 @@ class EmceeSampler(object):
             return self.sampler.flatchain
 
 
+    def read_chain_from_file(self,filename):
+        """Read chain from file, and check parameters"""
+
+        # start by reading parameters from file
+        input_params=[]
+        param_filename=filename+".params"
+        param_file=open(param_filename,'r')
+        for line in param_file:
+            info=line.split()
+            name=info[0]
+            min_value=float(info[1])
+            max_value=float(info[2])
+            param=likelihood_parameter.LikelihoodParameter(name=name,
+                                    min_value=min_value,max_value=max_value)
+            input_params.append(param)
+
+        # check that paramters are the same
+        for ip in range(self.ndim):
+            par=self.like.free_params[ip]
+            assert par.is_same_parameter(input_params[ip]),"wrong parameters"
+        # read chain itself
+        chain_filename=filename+".chain"
+        self.chain_from_file=np.loadtxt(chain_filename,unpack=False)
+        # make sure you read file with same number of parameters
+        assert self.ndim == self.chain_from_file.shape[1],"size mismatch"
+
+        return
+
+
     def write_chain_to_file(self,filename):
         """Write flat chain to file"""
 
-        if self.verbose: print('will write chain to file',filename)
-        np.savetxt(filename,self.sampler.flatchain)
+        if not self.sampler: raise ValueError('sampler not properly setup')
+
+        # start by writing parameters info to file
+        param_filename=filename+".params"
+        param_file = open(param_filename,'w')
+        for par in self.like.free_params:
+            info_str="{} {} {} \n".format(par.name,par.min_value,par.max_value)
+            param_file.write(info_str)
+        param_file.close()
+
+        # now write chain itself
+        chain_filename=filename+".chain"
+        np.savetxt(chain_filename,self.sampler.flatchain)
+
         return
 
 

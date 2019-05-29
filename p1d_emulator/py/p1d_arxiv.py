@@ -9,7 +9,7 @@ class ArxivP1D(object):
     def __init__(self,basedir='../mini_sim_suite/',
                 p1d_label='p1d',skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                max_arxiv_size=None,verbose=True):
+                max_arxiv_size=None,verbose=False):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)"""
 

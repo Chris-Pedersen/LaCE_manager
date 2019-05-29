@@ -15,7 +15,7 @@ class LinearEmulator(object):
             p1d_label='p1d',skewers_label='Ns100_wM0.05',
             emulate_running=False,emulate_growth=False,emulate_pressure=True,
             drop_tau_rescalings=False,drop_temp_rescalings=False,
-            deg=4,kmax_Mpc=10.0,max_arxiv_size=None,verbose=True):
+            deg=4,kmax_Mpc=10.0,max_arxiv_size=None,verbose=False):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
 

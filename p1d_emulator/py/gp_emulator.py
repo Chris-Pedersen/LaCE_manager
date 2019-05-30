@@ -346,8 +346,9 @@ class PolyfitGPEmulator:
         poly=np.poly1d(pred)
         if returnErrors==True:
             err=np.abs(err)
+            print(err)
             P_of_k=np.exp(poly(np.log(k_Mpc)))
-            err=(err[0]*P_of_k**4+err[1]*P_of_k**3+err[2]*P_of_k**2+err[3]*P_of_k+err[4])
+            err=(err[0]*P_of_k**4+err[1]*P_of_k**3+err[2]*P_of_k**2+err[3]*P_of_k)
             return np.exp(poly(np.log(k_Mpc))), err
         else:
             return np.exp(poly(np.log(k_Mpc)))

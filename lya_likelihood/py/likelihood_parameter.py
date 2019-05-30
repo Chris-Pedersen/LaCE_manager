@@ -45,3 +45,17 @@ class LikelihoodParameter(object):
         """Given the value in range (xmin,xmax), return absolute value"""
 
         return self.min_value+x*(self.max_value-self.min_value)
+
+
+    def is_same_parameter(self,param):
+        """Check whether input parameter is the same parameter.
+            It checks name and range, not actual value."""
+
+        if self.name != param.name:
+            return False
+        if self.min_value != param.min_value:
+            return False
+        if self.max_value != param.max_value:
+            return False
+
+        return True

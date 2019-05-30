@@ -216,6 +216,7 @@ class GPEmulator:
         else:
             return interpolated_P
 
+
 class PolyfitGPEmulator:
     """ Gaussian process emulator which learns the nth degree polynomial fit
     as a function of model as opposed to training on the P(k)s themselves. """
@@ -344,9 +345,10 @@ class PolyfitGPEmulator:
         pred,err=self.predict(model)
         poly=np.poly1d(pred)
         if returnErrors==True:
-            error_interp=interp1d(self.training_k_bins,err, "cubic")
-            error=error_interp(k_Mpc)
-            return np.exp(poly(np.log(k_Mpc))), error
+            err=np.abs(err)
+            P_of_k=np.exp(poly(np.log(k_Mpc)))
+            err=(err[0]*P_of_k**4+err[1]*P_of_k**3+err[2]*P_of_k**2+err[3]*P_of_k+err[4])
+            return np.exp(poly(np.log(k_Mpc))), err
         else:
             return np.exp(poly(np.log(k_Mpc)))
 

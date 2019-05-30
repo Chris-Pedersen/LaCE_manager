@@ -11,11 +11,12 @@ class LinearEmulator(object):
     """Linear interpolation emulator for flux P1D."""
 
     def __init__(self,
-            basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
-            p1d_label='p1d',skewers_label='Ns110_wM0.1',
-            emulate_running=False,emulate_growth=False,
+            basedir='../../p1d_emulator/sim_suites/emulator_512_17052019/',
+            p1d_label='p1d',skewers_label='Ns100_wM0.05',
+            emulate_running=False,emulate_growth=False,emulate_pressure=True,
             drop_tau_rescalings=False,drop_temp_rescalings=False,
-            deg=4,kmax_Mpc=10.0,max_arxiv_size=None,verbose=True):
+            deg=4,kmax_Mpc=10.0,max_arxiv_size=None,
+            undersample_z=1,verbose=False):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
 
@@ -25,13 +26,14 @@ class LinearEmulator(object):
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                     drop_tau_rescalings=drop_tau_rescalings,
                     drop_temp_rescalings=drop_temp_rescalings,
-                    max_arxiv_size=max_arxiv_size,verbose=verbose)
+                    max_arxiv_size=max_arxiv_size,undersample_z=undersample_z,
+                    verbose=verbose)
 
         # for each model in arxiv, fit smooth function to P1D
         self._fit_p1d_in_arxiv(deg,kmax_Mpc)
 
         # setup parameter space to be used in emulator
-        self._setup_param_space(emulate_running,emulate_growth)
+        self._setup_param_space(emulate_running,emulate_growth,emulate_pressure)
 
         # for each order in polynomial, setup interpolation object
         self._setup_interp(deg)
@@ -48,15 +50,18 @@ class LinearEmulator(object):
             entry['fit_p1d'] = fit_p1d
 
 
-    def _setup_param_space(self,emulate_running,emulate_growth):
+    def _setup_param_space(self,emulate_running,emulate_growth,
+                                emulate_pressure):
         """Set order of parameters in emulator"""
 
         self.params=['Delta2_p','n_p']
         if emulate_running:
             self.params.append('alpha_p')
         if emulate_growth:
-            self.params.append('growht')
+            self.params.append('f_p')
         self.params += ['mF','sigT_Mpc','gamma']
+        if emulate_pressure:
+            self.params.append('kF_Mpc')
         if self.verbose:
             print('parameter names in emulator',self.params)
 

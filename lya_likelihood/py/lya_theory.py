@@ -4,13 +4,14 @@ import fit_linP
 import recons_cosmo
 import mean_flux_model
 import thermal_model
+import pressure_model
 import linear_emulator
 
 class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
     def __init__(self,zs,emulator=None,cosmo_fid=None,
-            mf_model=None,T_model=None,verbose=True):
+            mf_model=None,T_model=None,kF_model=None,verbose=False):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -42,13 +43,22 @@ class LyaTheory(object):
             if self.verbose: print('use default thermal model')
             self.T_model = thermal_model.ThermalModel()
 
+        # setup pressure smoothing model
+        if kF_model:
+            self.kF_model = kF_model
+        else:
+            if self.verbose: print('use default pressure model')
+            self.kF_model = pressure_model.PressureModel()
+
 
     def set_mf_model(self,mf_model):
         self.mf_model=mf_model
 
-
     def set_T_model(self,T_model):
         self.T_model=T_model
+
+    def set_kF_model(self,kF_model):
+        self.kF_model=kF_model
 
 
     def set_cosmo_model(self,linP_model):
@@ -74,6 +84,8 @@ class LyaTheory(object):
             sigT_kms=thermal_model.thermal_broadening_kms(T0)
             dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz)/(1+z)
             model['sigT_Mpc']=sigT_kms/dkms_dMpc
+            kF_kms=self.kF_model.get_kF_kms(z)
+            model['kF_Mpc']=kF_kms*dkms_dMpc
             if self.verbose: print(iz,z,'model',model)
             emu_calls.append(model)
 
@@ -115,6 +127,8 @@ class LyaTheory(object):
             params.append(par)
         for par in self.T_model.get_gamma_parameters():
             params.append(par)
+        for par in self.kF_model.get_parameters():
+            params.append(par)
 
         if self.verbose:
             print('got parameters')
@@ -134,6 +148,8 @@ class LyaTheory(object):
         if self.verbose: print('updated',counts,'after mean flux parameters')
         counts+=self.T_model.update_parameters(parameters)
         if self.verbose: print('updated',counts,'after thermal parameters')
+        counts+=self.kF_model.update_parameters(parameters)
+        if self.verbose: print('updated',counts,'after pressure parameters')
 
         return
 

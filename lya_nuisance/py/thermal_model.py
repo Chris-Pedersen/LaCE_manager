@@ -37,16 +37,13 @@ class ThermalModel(object):
         ln_gamma=ln_gamma_poly(xz)
         return np.exp(ln_gamma)
 
-
     def get_T0_Nparam(self):
         """Number of parameters in the model of T_0"""
         return len(self.ln_T0_coeff)
 
-
     def get_gamma_Nparam(self):
         """Number of parameters in the model of gamma"""
         return len(self.ln_gamma_coeff)
-
 
     def get_T0_parameters(self):
         """Tell likelihood about T_0 parameters in the thermal model"""

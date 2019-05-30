@@ -2,6 +2,7 @@
 
 import numpy as np
 import argparse
+import os
 # our modules below
 import snapshot_admin
 import extract_skewers
@@ -35,6 +36,17 @@ scales_tau=[float(scale) for scale in args.scales_tau.split(',')]
 if verbose:
     print('will scale tau by',scales_tau)
 
+# try to read information about filtering length in simulation
+kF_json=simdir+'/filtering_length.json'
+if os.path.isfile(kF_json):
+    # read json file with filtering data
+    with open(kF_json) as json_data:
+        kF_data = json.load(json_data)
+    kF_Mpc=kF_data['kF_Mpc'][args.snap_num]
+    print('read kF_Mpc =',kF_Mpc)
+else:
+    kF_Mpc=None
+
 # read file containing information of all temperature rescalings in snapshot
 snap_filename=skewers_dir+'/'+extract_skewers.get_snapshot_json_filename(
                 num=args.snap_num,n_skewers=args.n_skewers,
@@ -43,7 +55,8 @@ if verbose:
     print('setup snapshot admin from file',snap_filename)
 
 # create an object that will deal with all skewers in the snapshot
-snapshot=snapshot_admin.SnapshotAdmin(snap_filename,scales_tau)
+snapshot=snapshot_admin.SnapshotAdmin(snap_filename,scales_tau=scales_tau,
+                                                            kF_Mpc=kF_Mpc)
 Nsk=len(snapshot.data['sk_files'])
 if verbose:
     print('snapshot has {} temperature rescalings'.format(Nsk))

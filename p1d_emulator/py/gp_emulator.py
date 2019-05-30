@@ -15,9 +15,9 @@ class GPEmulator:
     """
     def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
 		p1d_label='p1d',skewers_label='Ns110_wM0.1',
-                max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
+                max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
-                drop_temp_rescalings=False):
+                drop_temp_rescalings=False,undersample_z=1):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -25,14 +25,15 @@ class GPEmulator:
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,verbose=verbose,
                                 drop_tau_rescalings=drop_tau_rescalings,
-                                drop_temp_rescalings=drop_temp_rescalings)
+                                drop_temp_rescalings=drop_temp_rescalings,
+                                undersample_z=undersample_z)
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
         self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
+        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 
@@ -226,23 +227,24 @@ class PolyfitGPEmulator:
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,deg=4):
-
+                paramList=None,undersample_z=1):
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
         self.deg=deg
         # read all files with P1D measured in simulation suite
+
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,verbose=verbose,
                                 drop_tau_rescalings=drop_tau_rescalings,
-                                drop_temp_rescalings=drop_temp_rescalings)
-
+                                drop_temp_rescalings=drop_temp_rescalings,
+                                undersample_z=undersample_z)
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
         self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
 
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma"]
+        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 
@@ -360,18 +362,20 @@ class GP_k_Emulator:
     def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
 		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
-                paramList=None,binSampling=None,binsPerModel=5):
+                paramList=None,binSampling=None,binsPerModel=5,
+                undersample_z=1):
         self.kmax_Mpc=kmax_Mpc
         # read all files with P1D measured in simulation suite
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-        	max_arxiv_size,verbose)
+        self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
+                skewers_label=skewers_label,max_arxiv_size=max_arxiv_size,
+                undersample_z=undersample_z,verbose=verbose)
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
 
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","k_Mpc"]
+        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc","k_Mpc"]
         else:
         	self.paramList=paramList
 

@@ -107,8 +107,8 @@ def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,run_genpk=False,
 
     # store information in json file
     json_filename=simdir+'/filtering_length.json'
-    kF_data = {'simdir':simdir, 'kF_Mpc':kF_Mpc, 'kmax_Mpc':kmax_Mpc}
-    kF_data['zs']=zs.tolist()
+    kF_data = {'simdir':simdir, 'kF_Mpc':kF_Mpc, 'kmax_kF_Mpc':kmax_Mpc}
+    kF_data['kF_zs']=zs.tolist()
 
     json_file = open(json_filename,"w")
     json.dump(kF_data,json_file)

@@ -9,7 +9,7 @@ class ArxivP1D(object):
     def __init__(self,basedir='../mini_sim_suite/',
                 p1d_label='p1d',skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                max_arxiv_size=None,verbose=True):
+                max_arxiv_size=None,undersample_z=1,verbose=False):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)"""
 
@@ -18,10 +18,12 @@ class ArxivP1D(object):
         self.skewers_label=skewers_label
         self.verbose=verbose
 
-        self._load_data(drop_tau_rescalings,drop_temp_rescalings,max_arxiv_size)
+        self._load_data(drop_tau_rescalings,drop_temp_rescalings,
+                            max_arxiv_size,undersample_z)
 
 
-    def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,max_arxiv_size):
+    def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
+                            max_arxiv_size,undersample_z):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -57,9 +59,12 @@ class ArxivP1D(object):
             zs=pair_data['zs']
             Nz=len(zs)
             if self.verbose:
-                print('simulation has %d redshifts'%Nz) 
+                print('simulation has %d redshifts'%Nz)
+                print('undersample_z =',undersample_z)
 
-            for snap in range(Nz):        
+            # to make lighter emulators, we might undersample redshifts
+            for snap in range(0,Nz,undersample_z):
+
                 # get linear power parameters describing snapshot
                 linP_params = pair_data['linP_zs'][snap]
                 snap_p1d_data = {}
@@ -122,6 +127,9 @@ class ArxivP1D(object):
                         p1d_data['scale_T0'] = plus_pp['sim_scale_T0']
                     if 'sim_scale_gamma' in plus_pp:
                         p1d_data['scale_gamma'] = plus_pp['sim_scale_gamma']
+                    # store also filtering length (not present in old versions)
+                    if 'kF_Mpc' in plus_pp:
+                        p1d_data['kF_Mpc'] = plus_pp['kF_Mpc']
                     p1d_data['scale_tau'] = plus_pp['scale_tau']
                     # compute average of < F F >, not <delta delta> 
                     plus_p1d = np.array(plus_pp['p1d_Mpc'])
@@ -147,12 +155,9 @@ class ArxivP1D(object):
                 keep_data=[self.data[i] for i in keep]
                 self.data=keep_data
 
+        N=len(self.data)
         if self.verbose:
             print('Arxiv setup, containing %d entries'%len(self.data))
-
-        
-
-        N=len(self.data)
 
         # store linear power parameters
         self.Delta2_p=np.array([self.data[i]['Delta2_p'] for i in range(N)])
@@ -166,6 +171,8 @@ class ArxivP1D(object):
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
+            if self.data[0]['kF_Mpc']:
+                self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
 
         return
 

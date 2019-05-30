@@ -178,7 +178,13 @@ class EmceeSampler(object):
             assert par.is_same_parameter(input_params[ip]),"wrong parameters"
         # read chain itself
         chain_filename=filename+".chain"
-        self.chain_from_file=np.loadtxt(chain_filename,unpack=False)
+        chain=np.loadtxt(chain_filename,unpack=False)
+        # if only 1 parameter, reshape chain to be ndarray as the others
+        if len(chain.shape) == 1:
+            N=len(chain)
+            self.chain_from_file=chain.reshape(N,1)
+        else:
+            self.chain_from_file=chain
         # make sure you read file with same number of parameters
         assert self.ndim == self.chain_from_file.shape[1],"size mismatch"
 

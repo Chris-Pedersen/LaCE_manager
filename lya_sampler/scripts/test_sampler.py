@@ -29,8 +29,10 @@ parser.add_argument('--nsteps', type=int, default=500,
         help='Number of steps in main chain', required=False)
 parser.add_argument('--nburnin', type=int, default=100,
         help='Number of steps in burn-in phase', required=False)
-parser.add_argument('--max_arxiv_size', type=int, default=1000,
+parser.add_argument('--max_arxiv_size', type=int, default=None,
         help='Maximum number of models to train emulators', required=False)
+parser.add_argument('--undersample_z', type=int, default=1, required=False,
+        help='Undersample simulation snapshots, to make lighter emulators')
 parser.add_argument('--use_linear_emu', action='store_true',
         help='Use linear emulator instead of GP', required=False)
 parser.add_argument('--chain_filename', type=str, default=None,
@@ -61,11 +63,13 @@ skewers_label='Ns100_wM0.05'
 if args.use_linear_emu:
     if verbose: print('use linear emulator')
     emu=linear_emulator.LinearEmulator(basedir,p1d_label,skewers_label,
-                    max_arxiv_size=args.max_arxiv_size)
+                    max_arxiv_size=args.max_arxiv_size,
+                    undersample_z=args.undersample_z)
 else:
     if verbose: print('use GP emulator')
     emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                     max_arxiv_size=args.max_arxiv_size,
+                    undersample_z=args.undersample_z,
 					paramList=None,kmax_Mpc=5,train=True)
 
 # specify free parameters in likelihood

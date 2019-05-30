@@ -19,9 +19,9 @@ class PolyP1D(object):
 
         # we need to mask k=0 and high-k (or will dominate fit)
         kfit=(k_Mpc < kmax_Mpc) & (k_Mpc > kmin_Mpc)
-        lnP_fit = np.polyfit(np.log(k_Mpc[kfit]),np.log(P_Mpc[kfit]), deg)
+        self.lnP_fit = np.polyfit(np.log(k_Mpc[kfit]),np.log(P_Mpc[kfit]), deg)
         # store poly1d object
-        self.lnP = np.poly1d(lnP_fit)
+        self.lnP = np.poly1d(self.lnP_fit)
         # remember minimum k used in fit (better not to extrapolate)
         self.kmin_Mpc = min(k_Mpc[kfit])
 

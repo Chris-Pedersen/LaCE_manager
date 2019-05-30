@@ -52,7 +52,7 @@ class MeanFluxModel(object):
         if Npar > 0:
             name='ln_tau_0'
             xmin=-1.2
-            xmax=-0.7
+            xmax=-0.4
             # note non-trivial order in coefficients
             value=self.ln_tau_coeff[1]
             par = likelihood_parameter.LikelihoodParameter(name=name,

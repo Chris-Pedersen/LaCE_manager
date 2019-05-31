@@ -51,7 +51,7 @@ class MeanFluxModel(object):
         params=[]
         if Npar > 0:
             name='ln_tau_0'
-            xmin=-1.2
+            xmin=-1.5
             xmax=-0.4
             # note non-trivial order in coefficients
             value=self.ln_tau_coeff[1]

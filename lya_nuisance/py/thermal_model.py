@@ -53,7 +53,7 @@ class ThermalModel(object):
         if Npar > 0:
             name='ln_T0_0'
             xmin=np.log(5e3)
-            xmax=np.log(3e4)
+            xmax=np.log(5e4)
             # note non-trivial order in coefficients
             value=self.ln_T0_coeff[Npar-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,
@@ -79,7 +79,7 @@ class ThermalModel(object):
         if Npar > 0:
             name='ln_gamma_0'
             xmin=np.log(1.1)
-            xmax=np.log(1.8)
+            xmax=np.log(2.0)
             # note non-trivial order in coefficients
             value=self.ln_gamma_coeff[Npar-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,
@@ -87,8 +87,8 @@ class ThermalModel(object):
             params.append(par)
         if Npar > 1:
             name='ln_gamma_1'
-            xmin=-1.0
-            xmax=1.0
+            xmin=-2.0
+            xmax=2.0
             # note non-trivial order in coefficients
             value=self.ln_gamma_coeff[Npar-2]
             par = likelihood_parameter.LikelihoodParameter(name=name,

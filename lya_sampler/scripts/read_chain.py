@@ -53,10 +53,9 @@ else:
                     max_arxiv_size=args.max_arxiv_size,verbose=verbose,
 					paramList=None,kmax_Mpc=5,train=True)
 
-# specify free parameters in likelihood
-free_parameters=args.free_parameters.split(',')
-if verbose:
-    print('input free parameters',free_parameters)
+# specify free parameters in likelihood (make sure there are no empty spaces)
+free_parameters=[par.strip() for par in args.free_parameters.split(',')]
+if verbose: print('input free parameters',free_parameters)
 
 # read chain from file
 sampler = emcee_sampler.EmceeSampler(emulator=emu,

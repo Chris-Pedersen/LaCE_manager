@@ -22,7 +22,7 @@ parser = configargparse.ArgumentParser()
 parser.add_argument('-c', '--config', required=False, is_config_file=True,
         help='config file path')
 parser.add_argument('--free_parameters', type=str, default='ln_tau_0, ln_tau_1',
-        help='Comma-separated string of free parameters to use', required=True)
+        help='Comma-separated string of free parameters to use', required=False)
 parser.add_argument('--nwalkers', type=int, default=None,
         help='Number of walkers in emcee (even integer)', required=False)
 parser.add_argument('--nsteps', type=int, default=500,
@@ -67,15 +67,17 @@ if args.use_linear_emu:
                     undersample_z=args.undersample_z)
 else:
     if verbose: print('use GP emulator')
+    # do not emulate growth or running (for now)
+    #paramList=["mF","Delta2_p","n_p","sigT_Mpc","gamma","kF_Mpc"]
+    paramList=None
     emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                     max_arxiv_size=args.max_arxiv_size,
                     undersample_z=args.undersample_z,
-					paramList=None,kmax_Mpc=5,train=True)
+					paramList=paramList,kmax_Mpc=5,train=True)
 
-# specify free parameters in likelihood
-free_parameters=args.free_parameters.split(',')
-if verbose:
-    print('input free parameters',free_parameters)
+# specify free parameters in likelihood (make sure there are no empty spaces)
+free_parameters=[par.strip() for par in args.free_parameters.split(',')]
+if verbose: print('input free parameters',free_parameters)
 
 sampler = emcee_sampler.EmceeSampler(emulator=emu,nwalkers=args.nwalkers,
                         free_parameters=free_parameters,verbose=verbose)

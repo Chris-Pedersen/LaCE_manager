@@ -340,9 +340,7 @@ class PolyfitGPEmulator:
         Method to return the trained P(k) for an arbitrary set of k bins
         using the learned data
         '''
-        if max(k_Mpc)>max(self.training_k_bins):
-            print(max(k_Mpc))
-            print(max(self.training_k_bins))
+        if (max(k_Mpc)>max(self.training_k_bins)) and verbose:
             print("Warning! Your requested k bins are higher than the training values.")
         pred,err=self.predict(model)
         poly=np.poly1d(pred)

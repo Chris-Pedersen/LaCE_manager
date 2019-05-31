@@ -4,6 +4,7 @@ import p1d_arxiv
 import pickle
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+import poly_p1d
 
 class GPEmulator:
     """
@@ -44,7 +45,7 @@ class GPEmulator:
         ## Grid that will contain all training params
         params=np.empty([len(self.arxiv.data),len(paramList)])
         ## Array to contain our training data
-        P1D_k=np.empty([len(self.arxiv.data),self.k_bin]) ## -1 as we ignore the 0th k bin
+        P1D_k=np.empty([len(self.arxiv.data),self.k_bin])
         for aa in range(len(self.arxiv.data)):
             P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin] ## Collect P1D data for all k bins
             for bb in range(len(paramList)):
@@ -202,8 +203,6 @@ class GPEmulator:
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
         '''
-        if False: # min(k_Mpc)<self.training_k_bins[1]:
-            print("Warning! Your requested k bins contain values lower than k_box")
         if max(k_Mpc)>max(self.training_k_bins):
             print(max(k_Mpc))
             print(max(self.training_k_bins))
@@ -220,31 +219,139 @@ class GPEmulator:
 
 
 class PolyfitGPEmulator:
-    """ Gaussian process emulator to learn the 4th degree polynomial coefficients
-    to the P1D as a function of parameter """
-    def __init__(self,basedir='../mini_sim_suite/',
-		p1d_label='p1d',skewers_label='Ns50_wM0.1',
+    """ Gaussian process emulator which learns the nth degree polynomial fit
+    as a function of model as opposed to training on the P(k)s themselves. """
+
+    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
+		p1d_label='p1d',skewers_label='Ns110_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
+                paramList=None,train=False,drop_tau_rescalings=False,
+                drop_temp_rescalings=False,deg=4):
                 paramList=None,undersample_z=1):
         self.kmax_Mpc=kmax_Mpc
+        self.basedir=basedir
+        self.deg=deg
         # read all files with P1D measured in simulation suite
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
-                skewers_label=skewers_label,max_arxiv_size=max_arxiv_size,
-                undersample_z=undersample_z,verbose=verbose)
 
+        self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
+                                max_arxiv_size=max_arxiv_size,verbose=verbose,
+                                drop_tau_rescalings=drop_tau_rescalings,
+                                drop_temp_rescalings=drop_temp_rescalings,
+                                undersample_z=undersample_z)
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))
+        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
+
         ## If none, take all parameters
         if paramList==None:
         	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 
-    def _fit_p1d_in_arxiv(self,kmax_Mpc):
-        """For each entry in arxiv, fit polynomial to log(p1d)"""    
+        self._fit_p1d_in_arxiv(self.deg,self.kmax_Mpc)
+
+        if train:
+            if verbose: print('will train GP emulator')
+            self.train()
+
+    def _fit_p1d_in_arxiv(self,deg,kmax_Mpc):
+        """For each entry in arxiv, fit polynomial to log(p1d)"""
+        
         for entry in self.arxiv.data:
             k_Mpc = entry['k_Mpc']
             p1d_Mpc = entry['p1d_Mpc']
+            fit_p1d = poly_p1d.PolyP1D(k_Mpc,p1d_Mpc,kmin_Mpc=1.e-3,
+                    kmax_Mpc=kmax_Mpc,deg=deg)
+            entry['fit_p1d'] = fit_p1d.lnP_fit ## Add coeffs for each model to arxiv
+
+    def _buildTrainingSets(self,arxiv,paramList):
+        ## Grid that will contain all training params
+        params=np.empty([len(self.arxiv.data),len(paramList)])
+        ## Array to contain our training data
+        coeffs=np.empty([len(self.arxiv.data),self.deg+1])
+        for aa in range(len(self.arxiv.data)):
+            coeffs[aa]=self.arxiv.data[aa]['fit_p1d'] ## Collect P1D data for all k bins
+            for bb in range(len(paramList)):
+                params[aa][bb]=arxiv.data[aa][paramList[bb]] ## Populate parameter grid
+        return params,coeffs
+
+    def _build_interp(self,arxiv,paramList):
+        ''' Method to build an GP object from a spectra archive and list of parameters
+        Currently the parameter rescaling is done by taking the min and max
+        of the provided params, not by defining our own prior volume. Need to decide
+        whether or not this is what we want. '''
+
+        params,P1D_k=self._buildTrainingSets(arxiv,paramList)
+
+        ## Get parameter limits for rescaling
+        self.paramLimits=self._get_param_limits(params)
+
+        ## Rescaling to unit volume
+        for cc in range(len(self.arxiv.data)):
+            params[cc]=self._rescale_params(params[cc],self.paramLimits)
+        print("Rescaled params to unity volume")
+
+        ## Factors by which to rescale the flux to set a mean of 0
+        self.scalefactors = np.median(P1D_k, axis=0)
+
+        #Normalise by the median value
+        normspectra = (P1D_k/self.scalefactors) -1.
+
+        #Standard squared-exponential kernel with a different length scale for each parameter, as
+        #they may have very different physical properties.
+        kernel = GPy.kern.Linear(len(paramList))
+        kernel += GPy.kern.RBF(len(paramList))
+
+        print("Training GP")
+        self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel, noise_var=1e-10)
+        status = self.gp.optimize(messages=False) #True
+        print("Optimised")
+
+    def _get_param_limits(self,paramGrid):
+        paramLimits=np.empty((np.shape(paramGrid)[1],2))
+        for aa in range(len(paramLimits)):
+            paramLimits[aa,0]=min(paramGrid[:,aa])
+            paramLimits[aa,1]=max(paramGrid[:,aa])
+        return paramLimits
+
+    def _rescale_params(self,params,paramLimits):
+        ''' Rescale a set of parameters to have a unit volume '''
+        for aa in range(len(params)):
+            params[aa]=((params[aa]-paramLimits[aa,0])/(paramLimits[aa,1]-paramLimits[aa,0]))
+        return params
+
+    def train(self):
+        self._build_interp(self.arxiv,self.paramList)
+
+    def predict(self,model):
+        ## Method to return coefficients for a given parameter set
+        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+        param=[]
+        for par in self.paramList:
+            ## Rescale input parameters
+            param.append(model[par])
+        for aa in range(len(self.paramList)):
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        pred,err=self.gp.predict(np.array(param).reshape(1,-1))
+        return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+
+    def emulate_p1d_Mpc(self,model,k_Mpc,returnErrors=False):
+        '''
+        Method to return the trained P(k) for an arbitrary set of k bins
+        using the learned data
+        '''
+        if (max(k_Mpc)>max(self.training_k_bins)) and verbose:
+            print("Warning! Your requested k bins are higher than the training values.")
+        pred,err=self.predict(model)
+        poly=np.poly1d(pred)
+        if returnErrors==True:
+            err=np.abs(err)
+            print(err)
+            P_of_k=np.exp(poly(np.log(k_Mpc)))
+            err=(err[0]*P_of_k**4+err[1]*P_of_k**3+err[2]*P_of_k**2+err[3]*P_of_k)
+            return np.exp(poly(np.log(k_Mpc))), err
+        else:
+            return np.exp(poly(np.log(k_Mpc)))
 
 class GP_k_Emulator:
     """ 

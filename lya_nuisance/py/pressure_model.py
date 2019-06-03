@@ -72,3 +72,10 @@ class PressureModel(object):
 
         return counts
 
+
+    def get_new_model(self,parameters=[]):
+        """Return copy of model, updating values from list of parameters"""
+
+        kF = PressureModel(z_kF=self.z_kF, ln_kF_coeff=self.ln_kF_coeff)
+        kF.update_parameters(parameters)
+        return kF

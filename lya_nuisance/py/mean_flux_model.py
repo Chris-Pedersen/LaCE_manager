@@ -90,3 +90,11 @@ class MeanFluxModel(object):
 
         return counts
 
+
+    def get_new_model(self,parameters=[]):
+        """Return copy of model, updating values from list of parameters"""
+
+        mf = MeanFluxModel(z_tau=self.z_tau, ln_tau_coeff=self.ln_tau_coeff)
+        mf.update_parameters(parameters)
+        return mf
+

@@ -61,35 +61,29 @@ class Likelihood(object):
         return
 
 
-    def update_parameters(self,values):
-        """Use input array of values (in cube) to update parameters,
-            and update theories."""
+    def parameters_from_sampling_point(self,values):
+        """Translate input array of values (in cube) to likelihood parameters"""
 
         assert len(values)==len(self.free_params),'size mismatch'
         Npar=len(values)
+        like_params=[]
         for ip in range(Npar):
-            self.free_params[ip].set_from_cube(values[ip])
+            par = self.free_params[ip].get_new_parameter(values[ip])
+            like_params.append(par)
 
-        if self.verbose: print('updated parameters, update theories')
-
-        # pass parameters to internal theories to update their models
-        self.theory.update_parameters(self.free_params)
-
-        return
+        return like_params
 
 
     def get_p1d_kms(self,k_kms,values=None):
         """Compute theoretical prediction for 1D P(k)"""
 
-        # update parameter and theories
+        # translate sampling point (in unit cube) to parameter values
         if values:
-            print('using values',values)
-            self.update_parameters(values)
+            like_params= self.parameters_from_sampling_point(values)
+        else:
+            like_params=[]
 
-        # linP is not being updated now
-        linP_model = self.theory.cosmo.get_linP_model(self.free_params)
-
-        return self.theory.get_p1d_kms(k_kms,linP_model)
+        return self.theory.get_p1d_kms(k_kms,like_params=like_params)
 
 
     def get_chi2(self,values=None):
@@ -168,7 +162,7 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,linP_model=None,plot_every_iz=1):
+    def plot_p1d(self,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
@@ -206,7 +200,7 @@ class Likelihood(object):
         return
 
 
-    def overplot_emulator_calls(self,param_1,param_2,linP_model=None,
+    def overplot_emulator_calls(self,param_1,param_2,like_params=[],
                                 tau_scalings=True,temp_scalings=True):
         """For parameter pair (param1,param2), overplot emulator calls
             with values stored in arxiv, color coded by redshift"""
@@ -231,7 +225,7 @@ class Likelihood(object):
                                                     mask_tau[i] & mask_temp[i])])
 
         # get emulator calls
-        emu_calls=self.theory.get_emulator_calls(linP_model=linP_model)
+        emu_calls=self.theory.get_emulator_calls(like_params=like_params)
         # figure out values of param_1,param_2 called
         call_1=[emu_call[param_1] for emu_call in emu_calls]
         call_2=[emu_call[param_2] for emu_call in emu_calls]

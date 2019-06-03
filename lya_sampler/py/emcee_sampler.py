@@ -150,10 +150,13 @@ class EmceeSampler(object):
         """Figure out whether chain has been read from file, or computed"""
 
         if not self.chain_from_file is None:
-            return self.chain_from_file
+            chain=self.chain_from_file['chain']
+            lnprob=self.chain_from_file['lnprob']
         else:
             if not self.sampler: raise ValueError('sampler not properly setup')
-            return self.sampler.flatchain
+            chain=self.sampler.flatchain
+            lnprob=self.sampler.flatlnprobability
+        return chain,lnprob
 
 
     def read_chain_from_file(self,filename):
@@ -176,17 +179,25 @@ class EmceeSampler(object):
         for ip in range(self.ndim):
             par=self.like.free_params[ip]
             assert par.is_same_parameter(input_params[ip]),"wrong parameters"
+
         # read chain itself
         chain_filename=filename+".chain"
         chain=np.loadtxt(chain_filename,unpack=False)
+        lnprob_filename=filename+".lnprob"
+        lnprob=np.loadtxt(lnprob_filename,unpack=False)
+
         # if only 1 parameter, reshape chain to be ndarray as the others
         if len(chain.shape) == 1:
             N=len(chain)
-            self.chain_from_file=chain.reshape(N,1)
+            self.chain_from_file={'chain':chain.reshape(N,1)}
         else:
-            self.chain_from_file=chain
+            self.chain_from_file={'chain':chain}
+        self.chain_from_file['lnprob']=lnprob
+
         # make sure you read file with same number of parameters
-        assert self.ndim == self.chain_from_file.shape[1],"size mismatch"
+        chain_shape=self.chain_from_file['chain'].shape
+        assert self.ndim == chain_shape[1],"mismatch"
+        assert chain_shape[0] == len(self.chain_from_file['lnprob']),"mismatch"
 
         return
 
@@ -208,6 +219,10 @@ class EmceeSampler(object):
         chain_filename=filename+".chain"
         np.savetxt(chain_filename,self.sampler.flatchain)
 
+        # finally write log likelihood in file
+        lnprob_filename=filename+".lnprob"
+        np.savetxt(lnprob_filename,self.sampler.flatlnprobability)
+
         return
 
 
@@ -216,7 +231,7 @@ class EmceeSampler(object):
             cube=True"""
 
         # get chain (from sampler or from file)
-        chain=self.get_chain()
+        chain,lnprob=self.get_chain()
 
         for ip in range(self.ndim):
             param=self.like.free_params[ip]
@@ -239,7 +254,7 @@ class EmceeSampler(object):
         """Make corner plot, using re-normalized values if cube=True"""
 
         # get chain (from sampler or from file)
-        chain=self.get_chain()
+        chain,lnprob=self.get_chain()
 
         labels=[]
         for p in self.like.free_params:

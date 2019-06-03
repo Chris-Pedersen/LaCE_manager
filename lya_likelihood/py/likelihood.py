@@ -78,7 +78,7 @@ class Likelihood(object):
         """Compute theoretical prediction for 1D P(k)"""
 
         # translate sampling point (in unit cube) to parameter values
-        if values:
+        if values is not None:
             like_params= self.parameters_from_sampling_point(values)
         else:
             like_params=[]
@@ -162,7 +162,7 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,plot_every_iz=1):
+    def plot_p1d(self,values=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
@@ -172,7 +172,8 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.theory.get_p1d_kms(k_kms)
+        emu_p1d = self.get_p1d_kms(k_kms,values)
+
         if self.verbose: print('got P1D from emulator')
 
         # plot only few redshifts for clarity
@@ -200,7 +201,7 @@ class Likelihood(object):
         return
 
 
-    def overplot_emulator_calls(self,param_1,param_2,like_params=[],
+    def overplot_emulator_calls(self,param_1,param_2,values=None,
                                 tau_scalings=True,temp_scalings=True):
         """For parameter pair (param1,param2), overplot emulator calls
             with values stored in arxiv, color coded by redshift"""
@@ -224,7 +225,11 @@ class Likelihood(object):
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
                                                     mask_tau[i] & mask_temp[i])])
 
-        # get emulator calls
+        # translate sampling point (in unit cube) to parameter values
+        if values is not None:
+            like_params= self.parameters_from_sampling_point(values)
+        else:
+            like_params=[]
         emu_calls=self.theory.get_emulator_calls(like_params=like_params)
         # figure out values of param_1,param_2 called
         call_1=[emu_call[param_1] for emu_call in emu_calls]

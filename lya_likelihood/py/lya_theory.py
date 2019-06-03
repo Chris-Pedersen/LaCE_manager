@@ -60,16 +60,12 @@ class LyaTheory(object):
     def set_kF_model(self,kF_model):
         self.kF_model=kF_model
 
-
-    def set_cosmo_model(self,linP_model):
-        self.cosmo.linP_model=linP_model
-
     
-    def get_emulator_calls(self):
+    def get_emulator_calls(self,linP_model=None):
         """Compute models that will be emulated, one per redshift bin"""
 
         # compute linear power parameters at all redshifts
-        linP_Mpc_params=self.cosmo.get_linP_Mpc_params()
+        linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
 
         # loop over redshifts and store emulator calls
         emu_calls=[]
@@ -82,7 +78,7 @@ class LyaTheory(object):
             model['gamma']=self.T_model.get_gamma(z)
             T0=self.T_model.get_T0(z)
             sigT_kms=thermal_model.thermal_broadening_kms(T0)
-            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz)/(1+z)
+            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
             model['sigT_Mpc']=sigT_kms/dkms_dMpc
             kF_kms=self.kF_model.get_kF_kms(z)
             model['kF_Mpc']=kF_kms*dkms_dMpc
@@ -92,11 +88,11 @@ class LyaTheory(object):
         return emu_calls
 
 
-    def get_p1d_kms(self,k_kms):
+    def get_p1d_kms(self,k_kms,linP_model=None):
         """Emulate P1D in velocity units, for all redshift bins"""
 
         # figure out emulator calls, one per redshift
-        emu_calls=self.get_emulator_calls()
+        emu_calls=self.get_emulator_calls(linP_model)
 
         # loop over redshifts and compute P1D
         p1d_kms=[]
@@ -105,7 +101,7 @@ class LyaTheory(object):
             # will call emulator for this model
             model=emu_calls[iz]
             # emulate p1d
-            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz)/(1+z)
+            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
             k_Mpc = k_kms * dkms_dMpc
             p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc)
             if p1d_Mpc is None:
@@ -120,7 +116,7 @@ class LyaTheory(object):
     def get_parameters(self):
         """Return parameters in models, even if not free parameters"""
 
-        params=self.cosmo.linP_model.get_likelihood_parameters()
+        params=self.cosmo.linP_model_fid.get_likelihood_parameters()
         for par in self.mf_model.get_parameters():
             params.append(par)
         for par in self.T_model.get_T0_parameters():
@@ -142,7 +138,8 @@ class LyaTheory(object):
         """Update internal theories with input list of parameters"""
 
         # count how many have been updated
-        counts=self.cosmo.linP_model.update_parameters(parameters)
+        counts=0
+        #counts=self.cosmo.linP_model.update_parameters(parameters)
         if self.verbose: print('updated',counts,'linP parameters')
         counts+=self.mf_model.update_parameters(parameters)
         if self.verbose: print('updated',counts,'after mean flux parameters')

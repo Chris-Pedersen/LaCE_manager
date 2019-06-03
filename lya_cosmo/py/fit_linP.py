@@ -4,7 +4,6 @@ import camb
 import camb_cosmo
 import likelihood_parameter
 
-
 class LinearPowerModel(object):
     """Store parameters describing the linear power in a cosmology.
         It can work in two modes:

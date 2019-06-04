@@ -226,8 +226,7 @@ class PolyfitGPEmulator:
 		p1d_label='p1d',skewers_label='Ns110_wM0.1',
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
-                drop_temp_rescalings=False,deg=4):
-                paramList=None,undersample_z=1):
+                drop_temp_rescalings=False,deg=4,undersample_z=1):
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
         self.deg=deg

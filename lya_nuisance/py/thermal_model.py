@@ -16,6 +16,9 @@ class ThermalModel(object):
             ln_gamma_coeff=[0.0,np.log(1.4)]
         self.ln_T0_coeff=ln_T0_coeff
         self.ln_gamma_coeff=ln_gamma_coeff
+        # store list of likelihood parameters (might be fixed or free)
+        self.set_T0_parameters()
+        self.set_gamma_parameters()
 
 
     def get_T0(self,z):
@@ -39,92 +42,108 @@ class ThermalModel(object):
 
     def get_T0_Nparam(self):
         """Number of parameters in the model of T_0"""
+        assert len(self.ln_T0_coeff)==len(self.T0_params),"size mismatch"
         return len(self.ln_T0_coeff)
 
     def get_gamma_Nparam(self):
         """Number of parameters in the model of gamma"""
+        assert len(self.ln_gamma_coeff)==len(self.gamma_params),"size mismatch"
         return len(self.ln_gamma_coeff)
 
-    def get_T0_parameters(self):
-        """Tell likelihood about T_0 parameters in the thermal model"""
 
-        Npar=self.get_T0_Nparam()
-        params=[]
-        if Npar > 0:
-            name='ln_T0_0'
-            xmin=np.log(5e3)
-            xmax=np.log(3e4)
+    def set_T0_parameters(self):
+        """Setup T0 likelihood parameters for thermal model"""
+
+        self.T0_params=[]
+        Npar=len(self.ln_T0_coeff)
+        for i in range(Npar):
+            name='ln_T0_'+str(i)
+            if i==0:
+                xmin=np.log(5e3)
+                xmax=np.log(5e4)
+            else:
+                xmin=-2.0
+                xmax=2.0
             # note non-trivial order in coefficients
-            value=self.ln_T0_coeff[Npar-1]
+            value=self.ln_T0_coeff[Npar-i-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,
                                 value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        if Npar > 1:
-            name='ln_T0_1'
-            xmin=-2.0
-            xmax=2.0
+            self.T0_params.append(par)
+
+        return
+
+
+    def set_gamma_parameters(self):
+        """Setup gamma likelihood parameters for thermal model"""
+
+        self.gamma_params=[]
+        Npar=len(self.ln_gamma_coeff)
+        for i in range(Npar):
+            name='ln_gamma_'+str(i)
+            if i==0:
+                xmin=np.log(1.1)
+                xmax=np.log(2.0)
+            else:
+                xmin=-2.0
+                xmax=2.0
             # note non-trivial order in coefficients
-            value=self.ln_T0_coeff[Npar-2]
+            value=self.ln_gamma_coeff[Npar-i-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,
                                 value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        return params
+            self.gamma_params.append(par)
+
+        return
+
+
+    def get_T0_parameters(self):
+        """Return T0 likelihood parameters from the thermal model"""
+        return self.T0_params
 
 
     def get_gamma_parameters(self):
-        """Tell likelihood about gamma parameters in the thermal model"""
-
-        Npar=self.get_gamma_Nparam()
-        params=[]
-        if Npar > 0:
-            name='ln_gamma_0'
-            xmin=np.log(1.1)
-            xmax=np.log(1.8)
-            # note non-trivial order in coefficients
-            value=self.ln_gamma_coeff[Npar-1]
-            par = likelihood_parameter.LikelihoodParameter(name=name,
-                                value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        if Npar > 1:
-            name='ln_gamma_1'
-            xmin=-1.0
-            xmax=1.0
-            # note non-trivial order in coefficients
-            value=self.ln_gamma_coeff[Npar-2]
-            par = likelihood_parameter.LikelihoodParameter(name=name,
-                                value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        return params
+        """Return gamma likelihood parameters from the thermal model"""
+        return self.gamma_params
 
 
-    def update_parameters(self,parameters):
-        """Look for mean flux parameters in list of parameters"""
+    def update_parameters(self,like_params):
+        """Look for thermal parameters in list of parameters"""
 
         Npar_T0=self.get_T0_Nparam()
         Npar_gamma=self.get_gamma_Nparam()
 
-        # report how many parameters were updated
-        counts=0
+        # loop over likelihood parameters
+        for like_par in like_params:
+            if 'ln_T0' in like_par.name:
+                # make sure you find the parameter
+                found=False
+                # loop over T0 parameters in thermal model
+                for ip in range(len(self.T0_params)):
+                    if self.T0_params[ip].is_same_parameter(like_par):
+                        assert found==False,'can not update parameter twice'
+                        self.ln_T0_coeff[Npar_T0-ip-1]=like_par.value
+                        found=True
+                assert found==True,'could not update parameter '+like_par.name
+            elif 'ln_gamma' in like_par.name:
+                # make sure you find the parameter
+                found=False
+                # loop over gamma parameters in thermal model
+                for ip in range(len(self.gamma_params)):
+                    if self.gamma_params[ip].is_same_parameter(like_par):
+                        assert found==False,'can not update parameter twice'
+                        self.ln_gamma_coeff[Npar_gamma-ip-1]=like_par.value
+                        found=True
+                assert found==True,'could not update parameter '+like_par.name
 
-        for par in parameters:
-            if par.name=='ln_T0_0':
-                # note non-trivial order in coefficients
-                self.ln_T0_coeff[Npar_T0-1] = par.value
-                counts+=1
-            if par.name=='ln_T0_1':
-                # note non-trivial order in coefficients
-                self.ln_T0_coeff[Npar_T0-2] = par.value
-                counts+=1
-            if par.name=='ln_gamma_0':
-                # note non-trivial order in coefficients
-                self.ln_gamma_coeff[Npar_gamma-1] = par.value
-                counts+=1
-            if par.name=='ln_gamma_1':
-                # note non-trivial order in coefficients
-                self.ln_gamma_coeff[Npar_gamma-2] = par.value
-                counts+=1
+        return
 
-        return counts
+
+    def get_new_model(self,parameters=[]):
+        """Return copy of model, updating values from list of parameters"""
+
+        T = ThermalModel(z_T=self.z_T, ln_T0_coeff=self.ln_T0_coeff,
+                            ln_gamma_coeff=self.ln_gamma_coeff)
+        T.update_parameters(parameters)
+        return T
 
 
 def thermal_broadening_kms(T_0):

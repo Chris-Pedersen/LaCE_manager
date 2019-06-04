@@ -59,3 +59,13 @@ class LikelihoodParameter(object):
             return False
 
         return True
+
+
+    def get_new_parameter(self,value_in_cube):
+        """Return copy of parameter, with updated value from cube"""
+
+        par = LikelihoodParameter(name=self.name,min_value=self.min_value,
+                    max_value=self.max_value)
+        par.set_from_cube(value_in_cube)
+
+        return par

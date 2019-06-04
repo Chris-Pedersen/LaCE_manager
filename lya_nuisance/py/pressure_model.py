@@ -15,6 +15,9 @@ class PressureModel(object):
         if not ln_kF_coeff:
             ln_kF_coeff=[0,np.log(0.182)]
         self.ln_kF_coeff=ln_kF_coeff
+        # store list of likelihood parameters (might be fixed or free)
+        self.set_parameters()
+
 
     def get_kF_kms(self,z):
         """Filtering length at the input redshift (in s/km)"""
@@ -23,52 +26,66 @@ class PressureModel(object):
         ln_kF=ln_kF_poly(xz)
         return np.exp(ln_kF)
 
+
     def get_Nparam(self):
         """Number of parameters in the model"""
+        assert len(self.ln_kF_coeff)==len(self.params),"size mismatch"
         return len(self.ln_kF_coeff)
 
+
+    def set_parameters(self):
+        """Setup likelihood parameters in the pressure model"""
+
+        self.params=[]
+        Npar=len(self.ln_kF_coeff)
+        for i in range(Npar):
+            name='ln_kF_'+str(i)
+            if i==0:
+                xmin=np.log(0.05)
+                xmax=np.log(0.5)
+            else:
+                xmin=-2.0
+                xmax=2.0
+            # note non-trivial order in coefficients
+            value=self.ln_kF_coeff[Npar-i-1]
+            par = likelihood_parameter.LikelihoodParameter(name=name,
+                                value=value,min_value=xmin,max_value=xmax)
+            self.params.append(par)
+
+        return
+
+
     def get_parameters(self):
-        """Tell likelihood about parameters in the pressure model"""
+        """Return likelihood parameters for the pressure model"""
 
-        Npar=self.get_Nparam()
-        params=[]
-        if Npar > 0:
-            name='ln_kF_0'
-            xmin=np.log(0.05)
-            xmax=np.log(0.5)
-            # note non-trivial order in coefficients
-            value=self.ln_kF_coeff[Npar-1]
-            par = likelihood_parameter.LikelihoodParameter(name=name,
-                                value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        if Npar > 1:
-            name='ln_kF_1'
-            xmin=-2.0
-            xmax=2.0
-            # note non-trivial order in coefficients
-            value=self.ln_kF_coeff[Npar-2]
-            par = likelihood_parameter.LikelihoodParameter(name=name,
-                                value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        return params
+        return self.params
 
 
-    def update_parameters(self,parameters):
+    def update_parameters(self,like_params):
         """Look for pressure parameters in list of parameters"""
 
         Npar=self.get_Nparam()
-        # report how many parameters were updated
-        counts=0
 
-        for par in parameters:
-            if par.name=='ln_kF_0':
-                # note non-trivial order in coefficients
-                self.ln_kF_coeff[Npar-1] = par.value
-                counts+=1
-            if par.name=='ln_kF_1':
-                # note non-trivial order in coefficients
-                self.ln_kF_coeff[Npar-2] = par.value
-                counts+=1
+        # loop over likelihood parameters
+        for like_par in like_params:
+            if 'ln_kF' not in like_par.name:
+                continue
+            # make sure you find the parameter
+            found=False
+            # loop over parameters in pressure model
+            for ip in range(len(self.params)):
+                if self.params[ip].is_same_parameter(like_par):
+                    assert found==False,'can not update parameter twice'
+                    self.ln_kF_coeff[Npar-ip-1]=like_par.value
+                    found=True
+            assert found==True,'could not update parameter '+like_par.name
 
-        return counts
+        return
 
+
+    def get_new_model(self,parameters=[]):
+        """Return copy of model, updating values from list of parameters"""
+
+        kF = PressureModel(z_kF=self.z_kF, ln_kF_coeff=self.ln_kF_coeff)
+        kF.update_parameters(parameters)
+        return kF

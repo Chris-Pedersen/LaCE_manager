@@ -61,24 +61,32 @@ class Likelihood(object):
         return
 
 
-    def update_parameters(self,values):
-        """Use input array of values (in cube) to update parameters,
-            and update theories."""
+    def parameters_from_sampling_point(self,values):
+        """Translate input array of values (in cube) to likelihood parameters"""
 
         assert len(values)==len(self.free_params),'size mismatch'
         Npar=len(values)
+        like_params=[]
         for ip in range(Npar):
-            self.free_params[ip].set_from_cube(values[ip])
+            par = self.free_params[ip].get_new_parameter(values[ip])
+            like_params.append(par)
 
-        if self.verbose: print('updated parameters, update theories')
-
-        # pass parameters to internal theories to update their models
-        self.theory.update_parameters(self.free_params)
-
-        return
+        return like_params
 
 
-    def get_chi2(self):
+    def get_p1d_kms(self,k_kms,values=None):
+        """Compute theoretical prediction for 1D P(k)"""
+
+        # translate sampling point (in unit cube) to parameter values
+        if values is not None:
+            like_params= self.parameters_from_sampling_point(values)
+        else:
+            like_params=[]
+
+        return self.theory.get_p1d_kms(k_kms,like_params=like_params)
+
+
+    def get_chi2(self,values=None):
         """Compute chi2 using data and theory"""
 
         # get measured bins from data
@@ -87,7 +95,7 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.theory.get_p1d_kms(k_kms)
+        emu_p1d = self.get_p1d_kms(k_kms,values)
         if self.verbose: print('got P1D from emulator')
 
         # compute chi2 contribution from each redshift bin
@@ -122,11 +130,9 @@ class Likelihood(object):
         if min(values) < 0.0:
             return -np.inf
 
-        # update parameter and theories
-        self.update_parameters(values)
-
         # compute chi2
-        chi2=self.get_chi2()
+        chi2=self.get_chi2(values)
+
         if chi2 is None:
             if self.verbose: print('was not able to emulate at least on P1D')
             return -np.inf
@@ -156,8 +162,8 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,plot_only_few_bins=False):
-        """Plot P1D in theory vs data. If plot_only_iz is set,
+    def plot_p1d(self,values=None,plot_every_iz=1):
+        """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
         # get measured bins from data
@@ -166,11 +172,12 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.theory.get_p1d_kms(k_kms)
+        emu_p1d = self.get_p1d_kms(k_kms,values)
+
         if self.verbose: print('got P1D from emulator')
 
         # plot only few redshifts for clarity
-        for iz in range(0,Nz,3):
+        for iz in range(0,Nz,plot_every_iz):
             # acess data for this redshift
             z=zs[iz]
             p1d_data=self.data.get_Pk_iz(iz)
@@ -194,8 +201,8 @@ class Likelihood(object):
         return
 
 
-    def overplot_emulator_calls(self,param_1,param_2,tau_scalings=True,
-                                                    temp_scalings=True):
+    def overplot_emulator_calls(self,param_1,param_2,values=None,
+                                tau_scalings=True,temp_scalings=True):
         """For parameter pair (param1,param2), overplot emulator calls
             with values stored in arxiv, color coded by redshift"""
 
@@ -218,8 +225,12 @@ class Likelihood(object):
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
                                                     mask_tau[i] & mask_temp[i])])
 
-        # get emulator calls
-        emu_calls=self.theory.get_emulator_calls()
+        # translate sampling point (in unit cube) to parameter values
+        if values is not None:
+            like_params= self.parameters_from_sampling_point(values)
+        else:
+            like_params=[]
+        emu_calls=self.theory.get_emulator_calls(like_params=like_params)
         # figure out values of param_1,param_2 called
         call_1=[emu_call[param_1] for emu_call in emu_calls]
         call_2=[emu_call[param_2] for emu_call in emu_calls]

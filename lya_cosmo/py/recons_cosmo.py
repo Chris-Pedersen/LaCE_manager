@@ -8,10 +8,8 @@ class ReconstructedCosmology(object):
     """Given fiducial cosmology, and set of linear power parameters, 
         reconstruct a cosmology object."""
 
-    def __init__(self,zs,linP_model=None,cosmo_fid=None,use_constant_f=False,
-                    verbose=False):
-        """Setup from linear power model and fiducial cosmology, as well
-            as redshifts that we will want to evaluate (zs)."""
+    def __init__(self,zs,cosmo_fid=None,verbose=False):
+        """Setup from linear power model and redshifts to evaluate (zs)."""
 
         self.verbose=verbose
         # store redshifts that will be evaluated
@@ -28,27 +26,10 @@ class ReconstructedCosmology(object):
         # compute CAMB results for fiducial cosmology
         self.results_fid=camb.get_results(self.cosmo_fid)
 
-        # input model describing linear power around z_star and kp_kms
-        if linP_model:
-            if self.verbose: print('use input linear power model')
-            self.linP_model=linP_model
-            assert linP_model.k_units is 'kms', 'input linP_model not in kms'
-            # compute linear power model for fiducial cosmology
-            self.z_star=linP_model.z_star
-            self.kp_kms=linP_model.kp
-            self.linP_model_fid=fit_linP.LinearPowerModel(cosmo=self.cosmo_fid,
-                            z_star=self.z_star,k_units='kms',kp=self.kp_kms)
-        else:
-            if self.verbose: print('no input linear power model')
-            # compute linear power model for fiducial cosmology
-            self.linP_model_fid=fit_linP.LinearPowerModel(cosmo=self.cosmo_fid)
-            self.z_star=self.linP_model_fid.z_star
-            self.kp_kms=self.linP_model_fid.kp
-            linP_fid_params=self.linP_model_fid.get_params()
-            self.linP_model=fit_linP.LinearPowerModel(params=linP_fid_params)
-
-        # whether to model z-evolution of logarithmic growth rate with fiducial
-        self.use_constant_f=use_constant_f
+        # compute linear power model for fiducial cosmology
+        self.linP_model_fid=fit_linP.LinearPowerModel(cosmo=self.cosmo_fid)
+        self.z_star=self.linP_model_fid.z_star
+        self.kp_kms=self.linP_model_fid.kp
 
         # get Hubble at z_star for fiducial cosmology, used to compute kp_Mpc
         self.H_star_fid=self.results_fid.hubble_parameter(self.z_star)
@@ -65,8 +46,8 @@ class ReconstructedCosmology(object):
         self._compute_linP_Mpc_fid()
     
         # when running with fixed cosmology it is useful to keep this
-        self.linP_Mpc_params_fid=None
-
+        self.linP_Mpc_params_fid=self._compute_linP_Mpc_params(
+                                                linP_model=self.linP_model_fid)
         return
 
 
@@ -101,40 +82,9 @@ class ReconstructedCosmology(object):
         self.linP_Mpc_fid = P_Mpc
 
 
-    def linP_model_is_fiducial(self):
-        """Check if input linP model is same than fiducial"""
-
-        in_params=self.linP_model.get_params()
-        fid_params=self.linP_model_fid.get_params()
-
-        for key,value in in_params.items():
-            if value is not fid_params[key]:
-                if self.verbose: print('not using fiducial linP_model')
-                return False
-        
-        if self.verbose: print('using fiducial linP_model')
-        return True
-        
-
-    def get_linP_Mpc_params(self,linP_model=None):
+    def _compute_linP_Mpc_params(self,linP_model):
         """Reconstruct linear power (in Mpc) for input linP_model and fit
             linear power parameters at each redshift. """
-
-        if linP_model:
-            if self.verbose: print('use input linP_model')
-            self.linP_model=linP_model
-        else:
-            if self.verbose: print('use stored linP_model')
-
-        # check if we are asking for the fiducial model
-        if self.linP_model_is_fiducial():
-            if self.linP_Mpc_params_fid:
-                if self.verbose:
-                    print('return pre-computed linP for fiducial cosmo')
-                return self.linP_Mpc_params_fid
-            else:
-                if self.verbose:
-                    print('will compute linP for fiducial cosmo')
 
         # wavenumbers that will be used in fit
         kp_Mpc=self.kp_Mpc
@@ -149,9 +99,10 @@ class ReconstructedCosmology(object):
             # get information from fiducial cosmology at this redshift
             linP_Mpc_fid=self.linP_Mpc_fid[iz]
             # reconstruct logarithmic growth rate at the redshift
-            f_p=self.reconstruct_f_p_iz(iz)
+            f_p=self.reconstruct_f_p_iz(iz,linP_model)
             # reconstruct linear power at the redshift (in Mpc)
-            linP_Mpc=self.reconstruct_linP_Mpc(z,linP_Mpc_fid=linP_Mpc_fid)
+            linP_Mpc=self.reconstruct_linP_Mpc(z,linP_model=linP_model,
+                                               linP_Mpc_fid=linP_Mpc_fid)
             # fit polynomial describing log linear power
             linP_fit=fit_linP.fit_polynomial(xmin,xmax,x,linP_Mpc,deg=2)
             # compute parameters used in emulator
@@ -163,16 +114,41 @@ class ReconstructedCosmology(object):
             params={'Delta2_p':Delta2_p,'n_p':n_p,'alpha_p':alpha_p,'f_p':f_p}
             linP_Mpc_params.append(params)
 
-        if self.linP_model_is_fiducial():
-            self.linP_Mpc_params_fid=linP_Mpc_params
-            if self.verbose:
-                print('stored computed linP for fiducial cosmo')
-
         return linP_Mpc_params
 
 
-    def reconstruct_linP_Mpc(self,z,linP_Mpc_fid):
-        """ Use fiducial cosmology and linP_params to reconstruct power (Mpc)"""
+    def linP_model_is_fiducial(self,linP_model):
+        """Check if input linP model is same than fiducial"""
+
+        in_params=linP_model.get_params()
+        fid_params=self.linP_model_fid.get_params()
+
+        for key,value in in_params.items():
+            if value is not fid_params[key]:
+                if self.verbose: print('not using fiducial linP_model')
+                return False
+        if self.verbose: print('using fiducial linP_model')
+        return True
+
+
+    def get_linP_Mpc_params(self,linP_model=None):
+        """Reconstruct linear power (in Mpc) for input linP_model and fit
+            linear power parameters at each redshift. """
+
+        # check if we are asking for the fiducial model
+        if not linP_model:
+            if self.verbose: print('use fiducial linP_model')
+            return self.linP_Mpc_params_fid
+        if self.linP_model_is_fiducial(linP_model):
+            if self.verbose: print('use fiducial linP_model')
+            return self.linP_Mpc_params_fid
+
+        if self.verbose: print('will compute parameters for input linP_model')
+        return self._compute_linP_Mpc_params(linP_model)
+
+
+    def reconstruct_linP_Mpc(self,z,linP_model,linP_Mpc_fid):
+        """ Use fiducial cosmology and linP_model to reconstruct power (Mpc)"""
 
         # pivot points
         z_star=self.z_star
@@ -182,8 +158,8 @@ class ReconstructedCosmology(object):
         linP_Mpc = np.copy(linP_Mpc_fid)
 
         # get parameters describing linear power for input cosmology
-        f_star=self.linP_model.get_f_star()
-        linP_kms_params=self.linP_model.linP_params['linP_kms']
+        f_star=linP_model.get_f_star()
+        linP_kms_params=linP_model.linP_params['linP_kms']
         # get parameters describing linear power for fiducial cosmology
         f_star_fid=self.linP_model_fid.get_f_star()
         linP_kms_params_fid=self.linP_model_fid.linP_params['linP_kms']
@@ -205,21 +181,27 @@ class ReconstructedCosmology(object):
         return linP_Mpc
 
 
-    def reconstruct_Hubble_iz(self,iz):
+    def reconstruct_Hubble_iz(self,iz,linP_model):
         """ Use fiducial cosmology and g_star to reconstruct Hubble parameter"""
 
         Hz_fid=self.Hz_fid[iz]
         z=self.zs[iz]
-        return self.reconstruct_Hubble(z,Hz_fid=Hz_fid)
+
+        # check if we are asking for the fiducial model
+        if not linP_model:
+            if self.verbose: print('use fiducial linP_model')
+            return Hz_fid
+
+        return self.reconstruct_Hubble(z,linP_model,Hz_fid=Hz_fid)
 
 
-    def reconstruct_Hubble(self,z,Hz_fid=None):
+    def reconstruct_Hubble(self,z,linP_model,Hz_fid=None):
         """ Use fiducial cosmology and g_star to reconstruct Hubble parameter"""
 
         if not Hz_fid:
             Hz_fid=self.results_fid.hubble_parameter(z)
         # compute difference in acceleration
-        g_star=self.linP_model.get_g_star()
+        g_star=linP_model.get_g_star()
         g_star_fid=self.linP_model_fid.get_g_star()
         # compute Hubble parameter in input cosmology
         z_star=self.z_star
@@ -227,30 +209,45 @@ class ReconstructedCosmology(object):
         return Hz
 
 
-    def reconstruct_f_p_iz(self,iz):
+    def reconstruct_f_p_iz(self,iz,linP_model):
         """ Use fiducial cosmology and f_star to reconstruct logarithmic
             growth rate f (around kp_Mpc)"""
 
         f_p_fid=self.f_p_fid[iz]
         z=self.zs[iz]
-        return self.reconstruct_f_p(z,f_p_fid=f_p_fid)
+
+        # check if we are asking for the fiducial model
+        if not linP_model:
+            if self.verbose: print('use fiducial linP_model')
+            return f_p_fid
+
+        return self.reconstruct_f_p(z,linP_model,f_p_fid=f_p_fid)
 
 
-    def reconstruct_f_p(self,z,f_p_fid=None):
+    def reconstruct_f_p(self,z,linP_model,f_p_fid=None):
         """ Use fiducial cosmology and f_star to reconstruct logarithmic
             growth rate f (around kp_Mpc)"""
-
-        if self.use_constant_f:
-            return self.linP_model.get_f_star()
 
         # compute f in fiducial cosmology
         if not f_p_fid:
             f_p_fid=fit_linP.compute_f_star(self.cosmo_fid,z_star=z,
                             kp_Mpc=self.kp_Mpc)
         # correct using difference in f_star
-        f_star=self.linP_model.get_f_star()
+        f_star=linP_model.get_f_star()
         f_star_fid=self.linP_model_fid.get_f_star()
         df_star=f_star-f_star_fid
         f_p=f_p_fid+(f_star-f_star_fid)
         return f_p
 
+
+    def get_linP_model(self,like_params):
+        """Uset likelihood parameters to construct and return a linP_model"""
+
+        # create dummy linP_model, to be updated next
+        fid_params=self.linP_model_fid.get_params()
+        linP_model = fit_linP.LinearPowerModel(params=fid_params,
+                                z_star=self.z_star,k_units='kms',kp=self.kp_kms)
+        # update model with likelihood parameters
+        linP_model.update_parameters(like_params)
+
+        return linP_model

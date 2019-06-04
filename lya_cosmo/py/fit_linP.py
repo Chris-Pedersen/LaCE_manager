@@ -4,7 +4,6 @@ import camb
 import camb_cosmo
 import likelihood_parameter
 
-
 class LinearPowerModel(object):
     """Store parameters describing the linear power in a cosmology.
         It can work in two modes:
@@ -113,23 +112,18 @@ class LinearPowerModel(object):
         return params
 
 
-    def update_parameters(self,parameters):
+    def update_parameters(self,like_params):
         """Update linear power parameters, if present in input list"""
 
         # get current dictionary with parameters, update and setup again
         params=self.get_params()
 
-        # count how many parameters were updated
-        counts=0
-        for par in parameters:
+        for par in like_params:
             if par.name in params:
                 params[par.name]=par.value
-                #print(par.info_str(),'updated',params[par.name])
-                counts+=1
 
         self._setup_from_parameters(params)
-
-        return counts
+        return
 
 
     def get_f_star(self):

@@ -87,6 +87,7 @@ class LyaTheory(object):
         emu_calls=self.get_emulator_calls(like_params=like_params)
 
         # setup linear power using list of likelihood parameters
+        # we will need this to get g_star, and reconstruct H(z)
         linP_model=self.cosmo.get_linP_model(like_params=like_params)
 
         # loop over redshifts and compute P1D

@@ -22,10 +22,13 @@ class MeanFluxModel(object):
             tau_0=-np.log(mf_z)
             ln_tau_coeff=[3.18,np.log(tau_0)]
         self.ln_tau_coeff=ln_tau_coeff
+        # store list of likelihood parameters (might be fixed or free)
+        self.set_parameters()
 
 
     def get_Nparam(self):
         """Number of parameters in the model"""
+        assert len(self.ln_tau_coeff)==len(self.params),"size mismatch"
         return len(self.ln_tau_coeff)
 
 
@@ -43,52 +46,56 @@ class MeanFluxModel(object):
         return np.exp(-tau)
 
 
+    def set_parameters(self):
+        """Setup likelihood parameters in the mean flux model"""
+
+        self.params=[]
+        Npar=len(self.ln_tau_coeff)
+        for i in range(Npar):
+            name='ln_tau_'+str(i)
+            if i==0:
+                xmin=-1.5
+                xmax=-0.4
+            elif i==1:
+                xmin=3.0
+                xmax=5.0
+            else:
+                xmin=-2.0
+                xmax=2.0
+            # note non-trivial order in coefficients
+            value=self.ln_tau_coeff[Npar-i-1]
+            par = likelihood_parameter.LikelihoodParameter(name=name,
+                                value=value,min_value=xmin,max_value=xmax)
+            self.params.append(par)
+
+        return
+ 
+
     def get_parameters(self):
-        """Tell likelihood about the parameters in the mean flux model"""
+        """Return likelihood parameters for the mean flux model"""
+        return self.params
+
+
+    def update_parameters(self,like_params):
+        """Update mean flux values using input list of likelihood parameters"""
 
         Npar=self.get_Nparam()
-        assert Npar==2, 'update get_parameters in mean_flux_model'
-        params=[]
-        if Npar > 0:
-            name='ln_tau_0'
-            xmin=-1.5
-            xmax=-0.4
-            # note non-trivial order in coefficients
-            value=self.ln_tau_coeff[1]
-            par = likelihood_parameter.LikelihoodParameter(name=name,
-                                value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        if Npar > 1:
-            name='ln_tau_1'
-            xmin=3.0
-            xmax=5.0
-            # note non-trivial order in coefficients
-            value=self.ln_tau_coeff[0]
-            par = likelihood_parameter.LikelihoodParameter(name=name,
-                                value=value,min_value=xmin,max_value=xmax)
-            params.append(par)
-        return params
 
+        # loop over likelihood parameters
+        for like_par in like_params:
+            if 'ln_tau' not in like_par.name:
+                continue
+            # make sure you find the parameter
+            found=False
+            # loop over parameters in mean flux model
+            for ip in range(len(self.params)):
+                if self.params[ip].is_same_parameter(like_par):
+                    assert found==False,'can not update parameter twice'
+                    self.ln_tau_coeff[Npar-ip-1]=like_par.value
+                    found=True
+            assert found==True,'could not update parameter '+like_par.name
 
-    def update_parameters(self,parameters):
-        """Look for mean flux parameters in list of parameters"""
-
-        Npar=self.get_Nparam()
-        assert Npar==2, 'update update_parameters in mean_flux_model'
-
-        # report how many parameters were updated
-        counts=0
-        for par in parameters:
-            if par.name=='ln_tau_0':
-                # note non-trivial order in coefficients
-                self.ln_tau_coeff[1] = par.value
-                counts+=1
-            if par.name=='ln_tau_1':
-                # note non-trivial order in coefficients
-                self.ln_tau_coeff[0] = par.value
-                counts+=1
-
-        return counts
+        return
 
 
     def get_new_model(self,parameters=[]):

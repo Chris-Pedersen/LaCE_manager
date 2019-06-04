@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import configargparse
 import corner
+import cProfile
 # our own modules
 import simplest_emulator
 import linear_emulator
@@ -88,6 +89,7 @@ for p in sampler.like.free_params:
 # run burn-in
 sampler.like.go_silent()
 sampler.run_burn_in(nsteps=args.nburnin)
+#cProfile.run("sampler.run_burn_in(nsteps=args.nburnin)",sort='cumtime')
 
 # run main chain
 sampler.run_chains(nsteps=args.nsteps)

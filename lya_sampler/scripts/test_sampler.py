@@ -34,8 +34,8 @@ parser.add_argument('--max_arxiv_size', type=int, default=None,
         help='Maximum number of models to train emulators', required=False)
 parser.add_argument('--undersample_z', type=int, default=1, required=False,
         help='Undersample simulation snapshots, to make lighter emulators')
-parser.add_argument('--use_linear_emu', action='store_true',
-        help='Use linear emulator instead of GP', required=False)
+parser.add_argument('--emu_type', type=str, default='polyGP',
+        help='Type of emulator to use (polyGP, kGP or linear)', required=False)
 parser.add_argument('--chain_filename', type=str, default=None,
         help='Write the chain to this file (no extension)', required=False)
 parser.add_argument('--verbose', action='store_true',
@@ -61,20 +61,31 @@ zs=data.z
 basedir='../../p1d_emulator/sim_suites/emulator_512_17052019/'
 p1d_label='p1d'
 skewers_label='Ns100_wM0.05'
-if args.use_linear_emu:
-    if verbose: print('use linear emulator')
-    emu=linear_emulator.LinearEmulator(basedir,p1d_label,skewers_label,
+if args.emu_type=='polyGP':
+    if verbose: print('use polyGP emulator')
+    # do not emulate growth or running (for now)
+    #paramList=["mF","Delta2_p","n_p","sigT_Mpc","gamma","kF_Mpc"]
+    paramList=None
+    emu=gp_emulator.PolyfitGPEmulator(basedir,p1d_label,skewers_label,
                     max_arxiv_size=args.max_arxiv_size,
-                    undersample_z=args.undersample_z)
-else:
-    if verbose: print('use GP emulator')
+                    undersample_z=args.undersample_z,
+                    paramList=paramList,kmax_Mpc=5,train=True)
+elif args.emu_type=='kGP':
+    if verbose: print('use kGP emulator')
     # do not emulate growth or running (for now)
     #paramList=["mF","Delta2_p","n_p","sigT_Mpc","gamma","kF_Mpc"]
     paramList=None
     emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                     max_arxiv_size=args.max_arxiv_size,
                     undersample_z=args.undersample_z,
-					paramList=paramList,kmax_Mpc=5,train=True)
+                    paramList=paramList,kmax_Mpc=5,train=True)
+elif args.emu_type=='linear':
+    if verbose: print('use linear emulator')
+    emu=linear_emulator.LinearEmulator(basedir,p1d_label,skewers_label,
+                    max_arxiv_size=args.max_arxiv_size,
+                    undersample_z=args.undersample_z)
+else:
+    raise ValueError('wrong emulator type '+args.emu_type)
 
 # specify free parameters in likelihood (make sure there are no empty spaces)
 free_parameters=[par.strip() for par in args.free_parameters.split(',')]
@@ -94,7 +105,7 @@ sampler.run_burn_in(nsteps=args.nburnin)
 # run main chain
 sampler.run_chains(nsteps=args.nsteps)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(
-                                        sampler.sampler.acceptance_fraction)))
+                                    sampler.sampler.acceptance_fraction)))
 
 # plot results
 sampler.plot_corner(cube=True)

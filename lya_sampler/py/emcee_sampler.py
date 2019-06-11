@@ -78,8 +78,9 @@ class EmceeSampler(object):
 
         pos=self.p0
         for i,result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
+            pos=result[0]
             if self.verbose and (i % nprint == 0):
-                print(i,np.mean(result[0],axis=0))
+                print(i,np.mean(pos,axis=0))
 
         if self.verbose: print('finished burn-in')
 

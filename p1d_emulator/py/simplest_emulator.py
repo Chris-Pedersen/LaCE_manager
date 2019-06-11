@@ -8,8 +8,7 @@ import p1d_arxiv
 class SimplestEmulator(object):
     """Nearest-grid point emulator for flux P1D."""
 
-    def __init__(self,basedir='../mini_sim_suite/',
-                p1d_label='p1d',skewers_label='Ns50_wM0.1',
+    def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 max_arxiv_size=None,verbose=True):
         """Setup emulator from base sim directory and label identifying skewer

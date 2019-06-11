@@ -10,9 +10,7 @@ import poly_p1d
 class LinearEmulator(object):
     """Linear interpolation emulator for flux P1D."""
 
-    def __init__(self,
-            basedir='../../p1d_emulator/sim_suites/emulator_512_17052019/',
-            p1d_label='p1d',skewers_label='Ns100_wM0.05',
+    def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
             emulate_running=False,emulate_growth=False,emulate_pressure=True,
             drop_tau_rescalings=False,drop_temp_rescalings=False,
             deg=4,kmax_Mpc=10.0,max_arxiv_size=None,

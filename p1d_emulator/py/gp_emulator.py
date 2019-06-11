@@ -13,8 +13,7 @@ class GPEmulator:
     a given P_1D(k) for the same k-bins used in training.
     GPEmulator.predict takes models in a dictionary format currently.
     """
-    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
-		p1d_label='p1d',skewers_label='Ns110_wM0.1',
+    def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,undersample_z=1):
@@ -222,8 +221,7 @@ class PolyfitGPEmulator:
     """ Gaussian process emulator which learns the nth degree polynomial fit
     as a function of model as opposed to training on the P(k)s themselves. """
 
-    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_15052019/',
-		p1d_label='p1d',skewers_label='Ns110_wM0.1',
+    def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,deg=4,undersample_z=1):
@@ -356,8 +354,7 @@ class GP_k_Emulator:
     """ 
     This GP emulator will also train on the k values themselves.
     """
-    def __init__(self,basedir='../../p1d_emulator/sim_suites/emulator_04052019/',
-		p1d_label='mf_p1d',skewers_label='Ns100_wM0.1',
+    def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
                 paramList=None,binSampling=None,binsPerModel=5,
                 undersample_z=1):

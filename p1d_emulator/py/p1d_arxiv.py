@@ -6,31 +6,39 @@ import json
 class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
 
-    def __init__(self,basedir='../mini_sim_suite/',
-                p1d_label='p1d',skewers_label=None,
+    def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                max_arxiv_size=None,undersample_z=1,verbose=False):
+                max_arxiv_size=None,undersample_z=1,verbose=False,
+                no_skewers=False):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)"""
 
-        self.basedir=basedir
-        self.p1d_label=p1d_label
-        self.skewers_label=skewers_label
+        if basedir:
+            self.basedir=basedir
+        else:
+            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+            repo=os.environ['LYA_EMU_REPO']
+            self.basedir=repo+'/p1d_emulator/sim_suites/emulator_512_17052019/'
+        if p1d_label:
+            self.p1d_label=p1d_label
+        else:
+            self.p1d_label='p1d'
+        if skewers_label:
+            self.skewers_label=skewers_label
+        else:
+            self.skewers_label='Ns100_wM0.07'
         self.verbose=verbose
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
-                            max_arxiv_size,undersample_z)
+                            max_arxiv_size,undersample_z,no_skewers)
 
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
-                            max_arxiv_size,undersample_z):
+                            max_arxiv_size,undersample_z,no_skewers):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
         self.data=[]
-
-        # if we didn't provide skewers label, read only general sim info
-        no_skewers=(self.skewers_label is None)
 
         # read file containing information about latin hyper-cube
         cube_json=self.basedir+'/latin_hypercube.json'

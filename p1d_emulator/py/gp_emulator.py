@@ -222,7 +222,7 @@ class PolyfitGPEmulator:
     as a function of model as opposed to training on the P(k)s themselves. """
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
-                max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
+                max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,deg=4,undersample_z=1):
         self.kmax_Mpc=kmax_Mpc
@@ -355,7 +355,7 @@ class GP_k_Emulator:
     This GP emulator will also train on the k values themselves.
     """
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
-                max_arxiv_size=None,verbose=True,kmax_Mpc=10.0,
+                max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,binSampling=None,binsPerModel=5,
                 undersample_z=1):
         self.kmax_Mpc=kmax_Mpc

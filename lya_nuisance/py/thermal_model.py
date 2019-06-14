@@ -59,8 +59,8 @@ class ThermalModel(object):
         for i in range(Npar):
             name='ln_T0_'+str(i)
             if i==0:
-                xmin=np.log(5e3)
-                xmax=np.log(5e4)
+                xmin=np.log(4e3)
+                xmax=np.log(3e4)
             else:
                 xmin=-2.0
                 xmax=2.0

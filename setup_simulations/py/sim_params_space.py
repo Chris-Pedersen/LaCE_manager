@@ -14,7 +14,8 @@ class SimulationParameterSpace(object):
             self._default_setup(add_growth,add_amplitude,add_slope,add_running,
                                 add_heat_amp,add_heat_slo,add_z_rei)
         else:
-            self._setup_from_file(filename,add_slope,add_running,
+            self._setup_from_file(filename,add_growth,add_amplitude,
+                            add_slope,add_running,
                             add_heat_amp,add_heat_slo,add_z_rei)
 
     def _default_setup(self,add_growth,add_amplitude,add_slope,add_running,

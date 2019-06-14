@@ -21,20 +21,25 @@ def cosmo_from_sim_params(param_space,sim_params,linP_model_fid,
     kp_Mpc = linP_model_fid.kp
 
     # translate Omega_star to Omega_0 (in target cosmology)
-    ip_Om_star=param_space['Om_star']['ip']
-    Om_star=sim_params[ip_Om_star]
-    # translate Omega_star to Omega_0 (assumes flat LCDM)
-    z3=(1+z_star)**3
-    Om=Om_star/(z3+Om_star-Om_star*z3)
-    # get parameters from fiducial cosmology
-    Obh2=linP_model_fid.cosmo.ombh2
-    Och2=linP_model_fid.cosmo.omch2
-    Omh2=Obh2+Och2
-    h=np.sqrt(Omh2/Om)
-    if verbose:
-        print('Omega_m_star =', Om_star)
-        print('Omega_m =', Om)
-        print('h =', h)
+    if 'Om_star' in param_space:
+        ip_Om_star=param_space['Om_star']['ip']
+        Om_star=sim_params[ip_Om_star]
+        # translate Omega_star to Omega_0 (assumes flat LCDM)
+        z3=(1+z_star)**3
+        Om=Om_star/(z3+Om_star-Om_star*z3)
+        # get parameters from fiducial cosmology
+        Obh2=linP_model_fid.cosmo.ombh2
+        Och2=linP_model_fid.cosmo.omch2
+        Omh2=Obh2+Och2
+        h=np.sqrt(Omh2/Om)
+        if verbose:
+            print('Omega_m_star =', Om_star)
+            print('Omega_m =', Om)
+            print('h =', h)
+    else:
+        h=linP_model_fid.cosmo.H0/100.0
+        if verbose:
+            print('h =', h)
     
     # get temporary cosmology to tune primordial power spectrum
     cosmo_temp=camb_cosmo.get_cosmology(H0=100.0*h)
@@ -48,10 +53,13 @@ def cosmo_from_sim_params(param_space,sim_params,linP_model_fid,
     
     # difference in linear power at kp between target and fiducial cosmology
 	# (once they have the same transfer function)
-    ip_Delta2_star=param_space['Delta2_star']['ip']
-    Delta2_star=sim_params[ip_Delta2_star]
-    lnA_star=np.log(Delta2_star*(2*np.pi**2)/kp_Mpc**3)
-    delta_lnA_star=lnA_star-lnA_star_temp
+    if 'Delta2_star' in param_space:
+        ip_Delta2_star=param_space['Delta2_star']['ip']
+        Delta2_star=sim_params[ip_Delta2_star]
+        lnA_star=np.log(Delta2_star*(2*np.pi**2)/kp_Mpc**3)
+        delta_lnA_star=lnA_star-lnA_star_temp
+    else:
+        delta_lnA_star=0.0
     # slope
     if 'n_star' in param_space:
         ip_n_star=param_space['n_star']['ip']

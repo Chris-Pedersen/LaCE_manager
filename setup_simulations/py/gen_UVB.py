@@ -1,35 +1,10 @@
-#!/usr/bin/python
-##########################################
-# Generating UVB models (TREECOOL tables)#
-#         Author: Jose Onorbe            #
-#    Contact: jose.onnorbe@gmail.com     #
-##########################################
+# adapted from http://thermal.joseonorbe.com/doc/gen_UVB.py
 
-################################################################
-# This file includes all the python functions 
-# and constants to generate new UVB models using
-# the methodology described in Onorbe et al. (2017;
-# https://arxiv.org/abs/1607.04218).
-#
-# It generates new UVB tables based on a specific evolution 
-# of Q_HI(z) and Q_HeII(z), the heat injection of each of 
-# these reionizations and UVB tables to be used once 
-# reionization is finished. It is a bit messy but it is very 
-# simple once you understands the idea behind it. 
-# At some point, hopefully soon, I will like to put all this 
-# in an open repository, clean the code a bit and add some further
-# explanations but until then this will have to do it. 
-# 
-# The code assumes python-2 is used. I have not tested it with
-#  python-3. At the end of this file you have an example
-# of how the code should be run.
-#
-# Do not hesitate to contact me if you have any questions. 
-###############################################################
 import numpy
 import os
 import asciitable
 import scipy.interpolate as spi
+import scipy.special as sps
 
 #################
 ### Constants ###
@@ -74,8 +49,8 @@ lowval=1E-5
 ###########################
 
 # write TREECOOL file
-def write_TREECOOL(fout,lz,photo_new,QDeltaT=False):
-    pf=open(fout,'w')
+def write_TREECOOL(output_file,lz,photo_new,QDeltaT=False):
+    pf=open(output_file,'w')
     if QDeltaT==False: # standard out
         for i in range(len(lz)):
             pf.write("%f %e %e %e %e %e %e\n" %
@@ -119,31 +94,6 @@ def fdQdz(z,Q):
     dQdz[1:-1]=dQ/dz
     return dQdz
 
-"""
-def interpUVB(model):
-    # UVB model that will be used once reionization is finished
-    assert os.environ['LYA_EMU_REPO'],'define LYA_EMU_REPO env var'
-    treecool_dir=os.environ['LYA_EMU_REPO']+'/setup_simulations/test_sim/'
-    if model=='HM12':
-        treecool_file=treecool_dir+'/TREECOOL_HM12.txt'
-        data=asciitable.read(treecool_file)
-    elif model=="OHL16": # this is our corrected model to match observations
-        data=asciitable.read("FIXME")
-    elif model=="P18":
-        treecool_file=treecool_dir+'/TREECOOL_P18.txt'
-        data=asciitable.read(treecool_file)
-    else:
-        print('ERROR, model not defined: %s'%(model))
-    lz = data['col1']
-    fpiHI=spi.interp1d(lz,data['col2'],kind='linear')
-    fpiHeI=spi.interp1d(lz,data['col3'],kind='linear')
-    fpiHeII=spi.interp1d(lz,data['col4'],kind='linear')
-    fphHI=spi.interp1d(lz,data['col5'],kind='linear')
-    fphHeI=spi.interp1d(lz,data['col6'],kind='linear')
-    fphHeII=spi.interp1d(lz,data['col7'],kind='linear')
-    return [lz,fpiHI,fpiHeI,fpiHeII,fphHI,fphHeI,fphHeII]
-"""
-
 def interpUVB(input_file):
     # UVB model that will be used once reionization is finished
     data=asciitable.read(input_file)
@@ -172,8 +122,6 @@ def calc_nH(cosmo=[0.702,0.046,0.275,0.725,0.76]):
 def falpha(T,a,b,Tf0,Tf1):
     x0=numpy.sqrt(T/Tf0);x1=numpy.sqrt(T/Tf1)
     return a/ ( x0 * ((1.+x0)**(1.-b)) * ((1.+x1)**(1+b)) )
-
-
 
 #######  Recombination times
 # calc case B HI recombination coeff
@@ -368,10 +316,11 @@ def QHeIII2qHeII(z,QHeIII,dTdz,cosmo=[0.702,0.046,0.275,0.725,0.76]):
 
 def genQ2G_DeltaT(z,QHII,zcutH,QHeIII,zcutHe,
         DeltaTHI,DeltaTHeII,
-        model='data/TREECOOL_P18.txt',
+        input_file='data/TREECOOL_P18.txt',
         cosmo=[0.702,0.046,0.275,0.725,0.76],
         Gthreshold=True,
-        fout=None):
+        output_file=None):
+
     ### First we need to do assumption about temperature evolution
     TCMB=TCMBz0*(1.+z)
     TzH=QHII*DeltaTHI
@@ -386,9 +335,9 @@ def genQ2G_DeltaT(z,QHII,zcutH,QHeIII,zcutHe,
     dTHdz=numpy.zeros(newlen);dTHedz=numpy.zeros(newlen)
     ncutH=fzcut(z,zcutH) # highest redhist below or equal to the cut
     ncutHe=fzcut(z,zcutHe) # highest redhist below or equal to the cut
+
     #### Now we obtain the functions to get photoionization 
-    #### and photoheating rates at z lower than reionization
-    #### and fill values
+    #### and photoheating rates at z lower than reionization and fill values
     lzmodel,fpiHI,fpiHeI,fpiHeII,fphHI,fphHeI,fphHeII=interpUVB(input_file)
     #### IONIZATIOn HI
     # For ncut and below (z<zcut) we use model values
@@ -442,8 +391,8 @@ def genQ2G_DeltaT(z,QHII,zcutH,QHeIII,zcutHe,
     fcH=photo_new[0,:]==0.0;photo_new[3,:][fcH]=0.0
     fcHe=photo_new[2,:]==0.0;photo_new[5,:][fcHe]=0.0
     #### write to file
-    if fout!=None:
-        write_TREECOOL(fout,lz,photo_new,QDeltaT=False)
+    if output_file!=None:
+        write_TREECOOL(output_file,lz,photo_new,QDeltaT=False)
     return z,photo_new
 
 
@@ -478,24 +427,62 @@ def myfQHII_2(listz,zzero,n1=50.,n2=1.,norm=0.5):
         QHII[-1]=0.
     return QHII
 
-#########################################################
 
-################
-# Example run  #
-################
+#####################################################################
+#### Equations by Keir Rogers to get alternative Q_HII evolution ####
+#####################################################################
 
-## Input Variables
-# listz: array with redshift (goes from low to high)
-# QHII: value of QHII for listz
-# z_HII: redshift when QHII=1.0
-# QHeIII: value of QHeIII for listz
-# z_HeIII: redshift when QHeIII=1.0
-# DeltaT_HI: total heat injection due to HI reionization (Kelvin)
-# DeltaT_HeII: total heat injection due to HeII reionization (Kelvin)
-# model: indicates which photoionization and photoheating rates will be used once reionization is finished
-# cosmoHM: [hubble,Omega_b,Omega_M,Omega_L,Xp] for example cosmoHM=[0.702,0.046,0.275,0.725,0.76]
-# Gthreshold: true or false. True (default) does corrections to fix points near reionization redshift
-# fout: name for the TREECOOL file, if None data is not saved in file
+def volume_filling_factor_HII(z, z_mid, n_1=50., n_2=1.):
+    """Simple parametric model for input volume filling factor of ionised hydrogen (Q_HII) as a function of redshift z"""
+    sign_array = numpy.zeros_like(z) + (z <= z_mid) - (z > z_mid)
+    gamma_a = numpy.zeros_like(z) + ((z <= z_mid) / n_1)  + ((z > z_mid) / n_2)
+    gamma_x = numpy.zeros_like(z) + ((z <= z_mid) * (numpy.abs(z - z_mid) ** n_1))  + ((z > z_mid) * (numpy.abs(z - z_mid) ** n_2))
+    return 0.5 + (0.5 * sign_array * sps.gammainc(gamma_a, gamma_x))
 
-#zG,dataG=modQ2G.genQ2G_DeltaT(listz,QHII,z_HII,QHeIII,z_HeIII,DeltaT_HI,DeltaT_HeII,model='OHL16',cosmo=cosmoHM,Gthreshold=True,fout=None)
+def volume_filling_factor_HeIII(z, z_end):
+    """Simple parametric model for input volume filling factor of doubly-ionised helium (Q_HeIII) as a function of z"""
+    arctan_model = 1. - numpy.arctan(z - z_end)
+    arctan_model[arctan_model > 1.] = 1.
+    arctan_model[arctan_model < 0.] = 0.
+    return arctan_model
 
+def find_z_end_HI_reion(z, z_mid, n_1=50., n_2=1.):
+    """Approximate the redshift when HI reionisation has 'finished' (Q_HII = 1)"""
+    return numpy.max(z[volume_filling_factor_HII(z, z_mid, n_1=n_1, n_2=n_2) == 1.])
+
+
+##############################################
+#### Main equation used in LyaCosmoParams ####
+##############################################
+
+def generate_treecool_file(output_file='test_TREECOOL.txt',
+                    z_mid_HI_reion=7.65, z_end_HeII_reion = 3.5,
+                    DeltaTHI = 2.e4, DeltaTHeII = 1.5e+4):
+    # input model will be, for now, that of HM2012
+    treecool_dir=os.environ['LYA_EMU_REPO']+'/setup_simulations/test_sim/'
+    input_file=treecool_dir+'/TREECOOL_HM12.txt'
+    # cosmology in HM2012
+    Om=0.3
+    OL=1.0-Om
+    Ob=0.045
+    h=0.7
+    Y_He=0.245
+    cosmoHM = [h,Ob,Om,OL,1.-Y_He] #X_P = 1 - Y_P (???)    
+    # list of redshifts to go into the TREECOOL file
+    listz=numpy.arange(0.,18.,0.01)
+    
+    # Figure out filling factor of hydrogen
+    QHII = myfQHII_2(listz,z_mid_HI_reion,n1=50.,n2=1.,norm=0.5)
+    #QHII = volume_filling_factor_HII(listz, z_mid_HI_reion)
+    z_end_HI_reion = find_z_end_HI_reion(listz, z_mid_HI_reion)
+    print('z_end for HI reionisation model (Q_HII = 1) =', z_end_HI_reion)
+
+    # Filling factor of helium
+    QHeIII = volume_filling_factor_HeIII(listz, z_end_HeII_reion)
+    
+    # generate new treecool file, and write to disk
+    genQ2G_DeltaT(listz,QHII=QHII,zcutH=z_end_HI_reion,
+                QHeIII=QHeIII,zcutHe=z_end_HeII_reion,
+                DeltaTHI=DeltaTHI,DeltaTHeII=DeltaTHeII,
+                input_file=input_file,cosmo=cosmoHM,Gthreshold=True,
+                output_file=output_file)

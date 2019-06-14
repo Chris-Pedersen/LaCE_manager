@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import json
-
+import gen_UVB as UVB
 
 def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):
@@ -82,7 +82,14 @@ def get_output_list(zs):
     return output_list
 
 
-def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
+def write_treecool_file(simdir,z_mid_HI_reion):
+    """Write a treecool file for a given reionization history"""
+
+    fname=simdir+'/treecool.txt'
+    UVB.generate_treecool_file(output_file=fname,z_mid_HI_reion=z_mid_HI_reion)
+    return
+
+def write_gadget_file(simdir,cosmo,heat_amp=1.0,heat_slo=1.0,Ngrid=256,
                 zs=[49.0,9.0,8.0,7.0,6.0,5.0,4.5,4.0,3.5,3.0,2.5,2.0]):
     """Write a MP-Gadget file for a given cosmology"""
 
@@ -99,7 +106,7 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
 
     # main simulation settings (options)
     gadget_file.write("Nmesh = %d \n" % Nmesh)
-    gadget_file.write("TreeCoolFile = "+simdir+"/TREECOOL_P18.txt \n")
+    gadget_file.write("TreeCoolFile = "+simdir+"/treecool.txt \n")
     gadget_file.write("InitCondFile = "+simdir+"/output/IC \n")
     gadget_file.write("OutputDir = "+simdir+"/output \n")
     # find list of outputs (except last one) 
@@ -144,8 +151,8 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
 
     # thermal history parameters
     gadget_file.write("HeliumHeatOn = 1 \n")
-    gadget_file.write("HeliumHeatAmp = %f \n" % mu_He)
-    gadget_file.write("HydrogenHeatAmp = %f \n" % mu_H)
+    gadget_file.write("HeliumHeatAmp = %f \n" % heat_amp)
+    gadget_file.write("HeliumHeatExp = %f \n" % heat_slo)
 
     gadget_file.close()
 

@@ -119,6 +119,7 @@ def fdQdz(z,Q):
     dQdz[1:-1]=dQ/dz
     return dQdz
 
+"""
 def interpUVB(model):
     # UVB model that will be used once reionization is finished
     assert os.environ['LYA_EMU_REPO'],'define LYA_EMU_REPO env var'
@@ -133,6 +134,19 @@ def interpUVB(model):
         data=asciitable.read(treecool_file)
     else:
         print('ERROR, model not defined: %s'%(model))
+    lz = data['col1']
+    fpiHI=spi.interp1d(lz,data['col2'],kind='linear')
+    fpiHeI=spi.interp1d(lz,data['col3'],kind='linear')
+    fpiHeII=spi.interp1d(lz,data['col4'],kind='linear')
+    fphHI=spi.interp1d(lz,data['col5'],kind='linear')
+    fphHeI=spi.interp1d(lz,data['col6'],kind='linear')
+    fphHeII=spi.interp1d(lz,data['col7'],kind='linear')
+    return [lz,fpiHI,fpiHeI,fpiHeII,fphHI,fphHeI,fphHeII]
+"""
+
+def interpUVB(input_file):
+    # UVB model that will be used once reionization is finished
+    data=asciitable.read(input_file)
     lz = data['col1']
     fpiHI=spi.interp1d(lz,data['col2'],kind='linear')
     fpiHeI=spi.interp1d(lz,data['col3'],kind='linear')
@@ -354,7 +368,7 @@ def QHeIII2qHeII(z,QHeIII,dTdz,cosmo=[0.702,0.046,0.275,0.725,0.76]):
 
 def genQ2G_DeltaT(z,QHII,zcutH,QHeIII,zcutHe,
         DeltaTHI,DeltaTHeII,
-        model='OHL16',
+        model='data/TREECOOL_P18.txt',
         cosmo=[0.702,0.046,0.275,0.725,0.76],
         Gthreshold=True,
         fout=None):
@@ -375,7 +389,7 @@ def genQ2G_DeltaT(z,QHII,zcutH,QHeIII,zcutHe,
     #### Now we obtain the functions to get photoionization 
     #### and photoheating rates at z lower than reionization
     #### and fill values
-    lzmodel,fpiHI,fpiHeI,fpiHeII,fphHI,fphHeI,fphHeII=interpUVB(model)
+    lzmodel,fpiHI,fpiHeI,fpiHeII,fphHI,fphHeI,fphHeII=interpUVB(input_file)
     #### IONIZATIOn HI
     # For ncut and below (z<zcut) we use model values
     photo_new[0,:ncutH+1]=fpiHI(lz[:ncutH+1])

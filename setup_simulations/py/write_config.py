@@ -63,6 +63,10 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.write("PrimordialAmp = %.6e \n" % cosmo.InitPower.As)
     genic_file.write("PrimordialRunning = %.6e \n" % cosmo.InitPower.nrun)
 
+    # maxim memory required per node (in DiRAC)
+    genic_file.write("MaxMemSizePerNode=231168 \n")    ## For skylake-himem
+    #genic_file.write("MaxMemSizePerNode=115584 \n")    ## For skylake
+
     # not quite sure if needed...
     genic_file.write("UnitLength_in_cm = 3.085678e21 \n")
     genic_file.write("UnitMass_in_g = 1.989e43 \n")
@@ -117,7 +121,8 @@ def write_gadget_file(simdir,cosmo,heat_amp=1.0,heat_slo=1.0,Ngrid=256,
     # main simulation settings (default)
     gadget_file.write("SnapshotWithFOF = 0 \n")
     gadget_file.write("TimeLimitCPU = 430000 \n")
-    gadget_file.write("MaxMemSizePerNode=115584 \n")
+    gadget_file.write("MaxMemSizePerNode=231168 \n")    ## For skylake-himem
+    #gadget_file.write("MaxMemSizePerNode=115584 \n")    ## For skylake
     gadget_file.write("CoolingOn = 1 \n")
     gadget_file.write("StarformationOn = 1 \n")
     gadget_file.write("RadiationOn = 1 \n")
@@ -125,6 +130,7 @@ def write_gadget_file(simdir,cosmo,heat_amp=1.0,heat_slo=1.0,Ngrid=256,
     gadget_file.write("WindOn = 0 \n")
     gadget_file.write("StarformationCriterion = density \n")
     gadget_file.write("DensityKernelType = cubic \n")
+    gadget_file.write("DensityIndependentSphOn = 0 \n")
     gadget_file.write("InitGasTemp = 270. \n")
     gadget_file.write("MinGasTemp = 100 \n")
     gadget_file.write("PartAllocFactor = 2 \n")

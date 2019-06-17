@@ -142,7 +142,7 @@ class ArxivP1D(object):
                     # compute average of < F F >, not <delta delta> 
                     plus_p1d = np.array(plus_pp['p1d_Mpc'])
                     minus_p1d = np.array(minus_pp['p1d_Mpc'])
-                    pair_p1d = (plus_p1d * plus_mF**2
+                    pair_p1d = 0.5*(plus_p1d * plus_mF**2
                                 + minus_p1d * minus_mF**2) / pair_mF**2
                     p1d_data['k_Mpc'] = k_Mpc
                     p1d_data['p1d_Mpc'] = pair_p1d

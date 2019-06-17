@@ -74,8 +74,11 @@ class Likelihood(object):
         return like_params
 
 
-    def get_p1d_kms(self,k_kms,values=None):
+    def get_p1d_kms(self,k_kms=None,values=None):
         """Compute theoretical prediction for 1D P(k)"""
+
+        if k_kms is None:
+            k_kms=self.data.k
 
         # translate sampling point (in unit cube) to parameter values
         if values is not None:

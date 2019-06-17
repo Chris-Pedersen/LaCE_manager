@@ -44,8 +44,6 @@ nsamples=cube_data['nsamples']
 
 # directory to LyaCosmoParams repo
 lya_repo='/home/dc-font1/Codes/LyaCosmoParams/'
-# get TREECOOL file 
-treecool_file=lya_repo+'/setup_simulations/test_sim/TREECOOL_P18.txt'
 
 # for each sample, run make_class_power and copy the files to the right path
 for sample in range(nsamples):
@@ -57,10 +55,6 @@ for sample in range(nsamples):
     # full path to one each simulation in the pair
     plus_dir=pair_dir+'/sim_plus/'
     minus_dir=pair_dir+'/sim_minus/'
-
-    # copy treecool file to both folders
-    copy(treecool_file, plus_dir)
-    copy(treecool_file, minus_dir)
 
     # write submission script to both simulations
     plus_submit=plus_dir+'/simulation.sub'

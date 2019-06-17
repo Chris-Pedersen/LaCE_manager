@@ -54,11 +54,11 @@ class MeanFluxModel(object):
         for i in range(Npar):
             name='ln_tau_'+str(i)
             if i==0:
-                xmin=-2.5
+                xmin=-1.5
                 xmax=-0.5
             elif i==1:
                 xmin=2.5
-                xmax=4.0
+                xmax=3.8
             else:
                 xmin=-2.0
                 xmax=2.0

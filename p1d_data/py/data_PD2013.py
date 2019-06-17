@@ -1,17 +1,28 @@
+import os
 import numpy as np
 import base_p1d_data
 
 class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,basedir='../../p1d_data/data_files/PD2013/',use_FFT=True,
+    def __init__(self,basedir=None,zmin=None,zmax=None,use_FFT=True,
                 add_syst=True,blind_data=False):
         """Read measured P1D from files, either FFT or likelihood version.
             If blind_data=True, use analytical formula instead."""
+
+        # folder storing P1D measurement
+        if not basedir:
+            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+            repo=os.environ['LYA_EMU_REPO']
+            basedir=repo+'/p1d_data/data_files/PD2013/'
 
         if use_FFT:
             z,k,Pk,cov=self._setup_FFT(basedir,add_syst)
         else:
             z,k,Pk,cov=self._setup_like(basedir,add_syst)
+
+        # drop low-z or high-z bins
+        if zmin or zmax:
+            z,k,Pk,cov=_drop_zbins(z,k,Pk,cov,zmin,zmax)
 
         if blind_data:
             Nz=len(z)
@@ -65,7 +76,37 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
         p1d_file=basedir+'/table5a.dat'
         raise ValueError('implement _setup_like to read likelihood P1D') 
-        
+
+
+def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
+    """Drop redshift bins below zmin or above zmax"""
+
+    # size of input arrays
+    Nz_in=len(z_in)
+    Nk=len(k_in)
+
+    # figure out how many z to keep
+    keep=np.ones(Nz_in, dtype=bool)
+    if zmin:
+        keep = np.logical_and(keep,z_in>zmin)
+    if zmax:
+        keep = np.logical_and(keep,z_in<zmax)
+    Nz_out=np.sum(keep)
+
+    # setup new arrays
+    z_out=np.empty(Nz_out)
+    Pk_out=np.empty((Nz_out,Nk))
+    cov_out=[]
+    i=0
+    for j in range(Nz_in):
+        if keep[j]:
+            z_out[i]=z_in[j]
+            Pk_out[i]=Pk_in[j]
+            Pk_out[i]=Pk_in[j]
+            cov_out.append(cov_in[j])
+            i+=1
+    return z_out,k_in,Pk_out,cov_out
+
 
 def analytic_p1d_PD2013_z_kms(z,k_kms):
     """Fitting formula for 1D P(z,k) from Palanque-Delabrouille et al. (2013).

@@ -11,7 +11,8 @@ class LinearEmulator(object):
     """Linear interpolation emulator for flux P1D."""
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
-            emulate_running=False,emulate_growth=False,emulate_pressure=True,
+            emulate_slope=True,emulate_running=False,
+            emulate_growth=False,emulate_pressure=True,
             drop_tau_rescalings=False,drop_temp_rescalings=False,
             deg=4,kmax_Mpc=10.0,max_arxiv_size=None,
             undersample_z=1,verbose=False):
@@ -31,7 +32,10 @@ class LinearEmulator(object):
         self._fit_p1d_in_arxiv(deg,kmax_Mpc)
 
         # setup parameter space to be used in emulator
-        self._setup_param_space(emulate_running,emulate_growth,emulate_pressure)
+        self._setup_param_space(emulate_slope=emulate_slope,
+                    emulate_running=emulate_running,
+                    emulate_growth=emulate_growth,
+                    emulate_pressure=emulate_pressure)
 
         # for each order in polynomial, setup interpolation object
         self._setup_interp(deg)
@@ -48,11 +52,13 @@ class LinearEmulator(object):
             entry['fit_p1d'] = fit_p1d
 
 
-    def _setup_param_space(self,emulate_running,emulate_growth,
-                                emulate_pressure):
+    def _setup_param_space(self,emulate_slope,emulate_running,
+                            emulate_growth,emulate_pressure):
         """Set order of parameters in emulator"""
 
-        self.params=['Delta2_p','n_p']
+        self.params=['Delta2_p']
+        if emulate_slope:
+            self.params.append('n_p')
         if emulate_running:
             self.params.append('alpha_p')
         if emulate_growth:

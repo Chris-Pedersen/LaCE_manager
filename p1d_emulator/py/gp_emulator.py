@@ -84,7 +84,7 @@ class GPEmulator:
         kernel = GPy.kern.Linear(len(paramList))
         kernel += GPy.kern.RBF(len(paramList))
 
-        print("Training GP")
+        print("Training GP on %d points" % len(self.arxiv.data))
         self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel, noise_var=1e-10)
         status = self.gp.optimize(messages=False) #True
         print("Optimised")
@@ -299,7 +299,7 @@ class PolyfitGPEmulator:
         kernel = GPy.kern.Linear(len(paramList))
         kernel += GPy.kern.RBF(len(paramList))
 
-        print("Training GP")
+        print("Training GP on %d points" % len(self.arxiv.data))
         self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel, noise_var=1e-10)
         status = self.gp.optimize(messages=False) #True
         print("Optimised")
@@ -448,7 +448,7 @@ class GP_k_Emulator:
         kernel = GPy.kern.Linear(len(paramList))
         kernel += GPy.kern.RBF(len(paramList))
 
-        print("Training GP on %d models" % numModels)
+        print("Training GP on %d points" % numModels)
         self.gp = GPy.models.GPRegression(params,normspectra.reshape(-1,1),kernel=kernel, noise_var=1e-10)
         status = self.gp.optimize(messages=False) #True
         print("Optimised")

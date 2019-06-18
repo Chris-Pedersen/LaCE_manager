@@ -103,7 +103,7 @@ class LinearEmulator(object):
         return np.array(point)
 
 
-    def emulate_p1d_Mpc(self,model,k_Mpc):
+    def emulate_p1d_Mpc(self,model,k_Mpc,returnErrors=False):
         """Return emulate 1D power spectrum at input k values"""
 
         if self.verbose: print('asked to emulate model',model)
@@ -121,12 +121,17 @@ class LinearEmulator(object):
             if np.isnan(coeffs[Npar-i-1]):
                 if self.verbose:
                     print('linear emulator failed',point)
-                    return None
+                    if returnErrors:
+                        return None,None
+                    else:
+                        return None
         if self.verbose: print('got coefficients',coeffs)
 
         # set P1D object
         kmin_Mpc=self.arxiv.data[0]['fit_p1d'].kmin_Mpc
         smooth_p1d = poly_p1d.PolyP1D(lnP_fit=coeffs,kmin_Mpc=kmin_Mpc)
-
-        return smooth_p1d.P_Mpc(k_Mpc)
+        if returnErrors:
+            return smooth_p1d.P_Mpc(k_Mpc),None
+        else:
+            return smooth_p1d.P_Mpc(k_Mpc)
 

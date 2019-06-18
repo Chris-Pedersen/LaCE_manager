@@ -34,6 +34,7 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.write("FileBase = IC \n")
     genic_file.write("ProduceGas = 1 \n")
     genic_file.write("RadiationOn = 1 \n")
+    genic_file.write("MakeGlassGas = 0 \n")
     genic_file.write("DifferentTransferFunctions = 1 \n")
     genic_file.write("ScaleDepVelocity = 1 \n")
     genic_file.write("UnitaryAmplitude = 1 \n")

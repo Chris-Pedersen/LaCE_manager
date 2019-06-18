@@ -80,7 +80,7 @@ class LyaTheory(object):
         return emu_calls
 
 
-    def get_p1d_kms(self,k_kms,like_params=[]):
+    def get_p1d_kms(self,k_kms,like_params=[],returnErrors=False):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters"""
 
@@ -93,6 +93,8 @@ class LyaTheory(object):
 
         # loop over redshifts and compute P1D
         p1d_kms=[]
+        if returnErrors:
+            errors=[]
         Nz=len(self.zs)
         for iz,z in enumerate(self.zs):
             # will call emulator for this model
@@ -100,14 +102,26 @@ class LyaTheory(object):
             # emulate p1d
             dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
             k_Mpc = k_kms * dkms_dMpc
-            p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc)
+            if returnErrors:
+                p1d_Mpc,error = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
+                                                        returnErrors=True)
+            else:
+                p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
+                                                        returnErrors=False)
             if p1d_Mpc is None:
                 if self.verbose: print('emulator did not provide P1D')
                 p1d_kms.append(None)
+                if returnErrors:
+                    errors.append(None)
             else:
                 p1d_kms.append(p1d_Mpc * dkms_dMpc)
+                if returnErrors:
+                    errors.append(error * dkms_dMpc)
 
-        return p1d_kms
+        if returnErrors:
+            return p1d_kms,errors
+        else:
+            return p1d_kms
 
 
     def get_parameters(self):

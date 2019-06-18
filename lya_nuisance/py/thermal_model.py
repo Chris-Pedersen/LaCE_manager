@@ -11,9 +11,9 @@ class ThermalModel(object):
         """Construct model with central redshift and (x2,x1,x0) polynomials."""
         self.z_T=z_T
         if not ln_T0_coeff:
-            ln_T0_coeff=[0.0,np.log(1.e4)]
+            ln_T0_coeff=[0.0,np.log(1.2e4)]
         if not ln_gamma_coeff:
-            ln_gamma_coeff=[0.0,np.log(1.4)]
+            ln_gamma_coeff=[-0.2,np.log(1.4)]
         self.ln_T0_coeff=ln_T0_coeff
         self.ln_gamma_coeff=ln_gamma_coeff
         # store list of likelihood parameters (might be fixed or free)

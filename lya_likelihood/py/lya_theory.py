@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import camb_cosmo
 import fit_linP
 import recons_cosmo
@@ -140,3 +141,29 @@ class LyaTheory(object):
         models={'mf_model':mf_model,'T_model':T_model,'kF_model':kF_model}
 
         return models
+
+
+    def plot_p1d(self,k_kms,like_params=[],plot_every_iz=1):
+        """Emulate and plot P1D in velocity units, for all redshift bins,
+            as a function of input likelihood parameters"""
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d=self.get_p1d_kms(k_kms,like_params)
+
+        # plot only few redshifts for clarity
+        Nz=len(self.zs)
+        for iz in range(0,Nz,plot_every_iz):
+            # acess data for this redshift
+            z=self.zs[iz]
+            p1d=emu_p1d[iz]
+            # plot everything
+            col = plt.cm.jet(iz/(Nz-1))
+            plt.plot(k_kms,p1d*k_kms/np.pi,color=col,label='z=%.1f'%z)
+        plt.yscale('log')
+        plt.legend()
+        plt.xlabel('k [s/km]')
+        plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
+        plt.ylim(0.005,0.6)
+        plt.show()
+
+        return

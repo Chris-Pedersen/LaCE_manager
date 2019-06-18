@@ -187,7 +187,7 @@ class GPEmulator:
 
     def predict(self,model):
         ## Method to return P1D for a given parameter set
-        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+#assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
         param=[]
         for par in self.paramList:
             ## Rescale input parameters
@@ -322,7 +322,7 @@ class PolyfitGPEmulator:
 
     def predict(self,model):
         ## Method to return coefficients for a given parameter set
-        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+#assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
         param=[]
         for par in self.paramList:
             ## Rescale input parameters
@@ -455,7 +455,7 @@ class GP_k_Emulator:
 
     def predict(self,model):
         ## Method to return P1D for a given parameter set
-        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+#assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
         param=[]
         for par in self.paramList:
             ## Rescale input parameters

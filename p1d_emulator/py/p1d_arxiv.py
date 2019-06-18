@@ -137,7 +137,8 @@ class ArxivP1D(object):
                         p1d_data['scale_gamma'] = plus_pp['sim_scale_gamma']
                     # store also filtering length (not present in old versions)
                     if 'kF_Mpc' in plus_pp:
-                        p1d_data['kF_Mpc'] = plus_pp['kF_Mpc']
+                        p1d_data['kF_Mpc'] = 0.5*(plus_pp['kF_Mpc']
+                                                +minus_pp['kF_Mpc'])
                     p1d_data['scale_tau'] = plus_pp['scale_tau']
                     # compute average of < F F >, not <delta delta> 
                     plus_p1d = np.array(plus_pp['p1d_Mpc'])

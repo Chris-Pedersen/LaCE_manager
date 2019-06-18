@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import json
-
+import gen_UVB as UVB
 
 def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):
@@ -63,6 +63,10 @@ def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
     genic_file.write("PrimordialAmp = %.6e \n" % cosmo.InitPower.As)
     genic_file.write("PrimordialRunning = %.6e \n" % cosmo.InitPower.nrun)
 
+    # maxim memory required per node (in DiRAC)
+    genic_file.write("MaxMemSizePerNode=231168 \n")    ## For skylake-himem
+    #genic_file.write("MaxMemSizePerNode=115584 \n")    ## For skylake
+
     # not quite sure if needed...
     genic_file.write("UnitLength_in_cm = 3.085678e21 \n")
     genic_file.write("UnitMass_in_g = 1.989e43 \n")
@@ -82,7 +86,14 @@ def get_output_list(zs):
     return output_list
 
 
-def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
+def write_treecool_file(simdir,z_mid_HI_reion):
+    """Write a treecool file for a given reionization history"""
+
+    fname=simdir+'/treecool.txt'
+    UVB.generate_treecool_file(output_file=fname,z_mid_HI_reion=z_mid_HI_reion)
+    return
+
+def write_gadget_file(simdir,cosmo,heat_amp=1.0,heat_slo=1.0,Ngrid=256,
                 zs=[49.0,9.0,8.0,7.0,6.0,5.0,4.5,4.0,3.5,3.0,2.5,2.0]):
     """Write a MP-Gadget file for a given cosmology"""
 
@@ -99,7 +110,7 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
 
     # main simulation settings (options)
     gadget_file.write("Nmesh = %d \n" % Nmesh)
-    gadget_file.write("TreeCoolFile = "+simdir+"/TREECOOL_P18.txt \n")
+    gadget_file.write("TreeCoolFile = "+simdir+"/treecool.txt \n")
     gadget_file.write("InitCondFile = "+simdir+"/output/IC \n")
     gadget_file.write("OutputDir = "+simdir+"/output \n")
     # find list of outputs (except last one) 
@@ -110,6 +121,8 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
     # main simulation settings (default)
     gadget_file.write("SnapshotWithFOF = 0 \n")
     gadget_file.write("TimeLimitCPU = 430000 \n")
+    gadget_file.write("MaxMemSizePerNode=231168 \n")    ## For skylake-himem
+    #gadget_file.write("MaxMemSizePerNode=115584 \n")    ## For skylake
     gadget_file.write("CoolingOn = 1 \n")
     gadget_file.write("StarformationOn = 1 \n")
     gadget_file.write("RadiationOn = 1 \n")
@@ -117,6 +130,7 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
     gadget_file.write("WindOn = 0 \n")
     gadget_file.write("StarformationCriterion = density \n")
     gadget_file.write("DensityKernelType = cubic \n")
+    gadget_file.write("DensityIndependentSphOn = 0 \n")
     gadget_file.write("InitGasTemp = 270. \n")
     gadget_file.write("MinGasTemp = 100 \n")
     gadget_file.write("PartAllocFactor = 2 \n")
@@ -144,8 +158,8 @@ def write_gadget_file(simdir,cosmo,mu_He=1.0,mu_H=1.0,Ngrid=256,
 
     # thermal history parameters
     gadget_file.write("HeliumHeatOn = 1 \n")
-    gadget_file.write("HeliumHeatAmp = %f \n" % mu_He)
-    gadget_file.write("HydrogenHeatAmp = %f \n" % mu_H)
+    gadget_file.write("HeliumHeatAmp = %f \n" % heat_amp)
+    gadget_file.write("HeliumHeatExp = %f \n" % heat_slo)
 
     gadget_file.close()
 

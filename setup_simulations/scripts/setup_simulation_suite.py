@@ -19,9 +19,13 @@ import latin_hypercube
 parser = configargparse.ArgumentParser()
 parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
 parser.add_argument('--basedir', type=str, help='Base directory where all sims will be stored (crashes if it already exists)',required=True)
+parser.add_argument('--add_growth', action='store_true', help='Add parameter describing linear growth of structure',required=False)
+parser.add_argument('--add_amplitude', action='store_true', help='Add parameter describing amplitude of linear power',required=False)
 parser.add_argument('--add_slope', action='store_true', help='Add parameter describing slope of linear power',required=False)
 parser.add_argument('--add_running', action='store_true', help='Add parameter describing running of linear power',required=False)
-parser.add_argument('--add_mu_H', action='store_true', help='Add parameter to boost heating in Hydrogen',required=False)
+parser.add_argument('--add_heat_amp', action='store_true', help='Add parameter to boost heating',required=False)
+parser.add_argument('--add_heat_slo', action='store_true', help='Add parameter to boost heating depending on density',required=False)
+parser.add_argument('--add_z_rei', action='store_true', help='Add parameter to set hydrogen reionization (middle point)',required=False)
 parser.add_argument('--nsamples', type=int, default=10, help='Number of samples in Latin hypercube')
 parser.add_argument('--ngrid', type=int, default=64, help='Number of particles per side in simulation')
 parser.add_argument('--box_Mpc', type=float, default=50.0, help='Simulation box size (in Mpc)')
@@ -49,13 +53,16 @@ else:
 
 # setup parameter space
 param_space=sim_params_space.SimulationParameterSpace(filename=args.config,
+                    add_growth=args.add_growth,add_amplitude=args.add_amplitude,
                     add_slope=args.add_slope,add_running=args.add_running,
-                    add_mu_H=args.add_mu_H)
+                    add_heat_amp=args.add_heat_amp,
+                    add_heat_slo=args.add_heat_slo,
+                    add_z_rei=args.add_z_rei)
 params=param_space.params
 
 # get pivot point
-z_star=params['Om_star']['z_star']
-kp_Mpc=params['Delta2_star']['kp_Mpc']
+z_star=param_space.z_star
+kp_Mpc=param_space.kp_Mpc
 
 # print parameter information
 if verbose:
@@ -111,17 +118,24 @@ for sample in range(nsamples):
     cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(params,sim_params,
             linP_model_fid,verbose=verbose)
 
-    # figure out heating amplitude for Helium and Hydrogen
-    if 'mu_He' in params:
-        ip_He=params['mu_He']['ip']
-        mu_He=sim_params[ip_He]
+    # figure out (medium) redshift of (hydrogen) reionization
+    if 'z_rei' in params:
+        ip=params['z_rei']['ip']
+        z_rei=sim_params[ip]
     else:
-        mu_He=1.0
-    if 'mu_H' in params:
-        ip_H=params['mu_H']['ip']
-        mu_H=sim_params[ip_H]
+        z_rei=9.0
+
+    # figure out heating boost
+    if 'heat_amp' in params:
+        ip=params['heat_amp']['ip']
+        heat_amp=sim_params[ip]
     else:
-        mu_H=1.0
+        heat_amp=1.0
+    if 'heat_slo' in params:
+        ip=params['heat_slo']['ip']
+        heat_slo=sim_params[ip]
+    else:
+        heat_slo=0.0
 
     sim_dir=basedir+'/sim_pair_'+str(sample)+'/'
     os.mkdir(sim_dir)
@@ -131,16 +145,23 @@ for sample in range(nsamples):
     minus_dir=sim_dir+'/sim_minus/'
     os.mkdir(minus_dir)
 
+
+    # write treecool files for both simulations in pair
+    write_config.write_treecool_file(plus_dir,z_mid_HI_reion=z_rei)
+    write_config.write_treecool_file(minus_dir,z_mid_HI_reion=z_rei)
+
     # write GenIC and MP-Gadget parameters, for both simulations in pair
     if verbose:
         print('write config files for GenIC and Gadget')
     write_config.write_genic_file(plus_dir,cosmo_sim,
             Ngrid=args.ngrid,box_Mpc=args.box_Mpc,paired=False)
-    zs=write_config.write_gadget_file(plus_dir,cosmo_sim,mu_H=mu_H,mu_He=mu_He,
+    zs=write_config.write_gadget_file(plus_dir,cosmo_sim,
+            heat_amp=heat_amp,heat_slo=heat_slo,
             Ngrid=args.ngrid,zs=zs)
     write_config.write_genic_file(minus_dir,cosmo_sim,
             Ngrid=args.ngrid,box_Mpc=args.box_Mpc,paired=True)
-    _=write_config.write_gadget_file(minus_dir,cosmo_sim,mu_H=mu_H,mu_He=mu_He,
+    _=write_config.write_gadget_file(minus_dir,cosmo_sim,
+            heat_amp=heat_amp,heat_slo=heat_slo,
             Ngrid=args.ngrid,zs=zs)
 
     # construct linear power model and store in JSON format

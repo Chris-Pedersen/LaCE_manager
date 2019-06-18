@@ -74,7 +74,7 @@ class Likelihood(object):
         return like_params
 
 
-    def get_p1d_kms(self,k_kms=None,values=None):
+    def get_p1d_kms(self,k_kms=None,values=None,returnErrors=False):
         """Compute theoretical prediction for 1D P(k)"""
 
         if k_kms is None:
@@ -86,7 +86,8 @@ class Likelihood(object):
         else:
             like_params=[]
 
-        return self.theory.get_p1d_kms(k_kms,like_params=like_params)
+        return self.theory.get_p1d_kms(k_kms,like_params=like_params,
+                                            returnErrors=returnErrors)
 
 
     def get_chi2(self,values=None):
@@ -98,7 +99,7 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.get_p1d_kms(k_kms,values)
+        emu_p1d,emu_error = self.get_p1d_kms(k_kms,values,returnErrors=True)
         if self.verbose: print('got P1D from emulator')
 
         # compute chi2 contribution from each redshift bin

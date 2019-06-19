@@ -102,8 +102,8 @@ class Likelihood(object):
             return -2.0*log_like
 
 
-    def get_log_like(self,values=None,ignore_log_det_cov=False,
-                        add_emu_cov=True):
+    def get_log_like(self,values=None,ignore_log_det_cov=True,
+                        add_emu_cov=False):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True.
             If add_emu_cov, include emulator uncertainty to the covariance."""
@@ -163,7 +163,10 @@ class Likelihood(object):
             return -np.inf
 
         # compute log_like
-        log_like=self.get_log_like(values)
+        log_like=self.get_log_like(values,ignore_log_det_cov=True,
+                                    add_emu_cov=False)
+        #log_like=self.get_log_like(values,ignore_log_det_cov=False,
+        #                            add_emu_cov=True)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')

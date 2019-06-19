@@ -96,7 +96,10 @@ class Likelihood(object):
 
         log_like=self.get_log_like(values,ignore_log_det_cov=True,
                                     add_emu_cov=False)
-        return -2.0*log_like
+        if log_like is None:
+            return None
+        else:
+            return -2.0*log_like
 
 
     def get_log_like(self,values=None,ignore_log_det_cov=False,

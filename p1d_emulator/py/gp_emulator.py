@@ -197,7 +197,7 @@ class GPEmulator:
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
-    def emulate_p1d_Mpc(self,model,k_Mpc,returnErrors=False):
+    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
         '''
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
@@ -209,10 +209,13 @@ class GPEmulator:
         pred,err=self.predict(model)
         interpolator=interp1d(self.training_k_bins,pred, "cubic")
         interpolated_P=interpolator(k_Mpc)
-        if returnErrors==True:
+        if return_covar==True:
             error_interp=interp1d(self.training_k_bins,err, "cubic")
             error=error_interp(k_Mpc)
-            return interpolated_P, error
+            # for now, assume that we have fully correlated errors
+            covar = np.outer(error, error)
+            #covar = np.diag(error**2)
+            return interpolated_P, covar
         else:
             return interpolated_P
 
@@ -332,7 +335,7 @@ class PolyfitGPEmulator:
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
-    def emulate_p1d_Mpc(self,model,k_Mpc,returnErrors=False):
+    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
         '''
         Method to return the trained P(k) for an arbitrary set of k bins
         using the learned data
@@ -341,12 +344,14 @@ class PolyfitGPEmulator:
             print("Warning! Your requested k bins are higher than the training values.")
         pred,err=self.predict(model)
         poly=np.poly1d(pred)
-        if returnErrors==True:
+        if return_covar==True:
             err=np.abs(err)
-            print(err)
             P_of_k=np.exp(poly(np.log(k_Mpc)))
             err=(err[0]*P_of_k**4+err[1]*P_of_k**3+err[2]*P_of_k**2+err[3]*P_of_k)
-            return np.exp(poly(np.log(k_Mpc))), err
+            # for now, assume that we have fully correlated errors
+            covar = np.outer(err, err)
+            #covar = np.diag(err**2)
+            return np.exp(poly(np.log(k_Mpc))), covar
         else:
             return np.exp(poly(np.log(k_Mpc)))
 

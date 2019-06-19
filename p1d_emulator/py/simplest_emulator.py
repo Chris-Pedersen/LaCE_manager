@@ -83,7 +83,7 @@ class SimplestEmulator(object):
         return self.arxiv.data[nearest]
 
 
-    def emulate_p1d_Mpc(self,model,k_Mpc,returnErrors=False):
+    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
         """Return (k,p1d) for nearest model in arxiv"""
 
         if self.verbose: print('asked to emulate model',model)
@@ -92,7 +92,8 @@ class SimplestEmulator(object):
 
         p1d = np.interp(k_Mpc,nearest_model['k_Mpc'],nearest_model['p1d_Mpc'])
 
-        if returnErrors:
-            return p1d,None
+        if return_covar:
+            N=len(p1d)
+            return p1d, np.zeros([N,N])
         else:
             return p1d

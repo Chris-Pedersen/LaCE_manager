@@ -204,7 +204,7 @@ class ArxivP1D(object):
 
 
     def print_entry(self,entry,keys=['z','Delta2_p','n_p','alpha_p','f_p',
-                                    'mF','sigT_Mpc','gamma']):
+                                    'mF','sigT_Mpc','gamma','kF_Mpc']):
         """Print basic information about a particular entry in the arxiv"""
 
         if entry >= len(self.data):

@@ -13,7 +13,7 @@ class PressureModel(object):
         """Construct model with central redshift and (x2,x1,x0) polynomial."""
         self.z_kF=z_kF
         if not ln_kF_coeff:
-            ln_kF_coeff=[0.5,np.log(0.21)]
+            ln_kF_coeff=[0.3,np.log(0.17)]
         self.ln_kF_coeff=ln_kF_coeff
         # store list of likelihood parameters (might be fixed or free)
         self.set_parameters()

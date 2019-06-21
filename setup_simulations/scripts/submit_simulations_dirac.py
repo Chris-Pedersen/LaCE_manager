@@ -80,7 +80,7 @@ for sample in range(nsamples):
             print('will NOT submit scripts, we need to run make_class')
             continue
         total_nodes=2*args.nodes*nsamples
-        if total_nodes < 100:
+        if total_nodes < 1000:
             print('will submit scripts, for a total of {} nodes'.format(total_nodes))
             cmd_plus='sbatch '+plus_submit+' > '+plus_dir+'/info_sim_sub'
             os.system(cmd_plus)

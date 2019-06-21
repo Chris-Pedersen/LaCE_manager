@@ -45,13 +45,13 @@ class SimulationParameterSpace(object):
                     'z_star':self.z_star, 'kp_Mpc':self.kp_Mpc,
                     'latex':r'$\alpha_\star$'}
         if add_heat_amp:
-            params['heat_amp']={'ip':len(params), 'min_val':0.5, 'max_val':2.0,
+            params['heat_amp']={'ip':len(params), 'min_val':0.5, 'max_val':1.5,
                     'latex':r'$H_A$'}
         if add_heat_slo:
             params['heat_slo']={'ip':len(params), 'min_val':-0.5, 'max_val':0.5,
                     'latex':r'$H_S$'}
         if add_z_rei:
-            params['z_rei']={'ip':len(params), 'min_val':6.0, 'max_val':12.0,
+            params['z_rei']={'ip':len(params), 'min_val':5.5, 'max_val':15.0,
                     'latex':r'$z_r$'}
 
         self.params=params

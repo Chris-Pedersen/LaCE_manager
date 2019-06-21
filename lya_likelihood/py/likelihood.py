@@ -163,10 +163,8 @@ class Likelihood(object):
             return -np.inf
 
         # compute log_like
-        log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    add_emu_cov=False)
-        #log_like=self.get_log_like(values,ignore_log_det_cov=False,
-        #                            add_emu_cov=True)
+        log_like=self.get_log_like(values,ignore_log_det_cov=False,
+                                    add_emu_cov=True)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')

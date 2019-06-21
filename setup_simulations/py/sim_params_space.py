@@ -51,7 +51,7 @@ class SimulationParameterSpace(object):
             params['heat_slo']={'ip':len(params), 'min_val':-0.5, 'max_val':0.5,
                     'latex':r'$H_S$'}
         if add_z_rei:
-            params['z_rei']={'ip':len(params), 'min_val':6.0, 'max_val':12.0,
+            params['z_rei']={'ip':len(params), 'min_val':5.5, 'max_val':15.0,
                     'latex':r'$z_r$'}
 
         self.params=params

@@ -80,9 +80,10 @@ class LyaTheory(object):
         return emu_calls
 
 
-    def get_p1d_kms(self,k_kms,like_params=[],returnErrors=False):
+    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False):
         """Emulate P1D in velocity units, for all redshift bins,
-            as a function of input likelihood parameters"""
+            as a function of input likelihood parameters.
+            It might also return a covariance from the emulator."""
 
         # figure out emulator calls, one per redshift
         emu_calls=self.get_emulator_calls(like_params=like_params)
@@ -93,8 +94,8 @@ class LyaTheory(object):
 
         # loop over redshifts and compute P1D
         p1d_kms=[]
-        if returnErrors:
-            errors=[]
+        if return_covar:
+            covars=[]
         Nz=len(self.zs)
         for iz,z in enumerate(self.zs):
             # will call emulator for this model
@@ -102,24 +103,27 @@ class LyaTheory(object):
             # emulate p1d
             dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
             k_Mpc = k_kms * dkms_dMpc
-            if returnErrors:
-                p1d_Mpc,error = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        returnErrors=True)
+            if return_covar:
+                p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
+                                                        return_covar=True)
             else:
                 p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        returnErrors=False)
+                                                        return_covar=False)
             if p1d_Mpc is None:
                 if self.verbose: print('emulator did not provide P1D')
                 p1d_kms.append(None)
-                if returnErrors:
-                    errors.append(None)
+                if return_covar:
+                    covars.append(None)
             else:
                 p1d_kms.append(p1d_Mpc * dkms_dMpc)
-                if returnErrors:
-                    errors.append(error * dkms_dMpc)
+                if return_covar:
+                    if cov_Mpc is None:
+                        covars.append(None)
+                    else:
+                        covars.append(cov_Mpc * dkms_dMpc**2)
 
-        if returnErrors:
-            return p1d_kms,errors
+        if return_covar:
+            return p1d_kms,covars
         else:
             return p1d_kms
 

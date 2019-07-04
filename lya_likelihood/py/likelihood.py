@@ -74,7 +74,7 @@ class Likelihood(object):
         return like_params
 
 
-    def get_p1d_kms(self,k_kms=None,values=None,returnErrors=False):
+    def get_p1d_kms(self,k_kms=None,values=None,return_covar=False):
         """Compute theoretical prediction for 1D P(k)"""
 
         if k_kms is None:
@@ -87,11 +87,26 @@ class Likelihood(object):
             like_params=[]
 
         return self.theory.get_p1d_kms(k_kms,like_params=like_params,
-                                            returnErrors=returnErrors)
+                                            return_covar=return_covar)
 
 
     def get_chi2(self,values=None):
-        """Compute chi2 using data and theory"""
+        """Compute chi2 using data and theory, without adding
+            emulator covariance"""
+
+        log_like=self.get_log_like(values,ignore_log_det_cov=True,
+                                    add_emu_cov=False)
+        if log_like is None:
+            return None
+        else:
+            return -2.0*log_like
+
+
+    def get_log_like(self,values=None,ignore_log_det_cov=True,
+                        add_emu_cov=False):
+        """Compute log(likelihood), including determinant of covariance
+            unless you are setting ignore_log_det_cov=True.
+            If add_emu_cov, include emulator uncertainty to the covariance."""
 
         # get measured bins from data
         k_kms=self.data.k
@@ -99,34 +114,47 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d,emu_error = self.get_p1d_kms(k_kms,values,returnErrors=True)
+        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
         if self.verbose: print('got P1D from emulator')
 
-        # compute chi2 contribution from each redshift bin
-        chi2=0
+        # compute log like contribution from each redshift bin
+        log_like=0
 
         for iz in range(Nz):
             # acess data for this redshift
             z=zs[iz]
-            if self.verbose: print('compute chi2 for z={}'.format(z))
-            # get data
-            p1d=self.data.get_Pk_iz(iz)
-            cov=self.data.get_cov_iz(iz)
             # make sure that theory is valid
             if emu_p1d[iz] is None:
                 if self.verbose: print(z,'theory did not emulate p1d')
                 return None
+            if self.verbose: print('compute chi2 for z={}'.format(z))
+            # get data
+            p1d=self.data.get_Pk_iz(iz)
+            data_cov=self.data.get_cov_iz(iz)
+            # add covariance from emulator
+            if add_emu_cov:
+                cov = data_cov + emu_covar[iz]
+            else:
+                cov = data_cov
+
             # compute chi2 for this redshift bin
             icov = np.linalg.inv(cov)
             diff = (p1d-emu_p1d[iz])
             chi2_z = np.dot(np.dot(icov,diff),diff)
-            chi2 += chi2_z
-            if self.verbose: print('added {} to chi2'.format(chi2_z))
-        
-        return chi2
+            # check whether to add determinant of covariance as well
+            if ignore_log_det_cov:
+                log_like_z = -0.5*chi2_z
+            else:
+                (_, log_det_cov) = np.linalg.slogdet(cov)
+                log_like_z = -0.5*(chi2_z + log_det_cov)
+            log_like += log_like_z
+            if self.verbose: print('added {} to log_like'.format(log_like_z))
+
+        return log_like
 
 
     def log_prob(self,values):
+        """Return log likelihood plus log priors"""
 
         # for now priors are top hats in 0 < x < 1
         if max(values) > 1.0:
@@ -134,16 +162,15 @@ class Likelihood(object):
         if min(values) < 0.0:
             return -np.inf
 
-        # compute chi2
-        chi2=self.get_chi2(values)
+        # compute log_like
+        log_like=self.get_log_like(values,ignore_log_det_cov=False,
+                                    add_emu_cov=True)
 
-        if chi2 is None:
+        if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
             return -np.inf
 
-        loglike=-0.5*chi2
-
-        return loglike
+        return log_like
 
 
     def go_silent(self):

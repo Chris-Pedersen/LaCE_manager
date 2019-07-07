@@ -260,11 +260,14 @@ class GPEmulator:
             err=(err[0]*interpolated_P**4+err[1]*interpolated_P**3+err[2]*interpolated_P**2+err[3]*interpolated_P)
             covar = np.outer(err, err)
         if return_covar==True:
-            error_interp=interp1d(self.training_k_bins,err, "cubic")
-            error=error_interp(k_Mpc)
-            # for now, assume that we have fully correlated errors
-            covar = np.outer(error, error)
-            #covar = np.diag(error**2)
-            return interpolated_P, covar
+            if self.emu_type=="k_bin":
+                error_interp=interp1d(self.training_k_bins,err, "cubic")
+                error=error_interp(k_Mpc)
+                # for now, assume that we have fully correlated errors
+                covar = np.outer(error, error)
+                #covar = np.diag(error**2)
+                return interpolated_P, covar
+            else:
+                return interpolated_P, covar
         else:
             return interpolated_P

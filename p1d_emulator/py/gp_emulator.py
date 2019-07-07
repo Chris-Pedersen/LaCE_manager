@@ -142,6 +142,10 @@ class GPEmulator:
     def train(self):
         self._build_interp(self.arxiv,self.paramList)
 
+    def printPriorVolume(self):
+        for aa in range(len(self.paramList)):
+            print(self.paramList[aa],self.paramLimits[aa])
+
     def crossValidation(self,testSample=0.25,plotIndividual=False):
         paramList=self.paramList
         arxiv=self.arxiv

@@ -16,17 +16,22 @@ class GPEmulator:
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
-                drop_temp_rescalings=False,undersample_z=1,emu_type="k_bin"):
+                drop_temp_rescalings=False,undersample_z=1,emu_type="k_bin",
+                passArxiv=None):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
         self.emu_type=emu_type
         # read all files with P1D measured in simulation suite
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
+        if passArxiv==None:
+            self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,verbose=verbose,
                                 drop_tau_rescalings=drop_tau_rescalings,
                                 drop_temp_rescalings=drop_temp_rescalings,
                                 undersample_z=undersample_z)
+        else:
+            print("Loading emulator using a specific arxiv, not the one set in basedir")
+            self.arxiv=passArxiv
 
         ## Find max k bin
         self.k_bin=np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))

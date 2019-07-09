@@ -17,11 +17,12 @@ class GPEmulator:
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,undersample_z=1,emu_type="k_bin",
-                passArxiv=None):
+                passArxiv=None,set_noise_var=1e-10):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
         self.emu_type=emu_type
+        self.emu_noise=set_noise_var
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
             self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
@@ -124,7 +125,7 @@ class GPEmulator:
         kernel += GPy.kern.RBF(len(paramList))
 
         print("Training GP on %d points" % len(self.arxiv.data))
-        self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel, noise_var=1e-10)
+        self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel, noise_var=self.emu_noise)
         status = self.gp.optimize(messages=False) #True
         print("Optimised")
 

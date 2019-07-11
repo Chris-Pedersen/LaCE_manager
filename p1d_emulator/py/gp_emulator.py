@@ -153,7 +153,7 @@ class GPEmulator:
     def predict(self,model):
         ## Method to return P1D or polyfit coeffs for a given parameter set
         ## For the k bin emulator this will be in the training k bins
-        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+        #assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
         if self.trained==False:
             print("Emulator not trained, cannot make a prediction")
             return

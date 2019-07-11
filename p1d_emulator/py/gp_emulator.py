@@ -43,7 +43,9 @@ class GPEmulator:
         else:
         	self.paramList=paramList
 
-        if train:
+        self.trained=False
+
+        if train==True:
             if verbose: print('will train GP emulator')
             self.train()
 
@@ -142,96 +144,19 @@ class GPEmulator:
 
     def train(self):
         self._build_interp(self.arxiv,self.paramList)
+        self.trained=True
 
     def printPriorVolume(self):
         for aa in range(len(self.paramList)):
             print(self.paramList[aa],self.paramLimits[aa])
 
-    def crossValidation(self,testSample=0.25,plotIndividual=False):
-        paramList=self.paramList
-        arxiv=self.arxiv
-        ''' Code to cross validate. testSample determines the proportion
-        of the data to save for testing, default=0.25.
-        In progress of extending this to all k bins but its not working properly at the moment
-        '''
-
-        trainingLen=int(len(self.arxiv.data)*(1-testSample))
-        testLen=len(self.arxiv.data)- trainingLen
-
-        params,P1D_k=self._buildTrainingSets(arxiv,paramList)
-
-        ## Get parameter limits for rescaling
-        self.paramLimits=self._get_param_limits(params)
-
-        ## Rescaling to unit volume
-        for cc in range(len(self.arxiv.data)):
-            params[cc]=self._rescale_params(params[cc],self.paramLimits)
-        print("Rescaled params to unity volume")
-
-        ## Factors by which to rescale the flux to set a mean of 0
-        self.scalefactors = np.median(P1D_k, axis=0)
-
-        #Normalise by the median value
-        P1D_k = (P1D_k/self.scalefactors) -1.
-
-        ## Split into test and training
-        params_train=params[:trainingLen]
-        P1D_k_train=P1D_k[:trainingLen]
-        params_test=params[-testLen:]
-        P1D_k_test=P1D_k[-testLen:]
-
-        #Standard squared-exponential kernel with a different length scale for each parameter, as
-        #they may have very different physical properties.
-        kernel = GPy.kern.Linear(len(paramList))
-        kernel += GPy.kern.RBF(len(paramList))
-
-        print("Training GP")
-        self.gp = GPy.models.GPRegression(params_train,P1D_k_train,kernel=kernel, noise_var=1e-10)
-        status = self.gp.optimize(messages=False) #True
-        print("Optimised")
-
-        ## Now predict from the remaining test values
-        ## Mean comes out in shape (# of models, # of k bins)
-        ## Std comes out with # of models
-        print("test params shape",np.shape(params_test))
-        mean,std=self.gp.predict(params_test)
-
-        std=np.sqrt(std)
-        error=(mean-P1D_k_test)/std
-        error=np.hstack(error)
-
-        if plotIndividual==True:
-            ## Take a random model and plot the true P(k)
-            ## along with the predicted P(k)
-            sample=np.random.randint(trainingLen,trainingLen+testLen)
-            predictedP,err=self.gp.predict(params[sample].reshape(1,-1))
-            #err=np.full(len(predictedP),np.sqrt(err)*self.scalefactors)
-            predictedP=np.hstack(predictedP)
-            predictedP=(predictedP+1)*self.scalefactors
-            truek=self.arxiv.data[sample]["k_Mpc"][:self.k_bin]
-            trueP=self.arxiv.data[sample]["p1d_Mpc"][:self.k_bin]
-            plt.figure()
-            plt.title("Truth and predicted for a random test model #%d" % sample)
-            plt.plot(np.log10(truek),truek*trueP,label="True")
-            plt.plot(np.log10(truek[:len(predictedP)]),predictedP*truek[:len(predictedP)],label="Predicted",linestyle="dashed")
-            #plt.errorbar(np.log10(truek[:len(predictedP)]),predictedP*truek[:len(predictedP)],yerr=np.sqrt(err),label="Predicted",linestyle="dashed")
-            plt.xlabel("log k")
-            plt.legend()
-
-        ## Generate mock Gaussian to overlay
-        x=np.linspace(-6,6,200)
-        y=(np.exp(-0.5*(x*x)))/np.sqrt(2*np.pi)
-        plt.figure()
-        plt.title("%d training, %d test samples" % (trainingLen,testLen))
-        plt.hist(error,bins=500,density=True)
-        plt.plot(x,y)
-        plt.xlim(-6,6)
-        plt.xlabel("(predicted-truth)/std")
-        plt.show()
-
     def predict(self,model):
-        ## Method to return P1D for a given parameter set
-#assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+        ## Method to return P1D or polyfit coeffs for a given parameter set
+        ## For the k bin emulator this will be in the training k bins
+        assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+        if self.trained==False:
+            print("Emulator not trained, cannot make a prediction")
+            return
         param=[]
         for par in self.paramList:
             ## Rescale input parameters
@@ -246,7 +171,7 @@ class GPEmulator:
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
         '''
-        if max(k_Mpc)>max(self.training_k_bins):
+        if max(k_Mpc)>max(self.training_k_bins) and verbose:
             print(max(k_Mpc))
             print(max(self.training_k_bins))
             print("Warning! Your requested k bins are higher than the training values.")
@@ -272,3 +197,46 @@ class GPEmulator:
                 return interpolated_P, covar
         else:
             return interpolated_P
+
+    def crossValidation(self,testSample=0.25):
+        '''
+        Method to run a cross validation test on the given
+        data arxiv.
+        '''
+        print("Running cross-validation")
+        if self.trained:
+            print("Cannot run cross validation on an already-trained emulator.")
+            quit()
+
+        ## Split the arxiv into test and training samples
+        test=[]
+        numTest=int(len(self.arxiv.data)*testSample)
+        numTrain=len(self.arxiv.data)-testSample
+        for aa in range(numTest):
+            test.append(self.arxiv.data.pop(np.random.randint(len(self.arxiv.data))))
+
+        self.train()
+
+        accuracy=np.array([])
+        for aa in range(len(test)):
+            ## Set up model for emu calls
+            model={}
+            for parameter in self.paramList:
+                model[parameter]=test[aa][parameter]
+            ## Make emu calls for each test point
+            pred,err=self.predict(model)
+            ## Find inaccuracy/error
+            accuracy=np.append(accuracy,(pred-test[aa]["p1d_Mpc"][:self.k_bin])/err)
+
+        ## Generate mock Gaussian to overlay
+        x=np.linspace(-6,6,200)
+        y=(np.exp(-0.5*(x*x)))/np.sqrt(2*np.pi)
+
+        ## Plot results
+        plt.figure()
+        plt.title("%d training, %d test samples, noise=%.1e" % (numTrain,numTest,self.emu_noise))
+        plt.hist(accuracy,bins=500,density=True)
+        plt.plot(x,y)
+        plt.xlim(-6,6)
+        plt.xlabel("(predicted-truth)/std")
+        plt.show()

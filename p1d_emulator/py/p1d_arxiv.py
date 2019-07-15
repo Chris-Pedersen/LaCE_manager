@@ -9,7 +9,7 @@ class ArxivP1D(object):
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
-                no_skewers=False):
+                no_skewers=False,pick_sim_number=None):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)"""
 
@@ -30,11 +30,13 @@ class ArxivP1D(object):
         self.verbose=verbose
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
-                            max_arxiv_size,undersample_z,no_skewers)
+                            max_arxiv_size,undersample_z,no_skewers,
+                            pick_sim_number)
 
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
-                            max_arxiv_size,undersample_z,no_skewers):
+                            max_arxiv_size,undersample_z,no_skewers,
+                            pick_sim_number):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -50,8 +52,12 @@ class ArxivP1D(object):
         if self.verbose:
             print('simulation suite has %d samples'%self.nsamples)
 
+        if pick_sim_number:
+            start=pick_sim_number
+            self.nsamples=pick_sim_number+1
+
         # read info from all sims, all snapshots, all rescalings
-        for sample in range(self.nsamples):
+        for sample in range(start,self.nsamples):
             # store parameters for simulation pair / model
             sim_params = self.cube_data['samples']['%d'%sample]
             if self.verbose:

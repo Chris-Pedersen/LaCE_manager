@@ -9,3 +9,12 @@ It now contains different folders:
  - lya_nuisance: modelling of nuisance astrophysics (mean flux, temperature...)
  - user_interface: example of CosmoMC module for the marginalized likelihood
 
+
+Parameter spaces:
+
+Likelihood parameters: These are the parameters that we will ultimately get posteriors for. For each set of likelihood parameters, $N$ emulator calls are made, where $N$ is the number of redshift bins in the data. The specific emulator calls to be made are determined using the `lya_theory` object, which maps between likelihood and emulator parameters.
+
+The likelihood parameters are:
+$g_\star*
+
+Emulator parameters: these are the parameters that describe each individual P1D(k) power spectrum. We have detached these from redshift and traditional cosmology parameters.

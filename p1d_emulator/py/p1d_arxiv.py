@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import os
 import json
+import matplotlib.pyplot as plt
 
 class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
@@ -18,7 +19,7 @@ class ArxivP1D(object):
         else:
             assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
             repo=os.environ['LYA_EMU_REPO']
-            self.basedir=repo+'/p1d_emulator/sim_suites/emulator_512_17052019/'
+            self.basedir=repo+'/p1d_emulator/sim_suites/emulator_512_18062019/'
         if p1d_label:
             self.p1d_label=p1d_label
         else:
@@ -55,6 +56,8 @@ class ArxivP1D(object):
         if pick_sim_number:
             start=pick_sim_number
             self.nsamples=pick_sim_number+1
+        else:
+            start=0
 
         # read info from all sims, all snapshots, all rescalings
         for sample in range(start,self.nsamples):
@@ -222,4 +225,79 @@ class ArxivP1D(object):
             info += ', {} = {:.4f}'.format(key,data[key])
         print(info)
 
+    def plot_samples(self,param_1,param_2,
+                        tau_scalings=True,temp_scalings=True):
+        """For parameter pair (param1,param2), plot each point in the arxiv"""
 
+        # mask post-process scalings (optional)
+        emu_data=self.data
+        Nemu=len(emu_data)
+        if not tau_scalings:
+            mask_tau=[x['scale_tau']==1.0 for x in emu_data]
+        else:
+            mask_tau=[True]*Nemu
+        if not temp_scalings:
+            mask_temp=[(x['scale_T0']==1.0) 
+                        & (x['scale_gamma']==1.0) for x in emu_data]
+        else:
+            mask_temp=[True]*Nemu
+
+        # figure out values of param_1,param_2 in arxiv
+        emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+        emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+
+        emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+        zmin=min(emu_z)
+        zmax=max(emu_z)
+        plt.scatter(emu_1,emu_2,c=emu_z,s=1,vmin=zmin, vmax=zmax)
+        cbar=plt.colorbar()
+        cbar.set_label("Redshift", labelpad=+1)
+        plt.xlabel(param_1)
+        plt.ylabel(param_2)
+        plt.show()
+
+        return
+
+    def plot_3D_samples(self,param_1,param_2, param_3,
+                        tau_scalings=True,temp_scalings=True):
+        """For parameter trio (param1,param2,param3), plot each point in the arxiv"""
+
+        from mpl_toolkits import mplot3d
+        # mask post-process scalings (optional)
+        emu_data=self.data
+        Nemu=len(emu_data)
+        if not tau_scalings:
+            mask_tau=[x['scale_tau']==1.0 for x in emu_data]
+        else:
+            mask_tau=[True]*Nemu
+        if not temp_scalings:
+            mask_temp=[(x['scale_T0']==1.0) 
+                        & (x['scale_gamma']==1.0) for x in emu_data]
+        else:
+            mask_temp=[True]*Nemu
+
+        # figure out values of param_1,param_2 in arxiv
+        emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+        emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+        emu_3=np.array([emu_data[i][param_3] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+
+        emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
+                                                    mask_tau[i] & mask_temp[i])])
+        zmin=min(emu_z)
+        zmax=max(emu_z)
+        fig = plt.figure()
+        ax = plt.axes(projection="3d")
+        ax.scatter3D(emu_1, emu_2, emu_3, c=emu_z, cmap='brg',s=8)
+        plt.title("Rescalings=%s" % tau_scalings)
+        ax.set_xlabel(param_1)
+        ax.set_ylabel(param_2)
+        ax.set_zlabel(param_3)
+        plt.show()
+
+        return

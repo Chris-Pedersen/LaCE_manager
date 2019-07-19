@@ -32,11 +32,11 @@ The likelihood parameters are:
 
 Emulator parameters: these are the parameters that describe each individual P1D(k) power spectrum. We have detached these from redshift and traditional cosmology parameters.
 
-'sigT_Mpc'
-'alpha_p'
-'n_p'
-'gamma'
-'Delta2_p'
-'mF'
-'f_p'
-'kF_Mpc'
+`sigT_Mpc`
+`alpha_p`
+`n_p`
+`gamma`
+`Delta2_p`
+`mF`
+`f_p`
+`kF_Mpc`

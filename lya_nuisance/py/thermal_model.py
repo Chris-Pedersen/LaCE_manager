@@ -8,7 +8,9 @@ class ThermalModel(object):
         For now, we use two polynomials to describe log(T_0) and log(gamma)."""
 
     def __init__(self,z_T=3.5,ln_T0_coeff=None,ln_gamma_coeff=None):
-        """Construct model with central redshift and (x2,x1,x0) polynomials."""
+        """Construct model for T0 and gamma evolution.
+        For T0, we use a broken power law at a central redshift.
+        For gamma, we use a power law with running. """
         self.z_T=z_T
         if not ln_T0_coeff:
             ln_T0_coeff=[0.0,np.log(1.2e4)]

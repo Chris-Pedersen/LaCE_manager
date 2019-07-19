@@ -9,6 +9,37 @@ It now contains different folders:
  - lya_nuisance: modelling of nuisance astrophysics (mean flux, temperature...)
  - user_interface: example of CosmoMC module for the marginalized likelihood
 
+Dependencies:
+The following modules are required:
+
+`numpy`
+
+`scipy`
+
+`matplotlib`
+
+`emcee`
+
+`corner`
+
+`CAMB` version 1.0 or later (Jan 2019) https://github.com/cmbant/CAMB
+
+`GPy`
+
+`cProfile`
+
+To setup/run/postprocess simulations:
+
+`configargparse`
+
+`fake_spectra` branch at https://github.com/Chris-Pedersen/fake_spectra which includes temperature rescalings in postprocessing
+
+`validate`
+
+`classylss`
+
+`asciitable`
+
 
 Parameter spaces:
 

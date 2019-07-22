@@ -30,17 +30,16 @@ p1d_label=None
 skewers_label=None
 undersample_z=1
 paramList=["Delta2_p","mF","sigT_Mpc","gamma","kF_Mpc"]
-max_arxiv_size=100
+max_arxiv_size=2000
 kmax_Mpc=3.0
 
 emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                                undersample_z=undersample_z,max_arxiv_size=max_arxiv_size,
                                verbose=False,paramList=paramList,train=True)
 
-free_parameters=['ln_tau_0','ln_tau_1','ln_T0_0','ln_gamma_0','ln_kF_0']
+free_parameters=['ln_tau_0','ln_tau_1','ln_gamma_0','ln_kF_0','T0_1','T0_2','T0_3']
 
 sampler = emcee_sampler.EmceeSampler(emulator=emu,free_parameters=free_parameters,verbose=True)
-'''
 
 for p in sampler.like.free_params:
     print(p.name,p.value,p.min_value,p.max_value)
@@ -51,4 +50,5 @@ sampler.run_chains(nsteps=500)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.sampler.acceptance_fraction)))
 
 sampler.plot_histograms(cube=True)
-'''
+sampler.plot_histograms(cube=False)
+

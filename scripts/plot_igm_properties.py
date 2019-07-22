@@ -59,7 +59,7 @@ def get_broken_power(z,a,b,c):
             log_poly=np.poly1d([c,b])
             ln_f=log_poly(lnz)
             out[aa]=ln_f
-    return out
+    return np.exp(out)
 
     
 
@@ -106,6 +106,8 @@ plt.plot(z_fits,kf_power)
 plt.ylabel("kF")
 plt.tight_layout()
 plt.show()
+
+print(broken_power_t0)
 
 '''
 

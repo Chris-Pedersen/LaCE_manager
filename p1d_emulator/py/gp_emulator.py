@@ -171,10 +171,16 @@ class GPEmulator:
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
         '''
-        if max(k_Mpc)>max(self.training_k_bins):
-            print(max(k_Mpc))
-            print(max(self.training_k_bins))
-            print("Warning! Your requested k bins are higher than the training values.")
+        try:
+            if max(k_Mpc)>max(self.training_k_bins):
+                print(max(k_Mpc))
+                print(max(self.training_k_bins))
+                print("Warning! Your requested k bins are higher than the training values.")
+        except:
+            if k_Mpc>max(self.training_k_bins):
+                print(max(k_Mpc))
+                print(max(self.training_k_bins))
+                print("Warning! Your requested k bins are higher than the training values.")
         pred,err=self.predict(model)
         if self.emu_type=="k_bin":
             interpolator=interp1d(self.training_k_bins,pred, "cubic")

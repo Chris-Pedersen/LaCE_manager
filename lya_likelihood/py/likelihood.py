@@ -53,6 +53,7 @@ class Likelihood(object):
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)
+
         assert (Nfree==Nin), 'could not setup free paremeters'
 
         if self.verbose:

@@ -34,7 +34,6 @@ class ArxivP1D(object):
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number)
 
-
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number):

@@ -7,11 +7,13 @@ class ThermalModel(object):
         as a function of redshift.
         For now, we use two polynomials to describe log(T_0) and log(gamma)."""
 
-    def __init__(self,z_T=3.5,ln_T0_coeff=None,ln_gamma_coeff=None):
-        """Construct model with central redshift and (x2,x1,x0) polynomials."""
+    def __init__(self,z_T=3.6,ln_T0_coeff=None,ln_gamma_coeff=None):
+        """Construct model for T0 and gamma evolution.
+        For T0, we use a broken power law at a central redshift.
+        For gamma, we use a power law with running. """
         self.z_T=z_T
         if not ln_T0_coeff:
-            ln_T0_coeff=[0.0,np.log(1.2e4)]
+            ln_T0_coeff=[0.44,  9.37, -1.33]
         if not ln_gamma_coeff:
             ln_gamma_coeff=[-0.2,np.log(1.4)]
         self.ln_T0_coeff=ln_T0_coeff
@@ -22,10 +24,14 @@ class ThermalModel(object):
 
 
     def get_T0(self,z):
-        """T_0 at the input redshift"""
-        xz=np.log((1+z)/(1+self.z_T))
-        ln_T0_poly=np.poly1d(self.ln_T0_coeff)
-        ln_T0=ln_T0_poly(xz)
+        ''' Return T0(z) for a given model '''
+        lnz=np.log(z/self.z_T)
+        if z<self.z_T:
+            log_poly=np.poly1d([self.ln_T0_coeff[0],self.ln_T0_coeff[1]])
+            ln_T0=log_poly(lnz)
+        else:
+            log_poly=np.poly1d([self.ln_T0_coeff[2],self.ln_T0_coeff[1]])
+            ln_T0=log_poly(lnz)
         return np.exp(ln_T0)
 
     def get_sigT_kms(self,z):
@@ -50,26 +56,25 @@ class ThermalModel(object):
         assert len(self.ln_gamma_coeff)==len(self.gamma_params),"size mismatch"
         return len(self.ln_gamma_coeff)
 
-
     def set_T0_parameters(self):
         """Setup T0 likelihood parameters for thermal model"""
 
         self.T0_params=[]
-        Npar=len(self.ln_T0_coeff)
-        for i in range(Npar):
-            name='ln_T0_'+str(i)
+        for i in range(3):
+            name='T0_'+str(i+1)
             if i==0:
-                xmin=np.log(4e3)
-                xmax=np.log(3e4)
-            else:
-                xmin=-2.0
-                xmax=2.0
-            # note non-trivial order in coefficients
-            value=self.ln_T0_coeff[Npar-i-1]
+                xmin=0
+                xmax=1
+            elif i==1:
+                xmin=7
+                xmax=11
+            elif i==2:
+                xmin=-2
+                xmax=-0.5      # note non-trivial order in coefficients
+            value=self.ln_T0_coeff[i]
             par = likelihood_parameter.LikelihoodParameter(name=name,
                                 value=value,min_value=xmin,max_value=xmax)
             self.T0_params.append(par)
-
         return
 
 

@@ -224,15 +224,30 @@ class GPEmulator:
         self.train()
 
         accuracy=np.array([])
-        for aa in range(len(test)):
-            ## Set up model for emu calls
-            model={}
-            for parameter in self.paramList:
-                model[parameter]=test[aa][parameter]
-            ## Make emu calls for each test point
-            pred,err=self.predict(model)
-            ## Find inaccuracy/error
-            accuracy=np.append(accuracy,(pred-test[aa]["p1d_Mpc"][:self.k_bin])/err)
+        if self.emu_type=="k_bin":
+            for aa in range(len(test)):
+                ## Set up model for emu calls
+                model={}
+                for parameter in self.paramList:
+                    model[parameter]=test[aa][parameter]
+                ## Make emu calls for each test point
+                pred,err=self.predict(model)
+                ## Find inaccuracy/error
+                accuracy=np.append(accuracy,(pred-test[aa]["p1d_Mpc"][:self.k_bin])/err)
+        elif self.emu_type=="polyfit":
+            for aa in range(len(test)):
+                ## Set up model for emu calls
+                model={}
+                for parameter in self.paramList:
+                    model[parameter]=test[aa][parameter]
+                ## Make emu calls for each test point
+                pred,err=self.predict(model)
+                poly=np.poly1d(pred)
+                err=np.abs(err)
+                interpolated_P=np.exp(poly(np.log(self.training_k_bins)))
+                err=(err[0]*interpolated_P**4+err[1]*interpolated_P**3+err[2]*interpolated_P**2+err[3]*interpolated_P)
+                ## Find inaccuracy/error
+                accuracy=np.append(accuracy,(interpolated_P-test[aa]["p1d_Mpc"][:self.k_bin])/err)
 
         ## Generate mock Gaussian to overlay
         x=np.linspace(-6,6,200)
@@ -246,3 +261,4 @@ class GPEmulator:
         plt.xlim(-6,6)
         plt.xlabel("(predicted-truth)/std")
         plt.show()
+        

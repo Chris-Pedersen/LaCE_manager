@@ -17,7 +17,7 @@ class GPEmulator:
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,undersample_z=1,emu_type="k_bin",
-                passArxiv=None,set_noise_var=1e-10):
+                passArxiv=None,set_noise_var=1e-3):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir

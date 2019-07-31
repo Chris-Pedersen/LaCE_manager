@@ -57,8 +57,11 @@ class GPEmulator:
         self.trained=False
 
         if train==True:
-            if self.verbose: print('will train GP emulator')
-            self.train()
+            ## First try load the emulator
+            self.loadEmulator()
+            if self.trained==False:
+                if self.verbose: print('will train GP emulator')
+                self.train()
 
 
     def _training_points_k_bin(self,arxiv):
@@ -240,10 +243,12 @@ class GPEmulator:
         ## Split the arxiv into test and training samples
         test=[] ## List for test data
         numTest=int(len(self.arxiv.data)*testSample)
-        numTrain=len(self.arxiv.data)-testSample
+        numTrain=len(self.arxiv.data)-numTest
         for aa in range(numTest):
             test.append(self.arxiv.data.pop(np.random.randint(len(self.arxiv.data))))
 
+        ## Rebuild parameter grids using the new reduced arxiv
+        self._build_interp(self.arxiv,self.paramList)
         self.train()
 
         accuracy=np.array([])
@@ -390,12 +395,13 @@ class GPEmulator:
                 self.gp.initialize_parameter()
                 self.gp[:]=np.load(saveString+".npy")
                 self.gp.update_model(True)
+                self.trained=True
                 if self.verbose:
                     print("Loading emulator from %s.npy" % saveString)
                 return
                 
             else: ## If not keep looking through saved emulators
                 aa+=1
-
-        print("Could not find a matching emulator to load")
+        if self.verbose:
+            print("Could not find a matching emulator to load")
 

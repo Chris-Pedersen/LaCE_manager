@@ -5,6 +5,8 @@ import pickle
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import poly_p1d
+import os
+import json
 
 class GPEmulator:
     """
@@ -23,14 +25,22 @@ class GPEmulator:
         self.basedir=basedir
         self.emu_type=emu_type
         self.emu_noise=set_noise_var
+        self.max_arxiv_size=max_arxiv_size
+        self.drop_tau_rescalings=drop_tau_rescalings
+        self.drop_temp_rescalings=drop_temp_rescalings
+        self.undersample_z=undersample_z
+        self.verbose=verbose
+
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
+            self.custom_arxiv=False
             self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-                                max_arxiv_size=max_arxiv_size,verbose=verbose,
+                                max_arxiv_size=self.max_arxiv_size,verbose=verbose,
                                 drop_tau_rescalings=drop_tau_rescalings,
                                 drop_temp_rescalings=drop_temp_rescalings,
                                 undersample_z=undersample_z)
         else:
+            self.custom_arxiv=True
             print("Loading emulator using a specific arxiv, not the one set in basedir")
             self.arxiv=passArxiv
 
@@ -43,11 +53,13 @@ class GPEmulator:
         else:
         	self.paramList=paramList
 
+        self._build_interp(self.arxiv,self.paramList)
         self.trained=False
 
         if train==True:
-            if verbose: print('will train GP emulator')
+            if self.verbose: print('will train GP emulator')
             self.train()
+
 
     def _training_points_k_bin(self,arxiv):
         ''' Method to get the Y training points in the form of the P1D
@@ -56,6 +68,7 @@ class GPEmulator:
         for aa in range(len(self.arxiv.data)):
             P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin] ## Collect P1D data for all k bins
         return P1D_k
+
 
     def _training_points_polyfit(self,arxiv):
         ''' Method to get the Y training points in the form of polyfit 
@@ -66,11 +79,13 @@ class GPEmulator:
             coeffs[aa]=self.arxiv.data[aa]['fit_p1d'] ## Collect P1D data for all k bins
         return coeffs
 
+
     def _rescale_params(self,params,paramLimits):
         ''' Rescale a set of parameters to have a unit volume '''
         for aa in range(len(params)):
             params[aa]=((params[aa]-paramLimits[aa,0])/(paramLimits[aa,1]-paramLimits[aa,0]))
         return params
+
 
     def _buildTrainingSets(self,arxiv,paramList):
         ## Grid that will contain all training params
@@ -89,6 +104,7 @@ class GPEmulator:
                 params[aa][bb]=arxiv.data[aa][paramList[bb]] ## Populate parameter grid
         return params,trainingPoints
 
+
     def _fit_p1d_in_arxiv(self,deg,kmax_Mpc):
         """For each entry in arxiv, fit polynomial to log(p1d)"""
         
@@ -98,6 +114,7 @@ class GPEmulator:
             fit_p1d = poly_p1d.PolyP1D(k_Mpc,p1d_Mpc,kmin_Mpc=1.e-3,
                     kmax_Mpc=kmax_Mpc,deg=deg)
             entry['fit_p1d'] = fit_p1d.lnP_fit ## Add coeffs for each model to arxiv
+
 
     def _build_interp(self,arxiv,paramList):
         ''' Method to build an GP object from a spectra archive and list of parameters
@@ -126,10 +143,9 @@ class GPEmulator:
         kernel = GPy.kern.Linear(len(paramList))
         kernel += GPy.kern.RBF(len(paramList))
 
-        print("Training GP on %d points" % len(self.arxiv.data))
-        self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel, noise_var=self.emu_noise)
-        status = self.gp.optimize(messages=False) #True
-        print("Optimised")
+        self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel,
+                        noise_var=self.emu_noise,initialize=False)
+
 
     def _get_param_limits(self,paramGrid):
         paramLimits=np.empty((np.shape(paramGrid)[1],2))
@@ -138,17 +154,19 @@ class GPEmulator:
             paramLimits[aa,1]=max(paramGrid[:,aa])
         return paramLimits
 
-    def saveEmulator(self,saveName):
-        pickle.dump(self.gp,open(saveName+".p", "wb" ))
-        print("GP emulator object saved as:" + saveName + ".p")
 
     def train(self):
-        self._build_interp(self.arxiv,self.paramList)
+        self.gp.initialize_parameter()
+        print("Training GP on %d points" % len(self.arxiv.data))
+        status = self.gp.optimize(messages=False)
+        print("Optimised")
         self.trained=True
+
 
     def printPriorVolume(self):
         for aa in range(len(self.paramList)):
             print(self.paramList[aa],self.paramLimits[aa])
+
 
     def predict(self,model):
         ## Method to return P1D or polyfit coeffs for a given parameter set
@@ -165,6 +183,7 @@ class GPEmulator:
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+
 
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
         '''
@@ -204,6 +223,7 @@ class GPEmulator:
         else:
             return interpolated_P
 
+
     def crossValidation(self,testSample=0.25):
         '''
         Method to run a cross validation test on the given
@@ -214,8 +234,11 @@ class GPEmulator:
             print("Cannot run cross validation on an already-trained emulator.")
             quit()
 
+        ## We are now training the emulator on a customised arxiv
+        self.custom_arxiv=True
+
         ## Split the arxiv into test and training samples
-        test=[]
+        test=[] ## List for test data
         numTest=int(len(self.arxiv.data)*testSample)
         numTrain=len(self.arxiv.data)-testSample
         for aa in range(numTest):
@@ -261,4 +284,118 @@ class GPEmulator:
         plt.xlim(-6,6)
         plt.xlabel("(predicted-truth)/std")
         plt.show()
+
+
+    def saveEmulator(self):
+        ''' Method to save a trained emulator. The emulator
+        hyperparameters are saved alongside a .json dictionary
+        detailing the initial configuration of the emulator.
+        When an emulator is saved it will check the basedir
+        for existing emulator saves.
         
+        We currently do not save emulators on custom arxivs
+        as it is impossible to know if the training points
+        are all the same. Training points are currently
+        reassembled using the snapshot arxiv, and not
+        saved alongside the emulator hyperparameters. '''
+
+        ## Perform checks
+        if self.custom_arxiv or self.max_arxiv_size:
+            print("Cannot save emulators trained on custom arxivs")
+            return
+        if not self.trained:
+            print("Cannot save an emulator that is not trained")
+            return
+
+        ## Create and save dictionary of emulator parameters
+        ## Can't think of a way to do this iteratively so we write it out
+        initParams={}
+        initParams["k_bin"]=self.k_bin
+        initParams["emu_type"]=self.emu_type
+        initParams["emu_noise"]=self.emu_noise
+        initParams["drop_tau_rescalings"]=self.drop_tau_rescalings
+        initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
+        initParams["undersample_z"]=self.undersample_z
+
+        saveString=self.basedir+"/saved_emulator_"
+
+        ## Here we check to see if an emulator matching
+        ## our initial parameters is already saved
+        aa=1
+        while os.path.isfile(saveString+str(aa)+".json"):
+            ## Load dictionary and check if the values are different
+            ## to the emulator we want to save
+            with open(saveString+str(aa)+".json") as json_file:  
+                fileInitDict=json.load(json_file)
+            if fileInitDict==initParams: ## If so we can break the loop
+                if self.verbose:
+                    print("This emulator is already saved.")
+                return
+            else: ## If not keep looking through saved emulators
+                aa+=1
+
+        saveString=saveString+str(aa)
+        with open("%s.json" % saveString, 'w') as fp:
+            json.dump(initParams, fp)
+
+        ## Create and save dictionary of hyperparameters
+        saveDict={}
+        saveDict["paramList"]=self.paramList
+        saveDict["kmax_Mpc"]=self.kmax_Mpc
+        np.save('%s.npy' % saveString, self.gp.param_array)
+        if self.verbose:
+            print("Model saved as %s.npy" % saveString)
+
+
+    def loadEmulator(self):
+        ''' Method to load a saved set of emulator
+        hyperparameters. We need to make sure the
+        dataset and emulator configurations that the
+        hyperparameters were optimised on is the same
+        as the dataset we will use as training data.
+        So we will check the .json files for a perfect match '''
+
+        ## Perform same checks as when saving an emulator
+        ## as save/load does not work with non-standard
+        ## data arxivs
+
+        if self.custom_arxiv or self.max_arxiv_size:
+            print("Cannot load emulators with non-standard training data")
+            return
+        if self.trained:
+            print("Cannot load an emulator after training")
+            return
+
+        initParams={}
+        initParams["k_bin"]=self.k_bin
+        initParams["emu_type"]=self.emu_type
+        initParams["emu_noise"]=self.emu_noise
+        initParams["drop_tau_rescalings"]=self.drop_tau_rescalings
+        initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
+        initParams["undersample_z"]=self.undersample_z
+
+        saveString=self.basedir+"/saved_emulator_"
+
+        ## Here we check to see if an emulator matching
+        ## our initial parameters is already saved
+        aa=1
+        while os.path.isfile(saveString+str(aa)+".json"):
+            ## Load dictionary and check if the values are different
+            ## to the emulator we want to load
+            with open(saveString+str(aa)+".json") as json_file:  
+                fileInitDict=json.load(json_file)
+            if fileInitDict==initParams: ## If so, load it
+                saveString=saveString+str(aa)
+                self.gp.update_model(False)
+                self.gp.initialize_parameter()
+                self.gp[:]=np.load(saveString+".npy")
+                self.gp.update_model(True)
+                if self.verbose:
+                    print("Loading emulator from %s.npy" % saveString)
+                return
+                
+            else: ## If not keep looking through saved emulators
+                aa+=1
+
+        print("Could not find a matching emulator to load")
+

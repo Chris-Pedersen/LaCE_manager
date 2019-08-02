@@ -63,7 +63,8 @@ The likelihood parameters are:
 `ln_kF_0`
 `ln_kF_1`
 
-#### Emulator parameters: These are the parameters that describe each individual P1D(k) power spectrum. We have detached these from redshift and traditional cosmology parameters.
+#### Emulator parameters:
+These are the parameters that describe each individual P1D(k) power spectrum. We have detached these from redshift and traditional cosmology parameters.
 
 `sigT_Mpc`
 `alpha_p`
@@ -79,11 +80,13 @@ The optimised Gaussian process hyperparameters are saved alongside each sim suit
 The X (emulator parameters) and Y (P1D(k) or the polyfit coefficients) training data are rebuilt from the
 ArxivP1D on the fly each time the GPEmulator class is initialised, otherwise saving and loading the emulators
 becomes too disk-space intensive. The hyperparameters are stored as a .npy object.
+
 In order to ensure that the hyperparamters are loaded for only the training
 data and emulator configurations they are optimised on, a .json dictionary is written alongside each .npy
 object, containing all the relevant configurations of the emulator. The savenames are simply
 `saved_emulator_x.npy`, where x starts at 1. Every time a new emulator is saved, this index increments, and emulator saves
 will not overwrite or duplicate.
+
 Every time a new emulator class is initialised with train=True, before running the hyperparameter optimisation, the
 code will first look through the relevant basedir for saved hyperparameters with the same configuration. It will prioritise
 loading the hyperparameters rather than re-optimising. Emulators trained on anything other than the default P1DArxiv (i.e. with

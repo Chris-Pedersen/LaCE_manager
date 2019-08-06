@@ -1,0 +1,1 @@
+{"drop_temp_rescalings": true, "k_bin": 22, "emu_noise": 0.001, "emu_type": "k_bin", "drop_tau_rescalings": true, "undersample_z": 1, "paramList": ["Delta2_p", "mF", "sigT_Mpc", "gamma", "kF_Mpc"]}

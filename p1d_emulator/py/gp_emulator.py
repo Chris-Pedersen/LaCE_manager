@@ -321,6 +321,7 @@ class GPEmulator:
         initParams["drop_tau_rescalings"]=self.drop_tau_rescalings
         initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
         initParams["undersample_z"]=self.undersample_z
+        initParams["paramList"]=self.paramList
 
         saveString=self.basedir+"/saved_emulator_"
 
@@ -378,6 +379,7 @@ class GPEmulator:
         initParams["drop_tau_rescalings"]=self.drop_tau_rescalings
         initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
         initParams["undersample_z"]=self.undersample_z
+        initParams["paramList"]=self.paramList
 
         saveString=self.basedir+"/saved_emulator_"
 

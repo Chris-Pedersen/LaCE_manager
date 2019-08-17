@@ -118,7 +118,7 @@ class ThermalModel(object):
 
         # loop over likelihood parameters
         for like_par in like_params:
-            if 'ln_T0' in like_par.name:
+            if 'T0' in like_par.name:
                 # make sure you find the parameter
                 found=False
                 # loop over T0 parameters in thermal model

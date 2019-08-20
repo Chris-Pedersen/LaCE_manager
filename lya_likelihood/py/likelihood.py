@@ -9,10 +9,12 @@ class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
     def __init__(self,data=None,theory=None,emulator=None,
-                    free_parameters=None,verbose=False):
+                    free_parameters=None,verbose=False,
+                    priors="Gaussian"):
         """Setup likelihood from theory and data"""
 
         self.verbose=verbose
+        self.priors=priors
 
         if data:
             self.data=data
@@ -157,11 +159,21 @@ class Likelihood(object):
     def log_prob(self,values):
         """Return log likelihood plus log priors"""
 
+
         # for now priors are top hats in 0 < x < 1
         if max(values) > 1.0:
             return -np.inf
         if min(values) < 0.0:
             return -np.inf
+
+        ## Super basic implementation of priors
+        if self.priors=="uniform":
+            log_prior=0
+        elif self.priors=="Gaussian":
+            ## Determine log prior
+            sigma=0.2 ## Hardcoded for now...
+                      ## also using the same mu and sigma for every parameter..
+            log_prior=np.sum(-1*((values-0.5)**2)/(2*sigma**2))
 
         # compute log_like
         log_like=self.get_log_like(values,ignore_log_det_cov=False,
@@ -171,7 +183,7 @@ class Likelihood(object):
             if self.verbose: print('was not able to emulate at least on P1D')
             return -np.inf
 
-        return log_like
+        return log_like + log_prior
 
 
     def go_silent(self):

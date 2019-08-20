@@ -5,9 +5,10 @@ import base_p1d_data
 class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
     def __init__(self,basedir=None,zmin=None,zmax=None,use_FFT=True,
-                add_syst=True,blind_data=False):
+                add_syst=True,blind_data=False,toy_data=False):
         """Read measured P1D from files, either FFT or likelihood version.
-            If blind_data=True, use analytical formula instead."""
+            If blind_data=True, use analytical formula instead.
+            If toy_data=True, will use only a few bins in (z,k)"""
 
         # folder storing P1D measurement
         if not basedir:
@@ -24,6 +25,20 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
         if zmin or zmax:
             z,k,Pk,cov=_drop_zbins(z,k,Pk,cov,zmin,zmax)
 
+        # option to use simplied mock data
+        if toy_data: 
+            blind_data=True
+            # drop first bins in k, not present in small boxes
+            drop_until_k=3
+            k=k[drop_until_k:]
+            Nk=len(k)
+            z=np.array([2.0, 3.0, 4.0])
+            Pk=np.empty((3,Nk))
+            cov_toy=[cov[0][drop_until_k:,drop_until_k:],
+                    cov[4][drop_until_k:,drop_until_k:],
+                    cov[9][drop_until_k:,drop_until_k:]]
+            cov=cov_toy
+        
         if blind_data:
             Nz=len(z)
             for iz in range(Nz):

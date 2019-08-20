@@ -13,7 +13,7 @@ emulator on the rest of the arxiv. We then compare
 the predictions with the truth for the test point.
 '''
 
-arxivSize=1000
+arxivSize=None
 kMax=8
 dropRescalings=True
 
@@ -38,7 +38,9 @@ emu_kGP=gp_emulator.GPEmulator(basedir=basedir,
                                    paramList=paramList,
                                    emu_type="k_bin",
                                    passArxiv=archive)
+emu_kGP.saveEmulator()
 
+'''
 emu_poly=gp_emulator.GPEmulator(basedir=basedir,
                                    kmax_Mpc=kMax,train=True,
                                    paramList=paramList,
@@ -67,3 +69,4 @@ plt.xlabel(r"$k[1/Mpc]$")
 plt.xlim(0,kMax)
 plt.legend()
 plt.show()
+'''

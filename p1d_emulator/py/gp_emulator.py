@@ -19,7 +19,7 @@ class GPEmulator:
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,undersample_z=1,emu_type="k_bin",
-                passArxiv=None,set_noise_var=1e-3):
+                passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -30,6 +30,7 @@ class GPEmulator:
         self.drop_temp_rescalings=drop_temp_rescalings
         self.undersample_z=undersample_z
         self.verbose=verbose
+        self.asymmetric_kernel=asymmetric_kernel
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -143,8 +144,8 @@ class GPEmulator:
 
         #Standard squared-exponential kernel with a different length scale for each parameter, as
         #they may have very different physical properties.
-        kernel = GPy.kern.Linear(len(paramList))
-        kernel += GPy.kern.RBF(len(paramList))
+        kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
+        kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
 
         self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel,
                         noise_var=self.emu_noise,initialize=False)
@@ -322,6 +323,7 @@ class GPEmulator:
         initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
+        initParams["asymmetric_kernel"]=self.asymmetric_kernel
 
         saveString=self.basedir+"/saved_emulator_"
 
@@ -380,6 +382,7 @@ class GPEmulator:
         initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
+        initParams["asymmetric_kernel"]=self.asymmetric_kernel
 
         saveString=self.basedir+"/saved_emulator_"
 

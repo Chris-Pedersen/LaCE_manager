@@ -13,10 +13,21 @@ class MeanFluxEmulator:
                 emu_type="k_bin",set_noise_var=1e-3):
 
         # as a start, use 5 mean flux bins
-        self.N_mf=5
-        self.central_mf=[0.1,0.3,0.5,0.7,0.9]
-        self.min_mf=[0.0,0.15,0.35,0.55,0.75]
-        self.max_mf=[0.25,0.45,0.65,0.85,1.0]
+        use_five=False
+        if use_five:
+            self.N_mf=5
+            self.central_mf=[0.1,0.3,0.5,0.7,0.9]
+            self.min_mf=[0.0,0.15,0.35,0.55,0.75]
+            self.max_mf=[0.25,0.45,0.65,0.85,1.0]
+        else:
+            self.N_mf=9
+            self.central_mf=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+            self.min_mf=[0.0,0.125,0.225,0.325,0.425,0.525,0.625,0.725,0.825]
+            self.max_mf=[0.175,0.275,0.375,0.475,0.575,0.675,0.775,0.875,1.0]
+
+        if verbose:
+            for i in range(self.N_mf):
+                print(i,self.central_mf[i],self.min_mf[i],'<mf<',self.max_mf[i]
 
         # load full arxiv
         self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,

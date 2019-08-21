@@ -1,3 +1,4 @@
+import numpy as np
 import gp_emulator
 import p1d_arxiv
 
@@ -18,17 +19,18 @@ class MeanFluxEmulator:
         self.max_mf=[0.25,0.45,0.65,0.85,1.0]
 
         # load full arxiv
-        arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
+        self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
                 skewers_label=skewers_label,verbose=verbose,
                 drop_tau_rescalings=drop_tau_rescalings,
-                drop_temp_rescalings=drop_temp_rescalings,
-                max_arxiv_size=500)
+                drop_temp_rescalings=drop_temp_rescalings)
 
         self.emulators=[]
-        for i in range(N_mf):
-            print(i,self.central_mf[i],';',self.min_mf[i],'<F<',self.max_mf[i])
+        for i in range(self.N_mf):
+            # select entries within mean flux range
+            mf_arxiv=self.arxiv.sub_arxiv_mf(min_mf=self.min_mf[i],
+                                        max_mf=self.max_mf[i])
 
-            mf_arxiv=arxiv
+            # create GP emulator using only entries in mean flux range
             mf_emu=gp_emulator.GPEmulator(verbose=verbose,
                     kmax_Mpc=kmax_Mpc,paramList=paramList,train=train,
                     drop_tau_rescalings=drop_tau_rescalings,
@@ -42,13 +44,19 @@ class MeanFluxEmulator:
 
 
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
-        '''
+        """
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
-        '''
+        """
 
         if self.verbose: print('asked to emulate model',model)
 
-        return self.emulators[0].emulate_p1d_Mpc(model=model,k_Mpc=k_Mpc,
+        # look for best emulator to use (closer central value)
+        model_mF=model['mF']
+        delta_mF=[abs(cen_mf-model_mF) for cen_mf in self.central_mf]
+        i_emu=np.argmin(delta_mF)
+
+        return self.emulators[i_emu].emulate_p1d_Mpc(model=model,k_Mpc=k_Mpc,
                     return_covar=return_covar)
+
 

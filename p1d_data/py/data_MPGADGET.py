@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,basedir=None,zmin=None,zmax=None,use_FFT=True,
-                add_syst=True,blind_data=False,filename="1024_L90_mimic.json",
-                z_list=None):
+    def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,                                  filename="1024_L90_mimic.json",z_list=None):
         """ Read mock P1D from MP-Gadget sims, and return
         using the k bins and covariance from PD2013 """
 

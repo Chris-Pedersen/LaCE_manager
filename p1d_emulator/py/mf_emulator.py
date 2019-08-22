@@ -30,6 +30,9 @@ class MeanFluxEmulator:
             mf_arxiv=self.arxiv.sub_arxiv_mf(min_mf=self.min_mf[i],
                                         max_mf=self.max_mf[i])
 
+            if verbose:
+                print('build emulator %d/%d, <F>=%.3f'%(i,N_mf,self.cen_mf[i]))
+
             # create GP emulator using only entries in mean flux range
             mf_emu=gp_emulator.GPEmulator(verbose=verbose,
                     kmax_Mpc=kmax_Mpc,paramList=paramList,train=train,

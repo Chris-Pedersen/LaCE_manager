@@ -1,1 +1,1 @@
-{"k_bin": 111, "undersample_z": 1, "drop_tau_rescalings": true, "drop_temp_rescalings": true, "emu_noise": 0.001, "paramList": ["Delta2_p", "mF", "sigT_Mpc", "gamma", "kF_Mpc"], "emu_type": "polyfit"}
+{"k_bin": 111, "undersample_z": 1, "drop_tau_rescalings": true, "drop_temp_rescalings": true, "emu_noise": 0.001, "paramList": ["Delta2_p", "mF", "sigT_Mpc", "gamma", "kF_Mpc"], "emu_type": "polyfit", "asymmetric_kernel": false}

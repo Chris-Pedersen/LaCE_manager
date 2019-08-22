@@ -14,31 +14,34 @@ numPoints=200
 numPairs=50
 k=0.5
 
-## Use default repo, for now just 1806 thermal only
-archive_no_rescalings=p1d_arxiv.ArxivP1D(drop_tau_rescalings=True,drop_temp_rescalings=True)
-archive_with_rescalings=p1d_arxiv.ArxivP1D(max_arxiv_size=2000) ## Reduce size for computation time
+repo=os.environ['LYA_EMU_REPO']
+basedir=repo+'/p1d_emulator/sim_suites/emulator_512_18062019/'
+basedir=repo+'p1d_emulator/sim_suites/emulator_256_15072019'
 
 ## IGM only emulator
 paramList=["Delta2_p","mF","sigT_Mpc","gamma","kF_Mpc"]
 
 ## Initialise emulators
-emu_no_rescalings=gp_emulator.GPEmulator(paramList=paramList,
-                                passArxiv=archive_no_rescalings,
+emu_no_rescalings=gp_emulator.GPEmulator(basedir=basedir,paramList=paramList,drop_tau_rescalings=True,
+                                drop_temp_rescalings=True,emu_type="polyfit",skewers_label='Ns256_wM0.05',
+                                kmax_Mpc=8.0,
                                 train=True)
-emu_with_rescalings=gp_emulator.GPEmulator(paramList=paramList,
-                                passArxiv=archive_with_rescalings,
-                                train=True)
+emu_no_rescalings.saveEmulator()
+emu_with_rescalings=gp_emulator.GPEmulator(basedir=basedir,paramList=paramList, emu_type="polyfit",
+                                skewers_label='Ns256_wM0.05',kmax_Mpc=8.0,
+                                train=True,verbose=True)
+emu_with_rescalings.saveEmulator()
 
 def get_walk():
         ## Pick 2 random points in parameter space
-        p1=np.random.randint(len(archive_no_rescalings.data))
-        p2=np.random.randint(len(archive_no_rescalings.data))
+        p1=np.random.randint(len(emu_no_rescalings.arxiv.data))
+        p2=np.random.randint(len(emu_no_rescalings.arxiv.data))
         point1={}
         point2={}
 
         for par in paramList:
-                point1[par]=archive_no_rescalings.data[p1][par]
-                point2[par]=archive_no_rescalings.data[p2][par]
+                point1[par]=emu_no_rescalings.arxiv.data[p1][par]
+                point2[par]=emu_no_rescalings.arxiv.data[p2][par]
 
         delta_pars={}
         for par in paramList:

@@ -17,17 +17,20 @@ import thermal_model
 import lya_theory
 import likelihood
 import likelihood_parameter
+import scipy.stats
 
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
     def __init__(self,like=None,emulator=None,free_parameters=None,
-                        nwalkers=None,read_chain_file=None,verbose=False):
+                        nwalkers=None,read_chain_file=None,verbose=False,
+                        priors="Gaussian"):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
 
         self.verbose=verbose
+        self.priors=priors    
 
         if like:
             if self.verbose: print('use input likelihood')
@@ -117,7 +120,13 @@ class EmceeSampler(object):
         if self.verbose: 
             print('set %d walkers with %d dimensions'%(nwalkers,ndim))
 
-        p0=np.random.rand(ndim*nwalkers).reshape((nwalkers,ndim))
+        if self.priors=="uniform":
+            p0=np.random.rand(ndim*nwalkers).reshape((nwalkers,ndim))
+        elif self.priors=="Gaussian":
+            sigma=0.2
+            p0=scipy.stats.truncnorm.rvs(
+                (0-0.5)/sigma,(1-0.5)/sigma,loc=0.5,scale=sigma,
+                size=ndim*nwalkers).reshape((nwalkers,ndim))
 
         # make sure that all walkers are within the convex hull
         for iw in range(nwalkers):

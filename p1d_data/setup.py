@@ -9,6 +9,6 @@ setup(name="p1d_data",
     description=description,
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/p1d_data",
     author="Andreu Font-Ribera",
-    py_modules=['base_p1d_data','data_PD2013','data_Chabanier2019'],
+    py_modules=['base_p1d_data','data_PD2013','data_Chabanier2019','data_MPGADGET'],
     package_dir={'': 'py'})
 

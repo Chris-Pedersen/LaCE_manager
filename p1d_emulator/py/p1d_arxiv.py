@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import sys
 import os
 import json
@@ -167,7 +168,8 @@ class ArxivP1D(object):
         if max_arxiv_size is not None:
             Ndata=len(self.data)
             if Ndata > max_arxiv_size:
-                if self.verbose: print('will keep only',max_arxiv_size,'entries')
+                if self.verbose:
+                    print('will keep only',max_arxiv_size,'entries')
                 keep=np.random.randint(0,Ndata,max_arxiv_size)
                 keep_data=[self.data[i] for i in keep]
                 self.data=keep_data
@@ -176,6 +178,17 @@ class ArxivP1D(object):
         if self.verbose:
             print('Arxiv setup, containing %d entries'%len(self.data))
 
+        # create 1D arrays with all entries for a given parameter
+        self._store_param_arrays()
+
+        return
+
+
+    def _store_param_arrays(self):
+        """ create 1D arrays with all entries for a given parameter. """
+
+        N=len(self.data)
+
         # store linear power parameters
         self.Delta2_p=np.array([self.data[i]['Delta2_p'] for i in range(N)])
         self.n_p=np.array([self.data[i]['n_p'] for i in range(N)])
@@ -183,13 +196,15 @@ class ArxivP1D(object):
         self.f_p=np.array([self.data[i]['f_p'] for i in range(N)])
         self.z=np.array([self.data[i]['z'] for i in range(N)])
 
-        # store IGM parameters
-        if not no_skewers:
+        # store IGM parameters (if present)
+        if self.data[0]['mF']:
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
+        if self.data[0]['sigT_Mpc']:
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
+        if self.data[0]['gamma']:
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
-            if self.data[0]['kF_Mpc']:
-                self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
+        if self.data[0]['kF_Mpc']:
+            self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
 
         return
 
@@ -280,14 +295,14 @@ class ArxivP1D(object):
 
         # figure out values of param_1,param_2 in arxiv
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                mask_tau[i] & mask_temp[i])])
         emu_3=np.array([emu_data[i][param_3] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                mask_tau[i] & mask_temp[i])])
 
         emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                mask_tau[i] & mask_temp[i])])
         zmin=min(emu_z)
         zmax=max(emu_z)
         fig = plt.figure()
@@ -300,3 +315,28 @@ class ArxivP1D(object):
         plt.show()
 
         return
+
+    def sub_arxiv_mf(self,min_mf=0.0,max_mf=1.0):
+        """ Return copy of arxiv, with entries in a given mean flux range. """
+
+        # make copy of arxiv
+        copy_arxiv=copy.deepcopy(self)
+        copy_arxiv.min_mf=min_mf
+        copy_arxiv.max_mf=max_mf
+
+        print(len(copy_arxiv.data),'initial entries')
+
+        # select entries in a given mean flux range
+        new_data=[d for d in copy_arxiv.data if (
+                                        d['mF'] < max_mf and d['mF'] > min_mf)]
+
+        print(len(new_data),'final entries')
+
+        # store new sub-data
+        copy_arxiv.data=new_data
+
+        # re-create 1D arrays with all entries for a given parameter
+        copy_arxiv._store_param_arrays()
+
+        return copy_arxiv
+

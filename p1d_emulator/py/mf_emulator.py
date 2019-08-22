@@ -10,24 +10,13 @@ class MeanFluxEmulator:
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 verbose=False,kmax_Mpc=10.0,paramList=None,train=False,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                emu_type="k_bin",set_noise_var=1e-3):
+                emu_type="k_bin",set_noise_var=1e-3,N_mf=10):
 
-        # as a start, use 5 mean flux bins
-        use_five=False
-        if use_five:
-            self.N_mf=5
-            self.central_mf=[0.1,0.3,0.5,0.7,0.9]
-            self.min_mf=[0.0,0.15,0.35,0.55,0.75]
-            self.max_mf=[0.25,0.45,0.65,0.85,1.0]
-        else:
-            self.N_mf=9
-            self.central_mf=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-            self.min_mf=[0.0,0.125,0.225,0.325,0.425,0.525,0.625,0.725,0.825]
-            self.max_mf=[0.175,0.275,0.375,0.475,0.575,0.675,0.775,0.875,1.0]
-
+        # setup central mean flux and edges
+        self._setup_mean_flux_bins(N_mf)
         if verbose:
             for i in range(self.N_mf):
-                print(i,self.central_mf[i],self.min_mf[i],'<mf<',self.max_mf[i])
+                print(i,self.cen_mf[i],self.min_mf[i],'<mf<',self.max_mf[i])
 
         # load full arxiv
         self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
@@ -54,6 +43,21 @@ class MeanFluxEmulator:
         self.verbose=verbose
 
 
+    def _setup_mean_flux_bins(self,N_mf):
+        """ Setup central mean flux and edges. """
+ 
+        self.N_mf=N_mf
+        dmf=1.0/N_mf
+        # central values
+        self.cen_mf=np.linspace(start=0.5*dmf,stop=1.0-0.5*dmf, num=N_mf)
+        # minimum values
+        self.min_mf=np.fmax(0.0,self.cen_mf - dmf)
+        # maximum values
+        self.max_mf=np.fmin(1.0,self.cen_mf + dmf)
+
+        return
+
+
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
         """
         Method to return the trained P(k) for an arbitrary set of k bins
@@ -64,7 +68,7 @@ class MeanFluxEmulator:
 
         # look for best emulator to use (closer central value)
         model_mF=model['mF']
-        delta_mF=[abs(cen_mf-model_mF) for cen_mf in self.central_mf]
+        delta_mF=[abs(cen_mf-model_mF) for cen_mf in self.cen_mf]
         i_emu=np.argmin(delta_mF)
 
         return self.emulators[i_emu].emulate_p1d_Mpc(model=model,k_Mpc=k_Mpc,

@@ -27,7 +27,7 @@ class MeanFluxEmulator:
 
         if verbose:
             for i in range(self.N_mf):
-                print(i,self.central_mf[i],self.min_mf[i],'<mf<',self.max_mf[i]
+                print(i,self.central_mf[i],self.min_mf[i],'<mf<',self.max_mf[i])
 
         # load full arxiv
         self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,

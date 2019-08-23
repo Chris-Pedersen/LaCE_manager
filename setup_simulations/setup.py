@@ -11,6 +11,7 @@ setup(name="setup_sims",
     author="Andreu Font-Ribera",
     py_modules=['read_genic','read_gadget','write_config','gen_UVB',
                 'latin_hypercube','sim_params_cosmo',
-                'sim_params_space','write_submit_simulation_dirac'],
+                'sim_params_space','write_submit_simulation_dirac',
+		'thermal_evolution'],
     package_dir={'': 'py'})
 

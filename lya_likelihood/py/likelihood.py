@@ -265,9 +265,9 @@ class Likelihood(object):
 
         # figure out values of param_1,param_2 in arxiv
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                  mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                  mask_tau[i] & mask_temp[i])])
 
         # translate sampling point (in unit cube) to parameter values
         if values is not None:
@@ -282,7 +282,7 @@ class Likelihood(object):
         # overplot
         zs=self.data.z
         emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                  mask_tau[i] & mask_temp[i])])
         zmin=min(min(emu_z),min(zs))
         zmax=max(max(emu_z),max(zs))
         plt.scatter(emu_1,emu_2,c=emu_z,s=1,vmin=zmin, vmax=zmax)

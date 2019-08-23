@@ -239,6 +239,7 @@ class ArxivP1D(object):
             info += ', {} = {:.4f}'.format(key,data[key])
         print(info)
 
+
     def plot_samples(self,param_1,param_2,
                         tau_scalings=True,temp_scalings=True):
         """For parameter pair (param1,param2), plot each point in the arxiv"""
@@ -258,12 +259,11 @@ class ArxivP1D(object):
 
         # figure out values of param_1,param_2 in arxiv
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
-
+                                                mask_tau[i] & mask_temp[i])])
         emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                mask_tau[i] & mask_temp[i])])
         zmin=min(emu_z)
         zmax=max(emu_z)
         plt.scatter(emu_1,emu_2,c=emu_z,s=1,vmin=zmin, vmax=zmax)
@@ -274,6 +274,7 @@ class ArxivP1D(object):
         plt.show()
 
         return
+
 
     def plot_3D_samples(self,param_1,param_2, param_3,
                         tau_scalings=True,temp_scalings=True):
@@ -316,6 +317,7 @@ class ArxivP1D(object):
 
         return
 
+
     def sub_arxiv_mf(self,min_mf=0.0,max_mf=1.0):
         """ Return copy of arxiv, with entries in a given mean flux range. """
 
@@ -340,3 +342,23 @@ class ArxivP1D(object):
 
         return copy_arxiv
 
+
+    def get_param_values(self,param,tau_scalings=True,temp_scalings=True):
+        """ Return values for a given parameter, including escalings or not."""
+
+        N=len(self.data)
+        # mask post-process scalings (optional)
+        if not tau_scalings:
+            mask_tau=[x['scale_tau']==1.0 for x in self.data]
+        else:
+            mask_tau=[True]*N
+        if not temp_scalings:
+            mask_temp=[(x['scale_T0']==1.0) & (x['scale_gamma']==1.0) for x in self.data]
+        else:
+            mask_temp=[True]*N
+
+        # figure out values of param in arxiv
+        values=np.array([self.data[i][param] for i in range(N) if (
+                                                mask_tau[i] & mask_temp[i])])
+
+        return values

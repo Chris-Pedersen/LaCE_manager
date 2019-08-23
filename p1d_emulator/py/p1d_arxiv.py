@@ -332,7 +332,8 @@ class ArxivP1D(object):
         new_data=[d for d in copy_arxiv.data if (
                                         d['mF'] < max_mf and d['mF'] > min_mf)]
 
-        print(len(new_data),'final entries')
+        if self.verbose:
+            print('use %d/%d entries'%(len(new_data),len(self.data)))
 
         # store new sub-data
         copy_arxiv.data=new_data

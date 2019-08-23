@@ -10,7 +10,7 @@ class Likelihood(object):
 
     def __init__(self,data=None,theory=None,emulator=None,
                     free_parameters=None,verbose=False,
-                    priors="Gaussian"):
+                    priors="Gaussian",min_kp_kms=None):
         """Setup likelihood from theory and data"""
 
         self.verbose=verbose
@@ -21,6 +21,9 @@ class Likelihood(object):
         else:
             if self.verbose: print('use default data')
             self.data=data_PD2013.P1D_PD2013(blind_data=True)
+
+        # (optionally) get rid of low-k data points
+        self.data._cull_data(min_kp_kms)
 
         if theory:
             self.theory=theory

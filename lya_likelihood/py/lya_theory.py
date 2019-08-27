@@ -185,3 +185,17 @@ class LyaTheory(object):
         plt.show()
 
         return
+
+def get_mock_theory(zs,emulator=None,cosmo_fid=None,verbose=False):
+    """Setup LyaTheory with nuisance models close to that from a mock
+        dataset from a MP-Gadget simulation."""
+
+    mf_model_fid = mean_flux_model.MeanFluxModel()
+    T_model_fid = thermal_model.ThermalModel()
+    kF_model_fid = pressure_model.PressureModel()
+
+    theory=LyaTheory(zs,emulator=emulator,cosmo_fid=cosmo_fid,
+                    verbose=verbose,mf_model_fid=mf_model_fid,
+                    T_model_fid=T_model_fid,kF_model_fid=kF_model_fid)
+
+    return theory

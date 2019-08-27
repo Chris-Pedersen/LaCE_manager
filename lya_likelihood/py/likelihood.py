@@ -10,11 +10,13 @@ class Likelihood(object):
 
     def __init__(self,data=None,theory=None,emulator=None,
                     free_parameters=None,verbose=False,
-                    priors="Gaussian",min_kp_kms=None):
+                    priors="Gaussian",min_kp_kms=None,
+                    ignore_emu_cov=False):
         """Setup likelihood from theory and data"""
 
         self.verbose=verbose
         self.priors=priors
+        self.ignore_emu_cov=ignore_emu_cov
 
         if data:
             self.data=data
@@ -178,9 +180,9 @@ class Likelihood(object):
                       ## also using the same mu and sigma for every parameter..
             log_prior=np.sum(-1*((values-0.5)**2)/(2*sigma**2))
 
-        # compute log_like
+        # compute log_like (option to ignore emulator covariance)
         log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    add_emu_cov=True)
+                                    add_emu_cov=not self.ignore_emu_cov)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')

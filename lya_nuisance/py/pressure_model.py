@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import likelihood_parameter
 
 # lambda_F ~ 80 kpc ~ 0.08 Mpc ~ 0.055 Mpc/h ~ 5.5 km/s (Onorbe et al. 2016)
@@ -89,6 +90,7 @@ class PressureModel(object):
     def get_new_model(self,parameters=[]):
         """Return copy of model, updating values from list of parameters"""
 
-        kF = PressureModel(z_kF=self.z_kF, ln_kF_coeff=self.ln_kF_coeff)
+        kF = PressureModel(z_kF=self.z_kF,
+                            ln_kF_coeff=copy.deepcopy(self.ln_kF_coeff))
         kF.update_parameters(parameters)
         return kF

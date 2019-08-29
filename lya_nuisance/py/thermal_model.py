@@ -1,6 +1,6 @@
 import numpy as np
+import copy
 import likelihood_parameter
-
 
 class ThermalModel(object):
     """Use a handful of parameters to model the temperature-density relation
@@ -145,8 +145,9 @@ class ThermalModel(object):
     def get_new_model(self,parameters=[]):
         """Return copy of model, updating values from list of parameters"""
 
-        T = ThermalModel(z_T=self.z_T, ln_T0_coeff=self.ln_T0_coeff,
-                            ln_gamma_coeff=self.ln_gamma_coeff)
+        T = ThermalModel(z_T=self.z_T,
+                            ln_T0_coeff=copy.deepcopy(self.ln_T0_coeff),
+                            ln_gamma_coeff=copy.deepcopy(self.ln_gamma_coeff))
         T.update_parameters(parameters)
         return T
 

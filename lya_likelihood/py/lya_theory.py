@@ -22,10 +22,7 @@ class LyaTheory(object):
 
         self.verbose=verbose
         self.zs=zs
-        if emulator:
-            self.emulator=emulator
-        else:
-            self.emulator=linear_emulator.LinearEmulator(verbose=verbose)
+        self.emulator=emulator
 
         # setup object to compute linear power for any cosmology
         self.cosmo=recons_cosmo.ReconstructedCosmology(zs,cosmo_fid=cosmo_fid)
@@ -84,6 +81,9 @@ class LyaTheory(object):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
             It might also return a covariance from the emulator."""
+
+        if self.emulator is None:
+            raise ValueError('no emulator in LyaTheory')
 
         # figure out emulator calls, one per redshift
         emu_calls=self.get_emulator_calls(like_params=like_params)
@@ -186,7 +186,8 @@ class LyaTheory(object):
 
         return
 
-def get_mock_theory(zs,emulator=None,cosmo_fid=None,verbose=False):
+def get_mock_theory(zs,emulator=None,cosmo_fid=None,verbose=False,
+                alternative_pressure=False):
     """Setup LyaTheory with nuisance models close to that from a mock
         dataset from a MP-Gadget simulation."""
 
@@ -197,9 +198,13 @@ def get_mock_theory(zs,emulator=None,cosmo_fid=None,verbose=False):
     mf_model_fid = mean_flux_model.MeanFluxModel(ln_tau_coeff=ln_tau_coeff)
 
     # setup pressure model matching simulation
-    ln_kF_0 =  -0.8077668277205104
-    ln_kF_1 =  1.9001923998886694
-    ln_kF_coeff=[ln_kF_1,ln_kF_0]
+    if alternative_pressure:
+        # pressure in current 1024 simulation is crazy low
+        ln_kF_coeff=[0.5,np.log(0.25)]
+    else:
+        ln_kF_0 =  -0.8077668277205104
+        ln_kF_1 =  1.9001923998886694
+        ln_kF_coeff=[ln_kF_1,ln_kF_0]
     kF_model_fid = pressure_model.PressureModel(ln_kF_coeff=ln_kF_coeff)
 
     # setup thermal model matching simulation

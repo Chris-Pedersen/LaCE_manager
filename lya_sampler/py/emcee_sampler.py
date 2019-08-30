@@ -133,18 +133,17 @@ class EmceeSampler(object):
                 assert np.all(values <= 1.0)
                 p0[:,i]=values
 
-"""  This would not work with Gaussian priors, old code for linear interp.
-        # make sure that all walkers are within the convex hull (in lin interp)
-        for iw in range(nwalkers):
-            walker=p0[iw]
-            test=self.log_prob(walker)
-            while (test == -np.inf):
-                walker = np.random.rand(ndim)
-                test=self.log_prob(walker)
-            p0[iw]=walker
-"""
+#        #make sure that all walkers are within the convex hull (in lin interp)
+#        for iw in range(nwalkers):
+#            walker=p0[iw]
+#            test=self.log_prob(walker)
+#            while (test == -np.inf):
+#                walker = np.random.rand(ndim)
+#                test=self.log_prob(walker)
+#            p0[iw]=walker
 
         return p0
+
 
     def log_prob(self,values):
         """Function that will actually be called by emcee"""

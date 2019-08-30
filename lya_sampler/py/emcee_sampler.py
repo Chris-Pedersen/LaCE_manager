@@ -24,13 +24,11 @@ class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
     def __init__(self,like=None,emulator=None,free_parameters=None,
-                        nwalkers=None,read_chain_file=None,verbose=False,
-                        priors="Gaussian"):
+                        nwalkers=None,read_chain_file=None,verbose=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
 
         self.verbose=verbose
-        self.priors=priors    
 
         if like:
             if self.verbose: print('use input likelihood')
@@ -120,15 +118,23 @@ class EmceeSampler(object):
         if self.verbose: 
             print('set %d walkers with %d dimensions'%(nwalkers,ndim))
 
-        if self.priors=="uniform":
+        if self.like.prior_Gauss_rms is None:
             p0=np.random.rand(ndim*nwalkers).reshape((nwalkers,ndim))
-        elif self.priors=="Gaussian":
-            sigma=0.2
-            p0=scipy.stats.truncnorm.rvs(
-                (0-0.5)/sigma,(1-0.5)/sigma,loc=0.5,scale=sigma,
-                size=ndim*nwalkers).reshape((nwalkers,ndim))
+        else:
+            rms=self.like.prior_Gauss_rms
+            p0=np.ndarray([nwalkers,ndim])
+            for i in range(ndim):
+                p=self.like.free_params[i]
+                fid_value=p.value_in_cube()
+                values=scipy.stats.truncnorm.rvs((0.0-fid_value)/rms,
+                            (1.0-fid_value)/rms, scale=rms,
+                            loc=fid_value, size=nwalkers)
+                assert np.all(values >= 0.0)
+                assert np.all(values <= 1.0)
+                p0[:,i]=values
 
-        # make sure that all walkers are within the convex hull
+"""  This would not work with Gaussian priors, old code for linear interp.
+        # make sure that all walkers are within the convex hull (in lin interp)
         for iw in range(nwalkers):
             walker=p0[iw]
             test=self.log_prob(walker)
@@ -136,9 +142,9 @@ class EmceeSampler(object):
                 walker = np.random.rand(ndim)
                 test=self.log_prob(walker)
             p0[iw]=walker
+"""
 
         return p0
-
 
     def log_prob(self,values):
         """Function that will actually be called by emcee"""

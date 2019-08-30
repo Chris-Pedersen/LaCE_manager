@@ -10,12 +10,15 @@ class Likelihood(object):
 
     def __init__(self,data=None,theory=None,emulator=None,
                     free_parameters=None,verbose=False,
-                    priors="Gaussian",min_kp_kms=None,
-                    ignore_emu_cov=False):
-        """Setup likelihood from theory and data"""
+                    prior_Gauss_rms=0.2,
+                    min_kp_kms=None,ignore_emu_cov=False):
+        """Setup likelihood from theory and data. Options:
+            - if prior_Gauss_rms is None it will use uniform priors
+            - ignore k-bins with k > min_kp_kms
+            - ignore_emu_cov will ignore emulator covariance in likelihood."""
 
         self.verbose=verbose
-        self.priors=priors
+        self.prior_Gauss_rms=prior_Gauss_rms
         self.ignore_emu_cov=ignore_emu_cov
 
         if data:
@@ -164,21 +167,8 @@ class Likelihood(object):
     def log_prob(self,values):
         """Return log likelihood plus log priors"""
 
-
-        # for now priors are top hats in 0 < x < 1
-        if max(values) > 1.0:
-            return -np.inf
-        if min(values) < 0.0:
-            return -np.inf
-
-        ## Super basic implementation of priors
-        if self.priors=="uniform":
-            log_prior=0
-        elif self.priors=="Gaussian":
-            ## Determine log prior
-            sigma=0.2 ## Hardcoded for now...
-                      ## also using the same mu and sigma for every parameter..
-            log_prior=np.sum(-1*((values-0.5)**2)/(2*sigma**2))
+        # compute log_prior
+        log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
         log_like=self.get_log_like(values,ignore_log_det_cov=False,
@@ -189,6 +179,27 @@ class Likelihood(object):
             return -np.inf
 
         return log_like + log_prior
+
+
+    def get_log_prior(self,values):
+        """Compute logarithm of prior"""
+
+        assert len(values)==len(self.free_params),'size mismatch'
+
+        # Always force parameter to be within range (for now)
+        if max(values) > 1.0:
+            return -np.inf
+        if min(values) < 0.0:
+            return -np.inf
+
+        # Add Gaussian prior around fiducial parameter values
+        if self.prior_Gauss_rms is None:
+            return 0
+        else:
+            rms=self.prior_Gauss_rms
+            fid_values=[p.value_in_cube() for p in self.free_params]
+            log_prior=-np.sum((np.array(fid_values)-values)**2/(2*rms**2))
+            return log_prior
 
 
     def go_silent(self):

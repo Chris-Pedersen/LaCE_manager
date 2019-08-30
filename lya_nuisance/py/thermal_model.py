@@ -25,7 +25,7 @@ class ThermalModel(object):
 
     def get_T0(self,z):
         ''' Return T0(z) for a given model '''
-        lnz=np.log(z/self.z_T)
+        lnz=np.log((1+z)/(1+self.z_T))
         if z<self.z_T:
             log_poly=np.poly1d([self.ln_T0_coeff[0],self.ln_T0_coeff[1]])
             ln_T0=log_poly(lnz)

@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import likelihood_parameter
 
 
@@ -101,7 +102,8 @@ class MeanFluxModel(object):
     def get_new_model(self,parameters=[]):
         """Return copy of model, updating values from list of parameters"""
 
-        mf = MeanFluxModel(z_tau=self.z_tau, ln_tau_coeff=self.ln_tau_coeff)
+        mf = MeanFluxModel(z_tau=self.z_tau,
+                            ln_tau_coeff=copy.deepcopy(self.ln_tau_coeff))
         mf.update_parameters(parameters)
         return mf
 

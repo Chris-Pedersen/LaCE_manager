@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import gp_emulator
 import p1d_arxiv
 
@@ -9,6 +10,7 @@ class MeanFluxEmulator:
     """
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 verbose=False,kmax_Mpc=10.0,paramList=None,train=False,
+                max_arxiv_size=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 emu_type="k_bin",set_noise_var=1e-3,N_mf=10):
 
@@ -21,6 +23,7 @@ class MeanFluxEmulator:
         # load full arxiv
         self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
                 skewers_label=skewers_label,verbose=verbose,
+                max_arxiv_size=max_arxiv_size,
                 drop_tau_rescalings=drop_tau_rescalings,
                 drop_temp_rescalings=drop_temp_rescalings)
 
@@ -36,8 +39,6 @@ class MeanFluxEmulator:
             # create GP emulator using only entries in mean flux range
             mf_emu=gp_emulator.GPEmulator(verbose=verbose,
                     kmax_Mpc=kmax_Mpc,paramList=paramList,train=train,
-                    drop_tau_rescalings=drop_tau_rescalings,
-                    drop_temp_rescalings=drop_temp_rescalings,
                     emu_type=emu_type,set_noise_var=set_noise_var,
                     passArxiv=mf_arxiv)
 
@@ -78,3 +79,27 @@ class MeanFluxEmulator:
                     return_covar=return_covar)
 
 
+    def overplot_emulators(self,param_1,param_2,
+                                tau_scalings=True,temp_scalings=True):
+        """For parameter pair (param1,param2), overplot arxiv of emulators. """
+
+        plt.figure()
+        # loop over emulators
+        for imf in range(self.N_mf):
+            col = plt.cm.jet(imf/(self.N_mf-1))
+            val1=self.emulators[imf].arxiv.get_param_values(param_1,
+                     tau_scalings=tau_scalings,temp_scalings=temp_scalings)
+            val2=self.emulators[imf].arxiv.get_param_values(param_2,
+                     tau_scalings=tau_scalings,temp_scalings=temp_scalings)
+
+            cen_mf=self.cen_mf[imf]
+            plt.scatter(val1,val2,c=cen_mf*np.ones_like(val1),
+                                                    s=1,vmin=0.0,vmax=1.0)
+
+        cbar=plt.colorbar()
+        cbar.set_label("central <F>", labelpad=+1)
+        plt.xlabel(param_1)
+        plt.ylabel(param_2)
+        plt.show()
+
+        return

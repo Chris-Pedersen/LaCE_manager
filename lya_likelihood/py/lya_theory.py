@@ -185,3 +185,36 @@ class LyaTheory(object):
         plt.show()
 
         return
+
+def get_mock_theory(zs,emulator=None,cosmo_fid=None,verbose=False):
+    """Setup LyaTheory with nuisance models close to that from a mock
+        dataset from a MP-Gadget simulation."""
+
+    # setup mean flux matching simulation outputs
+    ln_tau_0 = -1.03436530241446
+    ln_tau_1 = 3.6744666006830182
+    ln_tau_coeff=[ln_tau_1,ln_tau_0]
+    mf_model_fid = mean_flux_model.MeanFluxModel(ln_tau_coeff=ln_tau_coeff)
+
+    # setup pressure model matching simulation
+    ln_kF_0 =  -0.8077668277205104
+    ln_kF_1 =  1.9001923998886694
+    ln_kF_coeff=[ln_kF_1,ln_kF_0]
+    kF_model_fid = pressure_model.PressureModel(ln_kF_coeff=ln_kF_coeff)
+
+    # setup thermal model matching simulation
+    ln_gamma_0 =  0.3295042060454974
+    ln_gamma_1 =  -0.2521703939255174
+    ln_gamma_coeff=[ln_gamma_1,ln_gamma_0]
+    T0_1 =  0.13626544653787526
+    T0_2 =  9.546039892898634
+    T0_3 =  -1.2041429220366868
+    ln_T0_coeff=[T0_1,T0_2,T0_3]
+    T_model_fid = thermal_model.ThermalModel(ln_T0_coeff=ln_T0_coeff,
+                                                ln_gamma_coeff=ln_gamma_coeff)
+
+    theory=LyaTheory(zs,emulator=emulator,cosmo_fid=cosmo_fid,
+                    verbose=verbose,mf_model_fid=mf_model_fid,
+                    T_model_fid=T_model_fid,kF_model_fid=kF_model_fid)
+
+    return theory

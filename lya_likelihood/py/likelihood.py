@@ -10,17 +10,25 @@ class Likelihood(object):
 
     def __init__(self,data=None,theory=None,emulator=None,
                     free_parameters=None,verbose=False,
-                    priors="Gaussian"):
-        """Setup likelihood from theory and data"""
+                    prior_Gauss_rms=0.2,
+                    min_kp_kms=None,ignore_emu_cov=False):
+        """Setup likelihood from theory and data. Options:
+            - if prior_Gauss_rms is None it will use uniform priors
+            - ignore k-bins with k > min_kp_kms
+            - ignore_emu_cov will ignore emulator covariance in likelihood."""
 
         self.verbose=verbose
-        self.priors=priors
+        self.prior_Gauss_rms=prior_Gauss_rms
+        self.ignore_emu_cov=ignore_emu_cov
 
         if data:
             self.data=data
         else:
             if self.verbose: print('use default data')
             self.data=data_PD2013.P1D_PD2013(blind_data=True)
+
+        # (optionally) get rid of low-k data points
+        self.data._cull_data(min_kp_kms)
 
         if theory:
             self.theory=theory
@@ -159,31 +167,39 @@ class Likelihood(object):
     def log_prob(self,values):
         """Return log likelihood plus log priors"""
 
+        # compute log_prior
+        log_prior=self.get_log_prior(values)
 
-        # for now priors are top hats in 0 < x < 1
-        if max(values) > 1.0:
-            return -np.inf
-        if min(values) < 0.0:
-            return -np.inf
-
-        ## Super basic implementation of priors
-        if self.priors=="uniform":
-            log_prior=0
-        elif self.priors=="Gaussian":
-            ## Determine log prior
-            sigma=0.2 ## Hardcoded for now...
-                      ## also using the same mu and sigma for every parameter..
-            log_prior=np.sum(-1*((values-0.5)**2)/(2*sigma**2))
-
-        # compute log_like
+        # compute log_like (option to ignore emulator covariance)
         log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    add_emu_cov=True)
+                                    add_emu_cov=not self.ignore_emu_cov)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
             return -np.inf
 
         return log_like + log_prior
+
+
+    def get_log_prior(self,values):
+        """Compute logarithm of prior"""
+
+        assert len(values)==len(self.free_params),'size mismatch'
+
+        # Always force parameter to be within range (for now)
+        if max(values) > 1.0:
+            return -np.inf
+        if min(values) < 0.0:
+            return -np.inf
+
+        # Add Gaussian prior around fiducial parameter values
+        if self.prior_Gauss_rms is None:
+            return 0
+        else:
+            rms=self.prior_Gauss_rms
+            fid_values=[p.value_in_cube() for p in self.free_params]
+            log_prior=-np.sum((np.array(fid_values)-values)**2/(2*rms**2))
+            return log_prior
 
 
     def go_silent(self):
@@ -265,9 +281,9 @@ class Likelihood(object):
 
         # figure out values of param_1,param_2 in arxiv
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                  mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                  mask_tau[i] & mask_temp[i])])
 
         # translate sampling point (in unit cube) to parameter values
         if values is not None:
@@ -282,7 +298,7 @@ class Likelihood(object):
         # overplot
         zs=self.data.z
         emu_z=np.array([emu_data[i]['z'] for i in range(Nemu) if (
-                                                    mask_tau[i] & mask_temp[i])])
+                                                  mask_tau[i] & mask_temp[i])])
         zmin=min(min(emu_z),min(zs))
         zmax=max(max(emu_z),max(zs))
         plt.scatter(emu_1,emu_2,c=emu_z,s=1,vmin=zmin, vmax=zmax)

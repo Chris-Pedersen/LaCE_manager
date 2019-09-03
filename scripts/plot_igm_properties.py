@@ -10,7 +10,7 @@ basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
 
 
 MF=mean_flux_model.MeanFluxModel()
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=2,
+archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=4,
                             drop_tau_rescalings=True,
                             drop_temp_rescalings=True)
 
@@ -50,7 +50,7 @@ def get_broken_power(z,a,b,c):
     pivot=3.6
     out=np.empty(len(z))
     for aa in range(len(z)):
-        lnz=np.log(z[aa]/pivot)
+        lnz=np.log((1+z[aa])/(1+pivot))
         if z[aa]<pivot:
             log_poly=np.poly1d([a,b])
             ln_f=log_poly(lnz)

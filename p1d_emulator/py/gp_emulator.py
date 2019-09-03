@@ -18,7 +18,8 @@ class GPEmulator:
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
-                drop_temp_rescalings=False,undersample_z=1,emu_type="k_bin",
+                drop_temp_rescalings=False,keep_every_other_rescaling=False,
+                undersample_z=1,emu_type="k_bin",
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
 
         self.kmax_Mpc=kmax_Mpc
@@ -28,6 +29,7 @@ class GPEmulator:
         self.max_arxiv_size=max_arxiv_size
         self.drop_tau_rescalings=drop_tau_rescalings
         self.drop_temp_rescalings=drop_temp_rescalings
+        self.keep_every_other_rescaling=keep_every_other_rescaling
         self.undersample_z=undersample_z
         self.verbose=verbose
         self.asymmetric_kernel=asymmetric_kernel
@@ -36,10 +38,11 @@ class GPEmulator:
         if passArxiv==None:
             self.custom_arxiv=False
             self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-                                max_arxiv_size=self.max_arxiv_size,verbose=verbose,
-                                drop_tau_rescalings=drop_tau_rescalings,
-                                drop_temp_rescalings=drop_temp_rescalings,
-                                undersample_z=undersample_z)
+                        max_arxiv_size=self.max_arxiv_size,verbose=verbose,
+                        drop_tau_rescalings=drop_tau_rescalings,
+                        drop_temp_rescalings=drop_temp_rescalings,
+                        keep_every_other_rescaling=keep_every_other_rescaling,
+                        undersample_z=undersample_z)
         else:
             self.custom_arxiv=True
             print("Loading emulator using a specific arxiv, not the one set in basedir")
@@ -321,6 +324,7 @@ class GPEmulator:
         initParams["emu_noise"]=self.emu_noise
         initParams["drop_tau_rescalings"]=self.drop_tau_rescalings
         initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
+        initParams["keep_every_other_rescaling"]=self.keep_every_other_rescaling
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
         initParams["asymmetric_kernel"]=self.asymmetric_kernel
@@ -380,6 +384,7 @@ class GPEmulator:
         initParams["emu_noise"]=self.emu_noise
         initParams["drop_tau_rescalings"]=self.drop_tau_rescalings
         initParams["drop_temp_rescalings"]=self.drop_temp_rescalings
+        initParams["keep_every_other_rescaling"]=self.keep_every_other_rescaling
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
         initParams["asymmetric_kernel"]=self.asymmetric_kernel

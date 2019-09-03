@@ -10,6 +10,7 @@ class SimplestEmulator(object):
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
+                keep_every_other_rescaling=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
@@ -20,6 +21,7 @@ class SimplestEmulator(object):
         self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                         drop_tau_rescalings=drop_tau_rescalings,
                         drop_temp_rescalings=drop_temp_rescalings,
+                        keep_every_other_rescaling=keep_every_other_rescaling,
                         max_arxiv_size=max_arxiv_size,
                         undersample_z=undersample_z,verbose=verbose)
 

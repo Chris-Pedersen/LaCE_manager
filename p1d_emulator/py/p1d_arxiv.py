@@ -53,7 +53,7 @@ class ArxivP1D(object):
         if self.verbose:
             print('simulation suite has %d samples'%self.nsamples)
 
-        if pick_sim_number:
+        if pick_sim_number is not None:
             start=pick_sim_number
             self.nsamples=pick_sim_number+1
         else:

@@ -4,15 +4,19 @@ import matplotlib.pyplot as plt
 import mean_flux_model
 from scipy.optimize import curve_fit
 import os
+import recons_cosmo
+import fit_linP
 
 repo=os.environ['LYA_EMU_REPO']
 basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
+basedir=repo+"/p1d_emulator/sim_suites/emulator_1024_21062019"
+skewers_label='Ns512_wM0.05'
 
 
 MF=mean_flux_model.MeanFluxModel()
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=4,
+archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=3,
                             drop_tau_rescalings=True,
-                            drop_temp_rescalings=True)
+                            drop_temp_rescalings=True,skewers_label=skewers_label)
 
 data=np.empty([len(archive.data),5])
 
@@ -26,27 +30,30 @@ for entry in archive.data:
     data[aa]=IGM_stuff
     aa+=1
 
-## x data is log10(1+z/(1+z_*)) (why????)
+zs=data[:,0]
+T0=data[:,2]
+gamma=data[:,3]
+mF=data[:,1]
+kF_Mpc=data[:,4]
+kF_kms=np.empty(len(kF_Mpc))
 
-def get_mf(z,a,b):
-    z_log=np.log((1+z)/(1+3))
-    ln_tau_poly=np.poly1d([a,b])
-    ln_tau=ln_tau_poly(z_log)
-    return np.exp(-np.exp(ln_tau))
+## Import cosmology object to get Mpc -> kms conversion factor
+cosmo=recons_cosmo.ReconstructedCosmology(np.flip(zs))
 
-def get_power_law(z,a,b,c):
-    z=np.log(z)
-    log_poly=np.poly1d([a,b,c])
-    ln_f=log_poly(z)
-    return np.exp(ln_f)
+## Convert kF_Mpc into kF_kms
+for aa in range(len(zs)):
+    ## Iterate backwards..
+    conversion_factor=cosmo.reconstruct_Hubble_iz(aa,cosmo.linP_model_fid)/(1+zs[-aa])
+    kF_kms[-aa]=kF_Mpc[-aa]/conversion_factor
 
-def get_power_1storder(z,a,b):
-    z=np.log(z)
-    log_poly=np.poly1d([a,b])
-    ln_f=log_poly(z)
-    return np.exp(ln_f)
+def get_gamma(z,ln_gamma_0,ln_gamma_1):
+    """gamma at the input redshift"""
+    xz=np.log((1+z)/(1+3.6))
+    ln_gamma_poly=np.poly1d([ln_gamma_0,ln_gamma_1])
+    ln_gamma=ln_gamma_poly(xz)
+    return np.exp(ln_gamma)
 
-def get_broken_power(z,a,b,c):
+def get_T0(z,a,b,c):
     pivot=3.6
     out=np.empty(len(z))
     for aa in range(len(z)):
@@ -61,82 +68,62 @@ def get_broken_power(z,a,b,c):
             out[aa]=ln_f
     return np.exp(out)
 
-    
+def get_mean_flux(z,ln_tau_0,ln_tau_1): ## Order is the wrong way round in these
+    """Effective optical depth at the input redshift"""
+    xz=np.log((1+z)/(1+3.0))
+    ln_tau_poly=np.poly1d([ln_tau_0,ln_tau_1])
+    ln_tau=ln_tau_poly(xz)
+    return np.exp(-np.exp(ln_tau))
 
-z_fits=np.linspace(5,2,200)
+def get_kF_kms(z,ln_kF_0,ln_kF_1):
+    """Filtering length at the input redshift (in s/km)"""
+    xz=np.log((1+z)/(1+3.5))
+    ln_kF_poly=np.poly1d([ln_kF_0,ln_kF_1])
+    ln_kF=ln_kF_poly(xz)
+    return np.exp(ln_kF)
+
+## Get fit params
+fit_mF, err_mF=curve_fit(get_mean_flux, zs, mF)
+fit_T0, err_T0=curve_fit(get_T0, zs, T0)
+fit_gamma, err_gamma=curve_fit(get_gamma, zs, gamma)
+fit_kF_kms, err_kF_kms=curve_fit(get_kF_kms, zs, kF_kms)
+
+## Print values
+print("ln_tau_0 = ", fit_mF[1])
+print("ln_tau_1 = ", fit_mF[0])
+print("ln_kF_0 = ", fit_kF_kms[1])
+print("ln_kF_1 = ", fit_kF_kms[0])
+print("ln_gamma_0 = ", fit_gamma[1])
+print("ln_gamma_1 = ", fit_gamma[0])
+print("T0_1 = ", fit_T0[0])
+print("T0_2 = ", fit_T0[1])
+print("T0_3 = ", fit_T0[2])
 
 
-opt_mf, cov_mf = curve_fit(get_mf, data[:,0], data[:,1])
-power_gamma, cov_gamma=curve_fit(get_power_law,data[:,0],data[:,3])
-power_kf, cov_kf=curve_fit(get_power_1storder,data[:,0],data[:,4])
-broken_power_t0,broken_power_cov=curve_fit(get_broken_power,data[:,0],data[:,2])
-
-mean_fluxes=get_mf(z_fits,opt_mf[0],opt_mf[1])
-gamma_power=get_power_law(z_fits,power_gamma[0],power_gamma[1],power_gamma[2])
-kf_power=get_power_1storder(z_fits,power_kf[0],power_kf[1])
-
-broken_t0=get_broken_power(z_fits,broken_power_t0[0],
-                                    broken_power_t0[1],
-                                    broken_power_t0[2])
-
+fit_zs=np.linspace(zs[0],zs[-1],200)
 
 plt.figure(figsize=(8,15))
 plt.subplot(4,1,1)
-plt.plot(data[:,0],data[:,1],label="Sim")
-plt.plot(z_fits,mean_fluxes,label="Model")
-plt.ylabel("<F>")
+plt.plot(zs,T0,label="Simulation")
+plt.plot(fit_zs,get_T0(fit_zs,fit_T0[0],fit_T0[1],fit_T0[2]),label="Model")
+plt.ylabel("T0")
 plt.legend()
-plt.xticks([])
 
 plt.subplot(4,1,2)
-plt.plot(data[:,0],data[:,2])
-plt.plot(z_fits,broken_t0)
-plt.ylabel("T0")
-plt.xticks([])
+plt.plot(zs,gamma)
+plt.plot(fit_zs,get_gamma(fit_zs,fit_gamma[0],fit_gamma[1]))
+plt.ylabel("gamma")
 
 plt.subplot(4,1,3)
-plt.plot(data[:,0],data[:,3])
-plt.plot(z_fits,gamma_power)
-plt.ylabel("gamma")
-plt.xticks([])
+plt.plot(zs,mF)
+plt.plot(fit_zs,get_mean_flux(fit_zs,fit_mF[0],fit_mF[1]))
+plt.ylabel("<F>")
 
 plt.subplot(4,1,4)
-plt.plot(data[:,0],data[:,4])
-plt.plot(z_fits,kf_power)
-plt.ylabel("kF")
+plt.plot(zs,kF_kms)
+plt.plot(fit_zs,get_kF_kms(fit_zs,fit_kF_kms[0],fit_kF_kms[1]))
+plt.ylabel("kF_kms")
+plt.xlabel("z")
+
 plt.tight_layout()
 plt.show()
-
-print(broken_power_t0)
-
-'''
-
-
-zs=np.empty(len(archive.data))
-T0_array=np.empty(len(zs))
-gamma_array=np.empty(len(zs))
-mean_fluxes=np.empty(len(zs))
-
-
-for aa in range(len(archive.data)):
-    zs[aa]=archive.data[aa]["z"]
-    T0_array[aa]=archive.data[aa]["T0"]
-    gamma_array[aa]=archive.data[aa]["gamma"]
-    mean_fluxes[aa]=MF.get_mean_flux(zs[aa])
-
-fig, ax1 = plt.subplots()
-color = 'tab:red'
-ax1.plot(zs, T0_array, color=color)
-ax1.tick_params(axis='y', labelcolor=color)
-ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-
-color = 'tab:blue'
-ax2.set_ylabel('gamma', color=color)  # we already handled the x-label with ax1
-ax2.plot(zs, gamma_array, color=color)
-ax2.tick_params(axis='y', labelcolor=color)
-
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.legend()
-plt.xlim(5,2)
-plt.show()
-'''

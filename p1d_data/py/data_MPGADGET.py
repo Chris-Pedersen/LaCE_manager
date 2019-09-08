@@ -33,6 +33,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         ## Load in dictionaries
         with open(basedir+filename) as json_file:
             data_file = json.load(json_file)
+        self.like_params=data_file["like_params"]
         sim_data = data_file["data"]
         ## Load PD2013 data
         PD2013=data_PD2013.P1D_PD2013(blind_data=False)

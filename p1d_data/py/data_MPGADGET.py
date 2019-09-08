@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,                                  filename="1024_L90_mimic.json",z_list=None):
+    def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,
+                        filename="1024_mock_0.json",z_list=None):
         """ Read mock P1D from MP-Gadget sims, and return
         using the k bins and covariance from PD2013 """
 
@@ -31,8 +32,8 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     def _load_p1d(self,basedir,filename):
         ## Load in dictionaries
         with open(basedir+filename) as json_file:
-            sim_data = json.load(json_file)
-
+            data_file = json.load(json_file)
+        sim_data = data_file["data"]
         ## Load PD2013 data
         PD2013=data_PD2013.P1D_PD2013(blind_data=False)
         k=PD2013.k

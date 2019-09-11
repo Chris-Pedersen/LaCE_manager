@@ -10,6 +10,7 @@ class ArxivP1D(object):
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
+                keep_every_other_rescaling=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None):
         """Load arxiv from base sim directory and (optional) label
@@ -33,11 +34,11 @@ class ArxivP1D(object):
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number)
+                            pick_sim_number,keep_every_other_rescaling)
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number):
+                            pick_sim_number,keep_every_other_rescaling):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -158,6 +159,9 @@ class ArxivP1D(object):
                     p1d_data['p1d_Mpc'] = pair_p1d
                     self.data.append(p1d_data)                
 
+        if keep_every_other_rescaling:
+            if self.verbose: print('will keep every other rescaling in arxiv')
+            self._keep_every_other_rescaling()
         if drop_tau_rescalings:
             if self.verbose: print('will drop tau scalings from arxiv')
             self._drop_tau_rescalings()
@@ -206,6 +210,24 @@ class ArxivP1D(object):
         if self.data[0]['kF_Mpc']:
             self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
 
+        return
+
+
+    def _keep_every_other_rescaling(self):
+        """Keep only every other rescaled entry"""
+
+        # select scalings that we want to keep
+        keep_tau_scales=np.unique([x['scale_tau'] for x in self.data])[::2]
+        keep_T0_scales=np.unique([x['scale_T0'] for x in self.data])[::2]
+        keep_gamma_scales=np.unique([x['scale_gamma'] for x in self.data])[::2]
+
+        # keep only entries with correct scalings
+        data = [x for x in self.data if (
+                            (x['scale_tau'] in keep_tau_scales) &
+                            (x['scale_T0'] in keep_T0_scales) &
+                            (x['scale_gamma'] in keep_gamma_scales))]
+
+        self.data = data
         return
 
 

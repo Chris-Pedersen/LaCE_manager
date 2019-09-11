@@ -69,7 +69,7 @@ class ThermalModel(object):
                 xmin=7
                 xmax=11
             elif i==2:
-                xmin=-2
+                xmin=-1.5
                 xmax=-0.5      # note non-trivial order in coefficients
             value=self.ln_T0_coeff[i]
             par = likelihood_parameter.LikelihoodParameter(name=name,
@@ -125,7 +125,9 @@ class ThermalModel(object):
                 for ip in range(len(self.T0_params)):
                     if self.T0_params[ip].is_same_parameter(like_par):
                         assert found==False,'can not update parameter twice'
-                        self.ln_T0_coeff[Npar_T0-ip-1]=like_par.value
+                        # note different order than with gamma parameters
+                        #self.ln_T0_coeff[Npar_T0-ip-1]=like_par.value
+                        self.ln_T0_coeff[ip]=like_par.value
                         found=True
                 assert found==True,'could not update parameter '+like_par.name
             elif 'ln_gamma' in like_par.name:

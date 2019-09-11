@@ -53,9 +53,9 @@ class LikelihoodParameter(object):
 
         if self.name != param.name:
             return False
-        if self.min_value != param.min_value:
+        if not np.isclose(self.min_value,param.min_value,rtol=1e-05):
             return False
-        if self.max_value != param.max_value:
+        if not np.isclose(self.max_value,param.max_value,rtol=1e-05):
             return False
 
         return True

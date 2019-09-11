@@ -12,6 +12,7 @@ class MeanFluxEmulator:
                 verbose=False,kmax_Mpc=10.0,paramList=None,train=False,
                 max_arxiv_size=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
+                keep_every_other_rescaling=False,
                 emu_type="k_bin",set_noise_var=1e-3,N_mf=10):
 
         # setup central mean flux and edges
@@ -25,7 +26,8 @@ class MeanFluxEmulator:
                 skewers_label=skewers_label,verbose=verbose,
                 max_arxiv_size=max_arxiv_size,
                 drop_tau_rescalings=drop_tau_rescalings,
-                drop_temp_rescalings=drop_temp_rescalings)
+                drop_temp_rescalings=drop_temp_rescalings,
+                keep_every_other_rescaling=keep_every_other_rescaling)
 
         self.emulators=[]
         for i in range(self.N_mf):

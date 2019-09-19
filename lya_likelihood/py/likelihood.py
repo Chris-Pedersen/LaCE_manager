@@ -60,6 +60,12 @@ class Likelihood(object):
         for par in params:
             if par.name in free_parameter_names:
                 self.free_params.append(par)
+                ## If we are using Gaussian priors
+                ## set the mean to be the best fit model
+                ## in the mock data
+                ## (Currently only works with MP-Gadget data, not PD2013)
+                if self.prior_Gauss_rms is not None:
+                    self.free_params[-1].value=self.data.like_params[par.name]
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)
@@ -250,12 +256,13 @@ class Likelihood(object):
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
                     yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,label='z=%.1f'%z)
-            plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col)
+            plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,linestyle="dashed")
         plt.yscale('log')
         plt.legend()
         plt.xlabel('k [s/km]')
         plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
         plt.ylim(0.005,0.6)
+        plt.tight_layout()
         plt.show()
 
         return

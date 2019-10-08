@@ -13,12 +13,14 @@ and save a json dictionary of the format used by the data_MPGADGET
 class, including the best fit likelihood parameters.
 '''
 
+sim_num=3
+
 ## Pick an emulator suite and a simulation number
 repo=os.environ['LYA_EMU_REPO']
 basedir=repo+"/p1d_emulator/sim_suites/emulator_1024_21062019"
 skewers_label='Ns512_wM0.05'
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=0,
-                            drop_tau_rescalings=True,
+archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=sim_num,
+                            drop_tau_rescalings=True,z_max=4,
                             drop_temp_rescalings=True,skewers_label=skewers_label)
 sim_data=archive.data
 z_sim=np.empty(len(archive.data))
@@ -138,5 +140,5 @@ saveDict["like_params"]["T0_1"]=fit_T0[0]
 saveDict["like_params"]["T0_2"]=fit_T0[1]
 saveDict["like_params"]["T0_3"]=fit_T0[2]
 
-with open('1024_mock_0.json', 'w') as f:
+with open(repo+'p1d_data/data_files/MP-Gadget_data/1024_mock_%s.json' % str(sim_num), 'w') as f:
     json.dump(saveDict, f)

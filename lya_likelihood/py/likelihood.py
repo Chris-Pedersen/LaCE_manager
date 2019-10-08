@@ -65,7 +65,9 @@ class Likelihood(object):
                 ## in the mock data
                 ## (Currently only works with MP-Gadget data, not PD2013)
                 if self.prior_Gauss_rms is not None:
-                    self.free_params[-1].value=self.data.like_params[par.name]
+                    #print("Parameter=",par.name)
+                    #print("Fid value=",self.data.like_params[par.name])
+                    self.free_params[-1].set_without_cube(self.data.like_params[par.name])
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)

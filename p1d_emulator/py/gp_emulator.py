@@ -19,7 +19,7 @@ class GPEmulator:
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
-                undersample_z=1,emu_type="k_bin",
+                undersample_z=1,emu_type="k_bin",z_max=5,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
 
         self.kmax_Mpc=kmax_Mpc
@@ -33,6 +33,7 @@ class GPEmulator:
         self.undersample_z=undersample_z
         self.verbose=verbose
         self.asymmetric_kernel=asymmetric_kernel
+        self.z_max=z_max
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -40,7 +41,7 @@ class GPEmulator:
             self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                         max_arxiv_size=self.max_arxiv_size,verbose=verbose,
                         drop_tau_rescalings=drop_tau_rescalings,
-                        drop_temp_rescalings=drop_temp_rescalings,
+                        drop_temp_rescalings=drop_temp_rescalings,z_max=self.z_max,
                         keep_every_other_rescaling=keep_every_other_rescaling,
                         undersample_z=undersample_z)
         else:
@@ -328,6 +329,7 @@ class GPEmulator:
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
         initParams["asymmetric_kernel"]=self.asymmetric_kernel
+        initParams["z_max"]=self.z_max
 
         saveString=self.basedir+"/saved_emulator_"
 
@@ -388,6 +390,7 @@ class GPEmulator:
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
         initParams["asymmetric_kernel"]=self.asymmetric_kernel
+        initParams["z_max"]=self.z_max
 
         saveString=self.basedir+"/saved_emulator_"
 

@@ -14,6 +14,7 @@ class LikelihoodParameter(object):
         self.min_value=min_value
         self.max_value=max_value
         self.value=value
+
         return
 
 
@@ -31,6 +32,13 @@ class LikelihoodParameter(object):
         self.value=value
         return
 
+    def set_without_cube(self,value):
+        """ Set parameter value without cube """
+        ## Check to make sure parameter is within min/max
+        assert self.min_value < value < self.max_value, "Parameter name: %s" % self.name
+        self.value=value
+        return
+
     def info_str(self,all_info=False):
         """Return a string with parameter name and value, for debugging"""
 
@@ -39,7 +47,6 @@ class LikelihoodParameter(object):
             info+=' , '+str(self.min_value)+' , '+str(self.max_value)
 
         return info
-
 
     def value_from_cube(self,x):
         """Given the value in range (xmin,xmax), return absolute value"""

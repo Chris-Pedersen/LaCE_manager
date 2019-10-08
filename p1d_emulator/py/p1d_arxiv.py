@@ -12,7 +12,7 @@ class ArxivP1D(object):
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 keep_every_other_rescaling=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
-                no_skewers=False,pick_sim_number=None):
+                no_skewers=False,pick_sim_number=None,z_max=5.):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)"""
 
@@ -34,11 +34,13 @@ class ArxivP1D(object):
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number,keep_every_other_rescaling)
+                            pick_sim_number,keep_every_other_rescaling,
+                            z_max)
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number,keep_every_other_rescaling):
+                            pick_sim_number,keep_every_other_rescaling,
+                            z_max):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -82,6 +84,8 @@ class ArxivP1D(object):
 
             # to make lighter emulators, we might undersample redshifts
             for snap in range(0,Nz,undersample_z):
+                if zs[snap]>z_max:
+                    continue
 
                 # get linear power parameters describing snapshot
                 linP_params = pair_data['linP_zs'][snap]

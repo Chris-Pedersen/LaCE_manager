@@ -265,7 +265,7 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cube=False):
+    def plot_corner(self,cube=False,mock_values=False):
         """Make corner plot, using re-normalized values if cube=True"""
 
         # get chain (from sampler or from file)
@@ -286,7 +286,26 @@ class EmceeSampler(object):
                                 cube_values[:,ip]) for ip in range(self.ndim)]
             values=np.array(list_values).transpose()
 
-        corner.corner(values,labels=labels)
+        figure = corner.corner(values,labels=labels)
+
+        # Extract the axes
+        axes = np.array(figure.axes).reshape((self.ndim, self.ndim))
+        if mock_values==True:
+            list_mock_values=[self.like.free_params[aa].value for aa in range(
+                                                len(self.like.free_params))]
+            # Loop over the diagonal
+            for i in range(self.ndim):
+                ax = axes[i, i]
+                ax.axvline(list_mock_values[i], color="r")
+
+            # Loop over the histograms
+            for yi in range(self.ndim):
+                for xi in range(yi):
+                    ax = axes[yi, xi]
+                    ax.axvline(list_mock_values[xi], color="r")
+                    ax.axhline(list_mock_values[yi], color="r")
+                    ax.plot(list_mock_values[xi], list_mock_values[yi], "sr")
+
         plt.show()
 
         return

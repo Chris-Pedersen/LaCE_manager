@@ -126,9 +126,7 @@ class EmceeSampler(object):
             for i in range(ndim):
                 p=self.like.free_params[i]
                 fid_value=p.value_in_cube()
-                values=scipy.stats.truncnorm.rvs((0.0-fid_value)/rms,
-                            (1.0-fid_value)/rms, scale=rms,
-                            loc=fid_value, size=nwalkers)
+                values=self.get_trunc_norm(fid_value,nwalkers)
                 assert np.all(values >= 0.0)
                 assert np.all(values <= 1.0)
                 p0[:,i]=values
@@ -143,6 +141,16 @@ class EmceeSampler(object):
 #            p0[iw]=walker
 
         return p0
+
+    def get_trunc_norm(self,mean,n_samples):
+        """ Wrapper for scipys truncated normal distribution
+        Runs in the range [0,1] with a rms specified on initialisation """
+
+        rms=self.like.prior_Gauss_rms
+        values=scipy.stats.truncnorm.rvs((0.0-mean)/rms,
+                            (1.0-mean)/rms, scale=rms,
+                            loc=mean, size=n_samples)
+        return values
 
 
     def log_prob(self,values):
@@ -286,17 +294,29 @@ class EmceeSampler(object):
                                 cube_values[:,ip]) for ip in range(self.ndim)]
             values=np.array(list_values).transpose()
 
-        figure = corner.corner(values,labels=labels)
+        figure = corner.corner(values,labels=labels,
+                                hist_kwargs={"density":True,"color":"blue"})
 
         # Extract the axes
         axes = np.array(figure.axes).reshape((self.ndim, self.ndim))
         if mock_values==True:
             list_mock_values=[self.like.free_params[aa].value for aa in range(
                                                 len(self.like.free_params))]
+
             # Loop over the diagonal
             for i in range(self.ndim):
                 ax = axes[i, i]
                 ax.axvline(list_mock_values[i], color="r")
+                prior=self.get_trunc_norm(self.like.free_params[i].value_in_cube(),
+                                                    100000)
+                if cube:
+                    ax.hist(prior,bins=200,alpha=0.4,color="hotpink",density=True)
+                else:
+                    for aa in range(len(prior)):
+                        prior[aa]=self.like.free_params[i].value_from_cube(prior[aa])
+                    ax.hist(prior,bins=50,alpha=0.4,color="hotpink",density=True)
+
+                ## 
 
             # Loop over the histograms
             for yi in range(self.ndim):

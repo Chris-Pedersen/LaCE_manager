@@ -45,8 +45,8 @@ class PressureModel(object):
                 xmin=np.log(0.05)
                 xmax=np.log(0.5)
             elif i==1:
-                xmin=-1.0
-                xmax=3.0
+                xmin=1.0
+                xmax=5.0
             else:
                 xmin=-2.0
                 xmax=2.0

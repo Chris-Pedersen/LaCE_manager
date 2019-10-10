@@ -60,14 +60,6 @@ class Likelihood(object):
         for par in params:
             if par.name in free_parameter_names:
                 self.free_params.append(par)
-                ## If we are using Gaussian priors
-                ## set the mean to be the best fit model
-                ## in the mock data
-                ## (Currently only works with MP-Gadget data, not PD2013)
-                if self.prior_Gauss_rms is not None:
-                    #print("Parameter=",par.name)
-                    #print("Fid value=",self.data.like_params[par.name])
-                    self.free_params[-1].set_without_cube(self.data.like_params[par.name])
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)

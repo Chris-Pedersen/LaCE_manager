@@ -222,7 +222,7 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,values=None,plot_every_iz=1):
+    def plot_p1d(self,values=None,values2=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
@@ -232,7 +232,9 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.get_p1d_kms(k_kms,values)
+        emu_p1d, emu_cov = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if values2 is not None:
+            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_kms,values,return_covar=True)
 
         if self.verbose: print('got P1D from emulator')
 
@@ -243,6 +245,7 @@ class Likelihood(object):
             p1d_data=self.data.get_Pk_iz(iz)
             p1d_cov=self.data.get_cov_iz(iz)
             p1d_theory=emu_p1d[iz]
+            cov_theory=emu_cov[iz]
             if p1d_theory is None:
                 if self.verbose: print(z,'emulator did not provide P1D')
                 continue
@@ -250,12 +253,24 @@ class Likelihood(object):
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
                     yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,label='z=%.1f'%z)
-            plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,linestyle="dashed")
+            plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
+                    linestyle="--")
+            #plt.errorbar(k_kms,p1d_theory*k_kms/np.pi,color=col,
+            #        yerr=np.sqrt(np.diag(cov_theory))*k_kms/np.pi,linestyle="dashed")
+            if values2 is not None:
+                plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
+                    linestyle=":")
+                
+        if values2 is not None:
+            plt.plot(-10,-10,linestyle="-",label="Data",color="k")
+            plt.plot(-10,-10,linestyle="--",label="Likelihood fit",color="k")
+            plt.plot(-10,-10,linestyle=":",label="MCMC best fit",color="k")
         plt.yscale('log')
         plt.legend()
         plt.xlabel('k [s/km]')
         plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
         plt.ylim(0.005,0.6)
+        plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
         plt.tight_layout()
         plt.show()
 

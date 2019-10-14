@@ -19,10 +19,11 @@ import lya_theory
 import likelihood
 import emcee_sampler
 import data_MPGADGET
+import z_emulator
 
 
 # read P1D measurement
-data=data_MPGADGET.P1D_MPGADGET(z_list=np.array([2.0,3.0,4.0]),filename="1024_mock_0.json")
+data=data_MPGADGET.P1D_MPGADGET(z_list=np.array([2.0,3.0,4.0]),filename="1024_mock_1.json")
 zs=data.z
 
 tau_values=[data.like_params["ln_tau_1"],data.like_params["ln_tau_0"]]
@@ -35,8 +36,6 @@ mf_model=mean_flux_model.MeanFluxModel(ln_tau_coeff=tau_values)
 thermal_model=thermal_model.ThermalModel(ln_gamma_coeff=gamma_values,
                                 ln_T0_coeff=T0_values)
 kF_model=pressure_model.PressureModel(ln_kF_coeff=kF_values)
-
-print(tau_values)
 
 repo=os.environ['LYA_EMU_REPO']
 #skewers_label='Ns256_wM0.05'
@@ -52,14 +51,21 @@ kmax_Mpc=8
 emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                                undersample_z=undersample_z,max_arxiv_size=max_arxiv_size,z_max=4,
                                verbose=False,paramList=paramList,train=True,emu_type="polyfit")
-emu.saveEmulator()
-
+'''
+emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
+                                max_arxiv_size=max_arxiv_size,z_max=4,
+                                verbose=False,paramList=paramList,train=True,
+                                emu_type="k_bin",
+                                drop_tau_rescalings=True,
+                                drop_temp_rescalings=True)
+#emu.saveEmulator()
+'''
 
 theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
                                             kF_model_fid=kF_model,
                                             mf_model_fid=mf_model)
 
-free_parameters=['ln_tau_0','ln_tau_1','ln_gamma_0','T0_1','T0_2','T0_3']
+free_parameters=['ln_tau_0','ln_tau_1']#,'ln_gamma_0','T0_1','T0_2','T0_3']
 
 like=likelihood.Likelihood(data=data,theory=theory,
                             free_parameters=free_parameters,verbose=False,
@@ -73,8 +79,9 @@ for p in sampler.like.free_params:
 
 
 sampler.like.go_silent()
-sampler.run_burn_in(nsteps=2)
-#sampler.run_chains(nsteps=500)
+sampler.run_burn_in(nsteps=5)
+sampler.run_chains(nsteps=10)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.sampler.acceptance_fraction)))
 
 sampler.plot_corner(mock_values=True)
+sampler.plot_best_fit()

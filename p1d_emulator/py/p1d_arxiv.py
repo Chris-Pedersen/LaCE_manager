@@ -343,7 +343,6 @@ class ArxivP1D(object):
 
         return
 
-
     def sub_arxiv_mf(self,min_mf=0.0,max_mf=1.0):
         """ Return copy of arxiv, with entries in a given mean flux range. """
 
@@ -371,7 +370,7 @@ class ArxivP1D(object):
 
 
     def get_param_values(self,param,tau_scalings=True,temp_scalings=True):
-        """ Return values for a given parameter, including escalings or not."""
+        """ Return values for a given parameter, including rescalings or not."""
 
         N=len(self.data)
         # mask post-process scalings (optional)

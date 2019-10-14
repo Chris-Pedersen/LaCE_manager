@@ -193,7 +193,7 @@ class GPEmulator:
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
 
-    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
+    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False,z=None):
         '''
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data

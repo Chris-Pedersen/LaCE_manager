@@ -316,8 +316,6 @@ class EmceeSampler(object):
                         prior[aa]=self.like.free_params[i].value_from_cube(prior[aa])
                     ax.hist(prior,bins=50,alpha=0.4,color="hotpink",density=True)
 
-                ## 
-
             # Loop over the histograms
             for yi in range(self.ndim):
                 for xi in range(yi):
@@ -327,5 +325,18 @@ class EmceeSampler(object):
                     ax.plot(list_mock_values[xi], list_mock_values[yi], "sr")
 
         plt.show()
-
         return
+
+    def plot_best_fit(self):
+        """ Plot the P1D of the data, the likelihood fit, and the MCMC best fit
+        the likelihood fit model is fitting the likelihood parameters to the
+        emulator parameters in the given simulation
+        """
+        ## Get best fit values for each parameter
+        chain,lnprob=self.get_chain()
+        mean_value=[]
+        for parameter_distribution in chain:
+            mean_value.append(np.mean(parameter_distribution))
+        self.like.plot_p1d(values=None,values2=mean_value)
+        return
+

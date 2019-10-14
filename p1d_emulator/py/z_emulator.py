@@ -15,7 +15,7 @@ class ZEmulator:
                 z_max=5,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 keep_every_other_rescaling=False,
-                emu_type="k_bin",set_noise_var=1e-3,N_mf=10):
+                emu_type="k_bin",set_noise_var=1e-10,N_mf=10,z_list=None):
 
         # load full arxiv
         self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
@@ -26,10 +26,9 @@ class ZEmulator:
                 drop_temp_rescalings=drop_temp_rescalings,
                 keep_every_other_rescaling=keep_every_other_rescaling)
 
-        self._split_arxiv_up()
+        self._split_arxiv_up(z_list)
         self.emulators=[]
 
-        ## Setup emulator list
         for arxiv in self.arxiv_list:
             emu=gp_emulator.GPEmulator(verbose=verbose,
                     kmax_Mpc=kmax_Mpc,paramList=paramList,train=train,
@@ -38,7 +37,7 @@ class ZEmulator:
             self.emulators.append(emu)
 
 
-    def _split_arxiv_up(self):
+    def _split_arxiv_up(self,z_list):
         """ Split up the arxiv into a list of arxiv objects, one for
         each redshift """
 
@@ -46,6 +45,17 @@ class ZEmulator:
         self.zs=[]
         for item in self.arxiv.data:
             self.zs.append(item["z"]) if item["z"] not in self.zs else self.zs
+        
+        ## Remove unwanted redshifts if a list of redshifts is provided
+        if z_list is not None:
+            removes=[] ## List of indices of self.zs to remove
+            for aa,z in enumerate(self.zs):
+                if z not in z_list:
+                    removes.append(aa)
+            for aa in sorted(removes, reverse=True):
+                del self.zs[aa]
+
+
         self.arxiv_list=[]
 
         ## For each redshift, create a new arxiv object
@@ -67,7 +77,8 @@ class ZEmulator:
         assert z in self.zs, "cannot emulate for z=%.1f" % z
 
         ## Find the appropriate emulator to call from
+        print("Desired z = ",z)
+        print("z we are using for emulator = ", self.zs[self.zs.index(z)])
         return self.emulators[self.zs.index(z)].emulate_p1d_Mpc(model=model,
                                                 k_Mpc=k_Mpc,
                                                 return_covar=return_covar)
-    

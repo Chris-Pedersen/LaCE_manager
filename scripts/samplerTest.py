@@ -23,7 +23,8 @@ import z_emulator
 
 
 # read P1D measurement
-data=data_MPGADGET.P1D_MPGADGET(z_list=np.array([2.0,3.0,4.0]),filename="1024_mock_1.json")
+z_list=np.array([2.0,3.0,4.0])
+data=data_MPGADGET.P1D_MPGADGET(z_list=z_list,filename="1024_mock_1.json")
 zs=data.z
 
 tau_values=[data.like_params["ln_tau_1"],data.like_params["ln_tau_0"]]
@@ -44,22 +45,22 @@ basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019/"
 #basedir=repo+"/p1d_emulator/sim_suites/emulator_256_15072019/"
 p1d_label=None
 undersample_z=1
-paramList=["Delta2_p","mF","sigT_Mpc","gamma","kF_Mpc"]
+paramList=["mF","sigT_Mpc","gamma","kF_Mpc"]
 max_arxiv_size=None
 kmax_Mpc=8
 
-emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
-                               undersample_z=undersample_z,max_arxiv_size=max_arxiv_size,z_max=4,
-                               verbose=False,paramList=paramList,train=True,emu_type="polyfit")
-'''
+#emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
+#                               undersample_z=undersample_z,max_arxiv_size=max_arxiv_size,z_max=4,
+#                               verbose=False,paramList=paramList,train=True,emu_type="polyfit")
+
 emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,z_max=4,
                                 verbose=False,paramList=paramList,train=True,
-                                emu_type="k_bin",
+                                emu_type="polyfit",z_list=z_list,
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
 #emu.saveEmulator()
-'''
+
 
 theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
                                             kF_model_fid=kF_model,
@@ -71,7 +72,9 @@ like=likelihood.Likelihood(data=data,theory=theory,
                             free_parameters=free_parameters,verbose=False,
                             prior_Gauss_rms=0.15)
 
-sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,free_parameters=free_parameters,verbose=True)
+sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,
+                        free_parameters=free_parameters,verbose=True,
+                        nwalkers=100)
 
 
 for p in sampler.like.free_params:
@@ -79,9 +82,9 @@ for p in sampler.like.free_params:
 
 
 sampler.like.go_silent()
-sampler.run_burn_in(nsteps=5)
-sampler.run_chains(nsteps=10)
+sampler.run_burn_in(nsteps=50)
+sampler.run_chains(nsteps=50)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.sampler.acceptance_fraction)))
 
-sampler.plot_corner(mock_values=True)
+sampler.plot_corner(cube=True,mock_values=True)
 sampler.plot_best_fit()

@@ -300,7 +300,11 @@ class EmceeSampler(object):
         # Extract the axes
         axes = np.array(figure.axes).reshape((self.ndim, self.ndim))
         if mock_values==True:
-            list_mock_values=[self.like.free_params[aa].value for aa in range(
+            if cube:
+                list_mock_values=[self.like.free_params[aa].value_in_cube() for aa in range(
+                                                len(self.like.free_params))]
+            else:
+                list_mock_values=[self.like.free_params[aa].value for aa in range(
                                                 len(self.like.free_params))]
 
             # Loop over the diagonal
@@ -335,7 +339,7 @@ class EmceeSampler(object):
         ## Get best fit values for each parameter
         chain,lnprob=self.get_chain()
         mean_value=[]
-        for parameter_distribution in chain:
+        for parameter_distribution in np.swapaxes(chain,0,1):
             mean_value.append(np.mean(parameter_distribution))
         self.like.plot_p1d(values=None,values2=mean_value)
         return

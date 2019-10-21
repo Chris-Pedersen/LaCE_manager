@@ -234,7 +234,7 @@ class Likelihood(object):
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_kms,values,return_covar=True)
         if values2 is not None:
-            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_kms,values,return_covar=True)
+            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_kms,values2,return_covar=True)
 
         if self.verbose: print('got P1D from emulator')
 
@@ -246,6 +246,7 @@ class Likelihood(object):
             p1d_cov=self.data.get_cov_iz(iz)
             p1d_theory=emu_p1d[iz]
             cov_theory=emu_cov[iz]
+            
             if p1d_theory is None:
                 if self.verbose: print(z,'emulator did not provide P1D')
                 continue
@@ -253,12 +254,15 @@ class Likelihood(object):
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
                     yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,label='z=%.1f'%z)
-            plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
-                    linestyle="--")
-            #plt.errorbar(k_kms,p1d_theory*k_kms/np.pi,color=col,
-            #        yerr=np.sqrt(np.diag(cov_theory))*k_kms/np.pi,linestyle="dashed")
+            #plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
+            #        linestyle="--")
+            plt.errorbar(k_kms,p1d_theory*k_kms/np.pi,color=col,
+                    yerr=np.sqrt(np.diag(cov_theory))*k_kms/np.pi,linestyle="dashed")
             if values2 is not None:
-                plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
+                p1d_theory_mcmc=emu_p1d_2[iz]
+                cov_theory_mcmc=emu_cov_2[iz]
+                plt.errorbar(k_kms,p1d_theory_mcmc*k_kms/np.pi,
+                    yerr=np.sqrt(np.diag(cov_theory_mcmc))*k_kms/np.pi,color=col,
                     linestyle=":")
                 
         if values2 is not None:

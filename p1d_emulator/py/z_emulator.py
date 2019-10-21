@@ -77,8 +77,6 @@ class ZEmulator:
         assert z in self.zs, "cannot emulate for z=%.1f" % z
 
         ## Find the appropriate emulator to call from
-        print("Desired z = ",z)
-        print("z we are using for emulator = ", self.zs[self.zs.index(z)])
         return self.emulators[self.zs.index(z)].emulate_p1d_Mpc(model=model,
                                                 k_Mpc=k_Mpc,
                                                 return_covar=return_covar)

@@ -68,6 +68,8 @@ class ZEmulator:
                 else:
                     del copy_arxiv.data[aa]
             self.arxiv_list.append(copy_arxiv)
+            
+        return
         
 
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False,z=None):

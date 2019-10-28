@@ -264,6 +264,7 @@ class ArxivP1D(object):
         for key in keys:
             info += ', {} = {:.4f}'.format(key,data[key])
         print(info)
+        return
 
 
     def plot_samples(self,param_1,param_2,
@@ -335,7 +336,6 @@ class ArxivP1D(object):
         fig = plt.figure()
         ax = plt.axes(projection="3d")
         ax.scatter3D(emu_1, emu_2, emu_3, c=emu_z, cmap='brg',s=8)
-        plt.title("Rescalings=%s" % tau_scalings)
         ax.set_xlabel(param_1)
         ax.set_ylabel(param_2)
         ax.set_zlabel(param_3)

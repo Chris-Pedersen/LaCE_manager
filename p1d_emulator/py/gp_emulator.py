@@ -19,7 +19,7 @@ class GPEmulator:
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
-                undersample_z=1,emu_type="k_bin",z_max=5,
+                undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
 
         self.kmax_Mpc=kmax_Mpc
@@ -251,7 +251,7 @@ class GPEmulator:
             return interpolated_P
 
 
-    def get_nearest_distance(self,model):
+    def get_nearest_distance(self,model,z=None):
         ''' For a given model, get the Euclidean distance to the nearest
         training point (in the rescaled parameter space)'''
 

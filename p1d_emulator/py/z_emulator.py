@@ -55,7 +55,6 @@ class ZEmulator:
             for aa in sorted(removes, reverse=True):
                 del self.zs[aa]
 
-
         self.arxiv_list=[]
 
         ## For each redshift, create a new arxiv object
@@ -82,3 +81,12 @@ class ZEmulator:
         return self.emulators[self.zs.index(z)].emulate_p1d_Mpc(model=model,
                                                 k_Mpc=k_Mpc,
                                                 return_covar=return_covar)
+
+    def get_nearest_distance(self, model, z=None):
+        """ Call the get_nearest_distance method for the
+        appropriate emulator """
+        
+        assert z is not None, "z is not provided, cannot emulate p1d"
+        assert z in self.zs, "cannot work for z=%.1f" % z
+
+        return self.emulators[self.zs.index(z)].get_nearest_distance(model,z=z)

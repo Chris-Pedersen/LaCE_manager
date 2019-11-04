@@ -98,8 +98,7 @@ class Likelihood(object):
             like_params=[]
 
         return self.theory.get_p1d_kms(k_kms,like_params=like_params,
-                                            return_covar=return_covar,
-                                            z_emu=z_emu)
+                                            return_covar=return_covar)
 
 
     def get_chi2(self,values=None):

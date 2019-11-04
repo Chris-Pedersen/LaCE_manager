@@ -29,6 +29,7 @@ class EmceeSampler(object):
             If read_chain_file is provided, read pre-computed chain."""
 
         self.verbose=verbose
+        self.store_distances=False
 
         if like:
             if self.verbose: print('use input likelihood')
@@ -65,6 +66,10 @@ class EmceeSampler(object):
                                                             self.log_prob)
             # setup walkers
             self.p0=self.get_initial_walkers()
+
+        self.distances=[]
+        for aa in range(len(self.like.data.z)):
+            self.distances.append([])
 
         if self.verbose:
             print('done setting up sampler')
@@ -161,8 +166,21 @@ class EmceeSampler(object):
             if self.verbose:
                 print('parameter values outside hull',values)
                 return -np.inf
+        if self.store_distances:
+            self.add_euclidean_distances(values)
+
         return test_log_prob
 
+    def add_euclidean_distances(self,values):
+        """ For a given set of likelihood parameters
+        find the Euclidean distances to the nearest
+        training point for each emulator call """
+
+        emu_calls=self.like.theory.get_emulator_calls(self.like.parameters_from_sampling_point(values))
+        for aa,call in enumerate(emu_calls):
+            self.distances[aa].append(self.like.theory.emulator.get_nearest_distance(call,z=self.like.data.z[aa]))
+
+        return 
 
     def go_silent(self):
         self.verbose=False

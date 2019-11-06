@@ -191,8 +191,22 @@ class GPEmulator:
 
 
     def printPriorVolume(self):
+        ''' Print the limits for each parameter '''
+
         for aa in range(len(self.paramList)):
             print(self.paramList[aa],self.paramLimits[aa])
+
+    def return_unit_call(self,model):
+        ''' For a given model in dictionary format, return an
+        ordered parameter list with the values rescaled to unit volume
+        '''
+
+        param=[]
+        for aa, par in enumerate(self.paramList):
+            ## Rescale input parameters
+            param.append(model[par])
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        return param
 
 
     def predict(self,model):

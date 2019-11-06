@@ -36,6 +36,8 @@ class ZEmulator:
                     passArxiv=arxiv)
             self.emulators.append(emu)
 
+        self.training_k_bins=self.emulators[0].training_k_bins
+
 
     def _split_arxiv_up(self,z_list):
         """ Split up the arxiv into a list of arxiv objects, one for
@@ -85,8 +87,8 @@ class ZEmulator:
     def get_nearest_distance(self, model, z=None):
         """ Call the get_nearest_distance method for the
         appropriate emulator """
-        
-        assert z is not None, "z is not provided, cannot emulate p1d"
+
+        assert z is not None, "z is not provided, cannot get distance"
         assert z in self.zs, "cannot work for z=%.1f" % z
 
         return self.emulators[self.zs.index(z)].get_nearest_distance(model,z=z)

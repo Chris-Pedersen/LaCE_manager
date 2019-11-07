@@ -24,7 +24,7 @@ import gp_emulator
 
 
 # read P1D measurement
-z_list=np.array([2.0,2.75,3.25,3.5,4.0])
+z_list=np.array([2.0,2.5,3.25,4.0])
 data=data_MPGADGET.P1D_MPGADGET(z_list=z_list,filename="256_mock_199.json")
 zs=data.z
 
@@ -50,15 +50,27 @@ paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p"]
 max_arxiv_size=None
 kmax_Mpc=8
 
+#emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
+#                               undersample_z=undersample_z,max_arxiv_size=max_arxiv_size,z_max=4,
+#                               verbose=False,paramList=paramList,train=True,emu_type="polyfit")
 
+emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
+                                max_arxiv_size=max_arxiv_size,z_max=4,
+                                verbose=False,paramList=paramList,train=True,
+                                emu_type="polyfit",z_list=z_list,
+                                drop_tau_rescalings=True,
+                                drop_temp_rescalings=True)
+
+'''
 emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,z_max=4,
-                                verbose=False,paramList=paramList,train=False,
+                                verbose=False,paramList=paramList,train=True,
                                 emu_type="polyfit",z_list=z_list,
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
 #emu.saveEmulator()
 
+'''
 theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
                                             kF_model_fid=kF_model,
                                             mf_model_fid=mf_model)
@@ -74,27 +86,11 @@ sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,
                         nwalkers=100)
 
 
-likes_1=[]
-likes_2=[]
-likes_3=[]
-likes_4=[]
-likes_5=[]
-for samplerPositions in sampler.p0:
-    #print(samplerPositions)
-        emu_calls=sampler.like.theory.get_emulator_calls(sampler.like.parameters_from_sampling_point(samplerPositions))
-        for emu_call in emu_calls:
-            unit_params=emu.return_unit_call(emu_call)
-            likes_1=np.append(likes_1,unit_params[0]) 
-            likes_2=np.append(likes_2,unit_params[1])
-            likes_3=np.append(likes_3,unit_params[2])
-            likes_4=np.append(likes_4,unit_params[3])
-            likes_5=np.append(likes_5,unit_params[4])
-
+'''
 fig = plt.figure()
     
 ax = plt.axes(projection="3d")
 ax.scatter3D(emu.X_param_grid[:,0], emu.X_param_grid[:,1], emu.X_param_grid[:,2])
-ax.scatter3D(likes_1, likes_2, likes_3,s=8,label="Emulator calls",color="red")
 #ax.scatter3D(emu_1, emu_2, emu_3,s=8,color="red",label="Training points")
 #ax.scatter3D(likes_1, likes_2, likes_3,s=8,label="Emulator calls",color="black")
 ax.set_xlabel(emu.paramList[0])
@@ -103,14 +99,13 @@ ax.set_zlabel(emu.paramList[2])
 fig = plt.figure()
 ax = plt.axes(projection="3d")
 ax.scatter3D(emu.X_param_grid[:,2], emu.X_param_grid[:,3], emu.X_param_grid[:,4])
-ax.scatter3D(likes_3, likes_4, likes_5,s=8,label="Emulator calls",color="red")
 ax.set_xlabel(emu.paramList[2])
 ax.set_ylabel(emu.paramList[3])
 ax.set_zlabel(emu.paramList[4])
 plt.show()
-
-
 '''
+
+
 
 #sampler.like.theory.emulator.emulators[0].arxiv.plot_3D_samples("mF","gamma","sigT_Mpc")
 parameter_list=emu.emulators[0].paramList
@@ -163,7 +158,7 @@ for aa,emu_test in enumerate(sampler.like.theory.emulator.emulators):
 
 plt.show()
 
-'''
+
 
 
 ''' 

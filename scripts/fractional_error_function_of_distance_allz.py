@@ -85,16 +85,10 @@ sigma_rbf=emulator.gp.param_array[1]
 sigma_linear=emulator.gp.param_array[0]
 lengthscale=emulator.gp.param_array[2]
 ## Plot scatter
-plt.subplot(2,1,1)
 plt.scatter(distances,frac_error,s=1.5,label=r"$\sigma^2_\mathrm{RBF}=%.3f$, $\sigma^2_\mathrm{linear}=%.3f$, $l_\mathrm{RBF}=%.3f$" % (sigma_rbf,sigma_linear,lengthscale))
-plt.subplot(2,1,2)
-plt.hist(distances,bins=100,alpha=0.35)
-
-plt.subplot(2,1,1)
 plt.title(r"$\bar{F}$ rescalings = %s, temp rescalings = %s" % (mF_res, temp_res))
 plt.ylabel("Fractional error")
 plt.legend(loc="upper left",markerscale=2.5)
-plt.subplot(2,1,2)
 plt.xlabel("Euclidean distance to nearest training point")
 plt.tight_layout()
 
@@ -123,9 +117,7 @@ sampler.run_burn_in(nsteps=50)
 #sampler.run_chains(nsteps=200)
 
 plt.figure()
-for aa,array in enumerate(sampler.distances):
-    plt.hist(array,label="z=%.2f" % sampler.like.theory.zs[aa],alpha=0.5)
-
+plt.hist(np.ndarray.flatten(np.asarray(sampler.distances)),bins=200)
 plt.xlabel("Euclidean distance to nearest training point")
 plt.ylabel("Counts")
 plt.legend()

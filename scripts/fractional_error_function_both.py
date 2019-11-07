@@ -21,7 +21,7 @@ import emcee_sampler
 import data_MPGADGET
 import z_emulator
 
-n_points=10000
+n_points=5000
 mF_res=False
 temp_res=False
 # read P1D measurement
@@ -55,13 +55,21 @@ paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p"]
 max_arxiv_size=None
 kmax_Mpc=8
 
+
 emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,z_max=4,
                                 verbose=False,paramList=paramList,train=True,
-                                emu_type="k_bin",z_list=z_list,
+                                emu_type="polyfit",z_list=z_list,
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
 
+
+emu_full=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
+                                max_arxiv_size=max_arxiv_size,z_max=4,
+                                verbose=False,paramList=paramList,train=True,
+                                emu_type="polyfit",z_list=z_list,
+                                drop_tau_rescalings=True,
+                                drop_temp_rescalings=True)
 
 k_point=k_mpc[5]
 
@@ -86,16 +94,23 @@ for aa, emulator in enumerate(emu.emulators):
     sigma_linear=emulator.gp.param_array[0]
     lengthscale=emulator.gp.param_array[2]
     ## Plot scatter
-    plt.subplot(2,1,1)
-    plt.scatter(distances,frac_error,s=1.5,label=r"z=%.2f, $\sigma^2_\mathrm{RBF}=%.3f$, $\sigma^2_\mathrm{linear}=%.3f$, $l_\mathrm{RBF}=%.3f$" % (emu.zs[aa],sigma_rbf,sigma_linear,lengthscale))
-    plt.subplot(2,1,2)
-    plt.hist(distances,bins=100,label="z%.2f"% emu.zs[aa],alpha=0.35)
+    plt.scatter(distances,frac_error,s=2,label=r"z=%.2f, $\sigma^2_\mathrm{RBF}=%.3f$, $\sigma^2_\mathrm{linear}=%.3f$, $l_\mathrm{RBF}=%.3f$" % (emu.zs[aa],sigma_rbf,sigma_linear,lengthscale))
 
-plt.subplot(2,1,1)
+distances=np.empty(n_points)
+frac_error=np.empty(n_points)
+for bb in range(n_points):
+    for param in paramList:
+        pred_dict[param]=np.random.uniform(limits[param][0],limits[param][1])
+    distances[bb]=emulator.get_nearest_distance(pred_dict)
+    p1d,error=emulator.emulate_p1d_Mpc(pred_dict,k_point,return_covar=True)
+    frac_error[bb]=error/p1d
+sigma_rbf=emulator.gp.param_array[1]
+sigma_linear=emulator.gp.param_array[0]
+lengthscale=emulator.gp.param_array[2]
+plt.scatter(distances,frac_error,s=2,label=r"All points, $\sigma^2_\mathrm{RBF}=%.3f$, $\sigma^2_\mathrm{linear}=%.3f$, $l_\mathrm{RBF}=%.3f$" % (sigma_rbf,sigma_linear,lengthscale),color="black")
 plt.title(r"$\bar{F}$ rescalings = %s, temp rescalings = %s" % (mF_res, temp_res))
 plt.ylabel("Fractional error")
 plt.legend(loc="upper left",markerscale=2.5)
-plt.subplot(2,1,2)
 plt.xlabel("Euclidean distance to nearest training point")
 plt.tight_layout()
 plt.legend()

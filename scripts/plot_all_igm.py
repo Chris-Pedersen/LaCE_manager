@@ -8,17 +8,53 @@ import recons_cosmo
 import fit_linP
 
 repo=os.environ['LYA_EMU_REPO']
-basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
-basedir=repo+"/p1d_emulator/sim_suites/emulator_1024_21062019"
-skewers_label='Ns512_wM0.05'
 skewers_label='Ns256_wM0.05'
 basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
 
-MF=mean_flux_model.MeanFluxModel()
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=199,
-                            drop_tau_rescalings=True,z_max=4,
-                            drop_temp_rescalings=True,skewers_label=skewers_label)
+num_sims=199
 
+plt.figure(figsize=(8,15))
+
+for sim_num in range(num_sims):
+    archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=sim_num,
+                            drop_tau_rescalings=True,z_max=5,
+                            drop_temp_rescalings=True,skewers_label=skewers_label)
+    z=np.empty(len(archive.data))
+    temp=np.empty(len(z))
+    mF=np.empty(len(z))
+    kF=np.empty(len(z))
+    gamma=np.empty(len(z))
+    linp=np.empty(len(z))
+    for aa,entry in enumerate(archive.data):
+        z[aa]=entry["z"]
+        mF[aa]=entry["mF"]
+        temp[aa]=entry["sigT_Mpc"]
+        gamma[aa]=entry["gamma"]
+        kF[aa]=entry["kF_Mpc"]
+        linp[aa]=entry["Delta2_p"]
+
+    plt.subplot(4,1,1)
+    plt.plot(z,mF,color="black",alpha=0.1)
+    plt.ylabel(r"$\bar{F}$")
+
+    plt.subplot(4,1,2)
+    plt.plot(z,temp,color="black",alpha=0.1)
+    plt.ylabel("sigT_Mpc")
+
+    plt.subplot(4,1,3)
+    plt.plot(z,kF,color="black",alpha=0.1)
+    plt.ylabel("kF_Mpc")
+
+    plt.subplot(4,1,4)
+    plt.plot(z,gamma,color="black",alpha=0.1)
+    plt.ylabel("gamma")
+    plt.xlabel("z")
+
+plt.tight_layout()
+plt.show()
+
+
+'''
 data=np.empty([len(archive.data),5])
 
 aa=0
@@ -128,3 +164,4 @@ plt.xlabel("z")
 
 plt.tight_layout()
 plt.show()
+'''

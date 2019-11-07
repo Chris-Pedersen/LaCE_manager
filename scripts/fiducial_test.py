@@ -20,17 +20,17 @@ import likelihood
 import emcee_sampler
 import data_MPGADGET
 import z_emulator
+import p1d_arxiv
 
-n_points=10000
-mF_res=False
-temp_res=False
+'''
+Script to check how close our fiducial models for each mock data
+sim actually reproduce the mock data
+'''
+
 # read P1D measurement
-z_list=np.array([2.0,2.75,3.25,4.0])
-data=data_MPGADGET.P1D_MPGADGET(z_list=z_list,filename="1024_mock_0.json")
-data._cull_data(0.0075)
+z_list=np.array([2.0,2.75,3.25,3.5,4.0])
+data=data_MPGADGET.P1D_MPGADGET(z_list=z_list,filename="256_mock_199.json")
 zs=data.z
-
-k_mpc=data.k*80
 
 tau_values=[data.like_params["ln_tau_1"],data.like_params["ln_tau_0"]]
 gamma_values=[data.like_params["ln_gamma_1"],data.like_params["ln_gamma_0"]]
@@ -47,7 +47,6 @@ repo=os.environ['LYA_EMU_REPO']
 skewers_label='Ns256_wM0.05'
 #skewers_label=None
 basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
-
 #basedir=repo+"/p1d_emulator/sim_suites/emulator_256_15072019/"
 p1d_label=None
 undersample_z=1
@@ -55,6 +54,17 @@ paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p"]
 max_arxiv_size=None
 kmax_Mpc=8
 
+archive=p1d_arxiv.ArxivP1D(basedir=basedir,nsamples=199,
+                            drop_tau_rescalings=True,z_max=4,
+                            drop_temp_rescalings=True,skewers_label=skewers_label)
+'''
+emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
+                                max_arxiv_size=max_arxiv_size,z_max=4,
+                                verbose=False,paramList=paramList,train=True,
+                                emu_type="k_bin",z_list=z_list,passArxiv=archive,
+                                drop_tau_rescalings=True,
+                                drop_temp_rescalings=True)
+'''
 emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,z_max=4,
                                 verbose=False,paramList=paramList,train=True,
@@ -62,41 +72,19 @@ emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
 
+theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
+                                            kF_model_fid=kF_model,
+                                            mf_model_fid=mf_model)
 
-k_point=k_mpc[5]
 
-plt.figure()
-for aa, emulator in enumerate(emu.emulators):
-    ## Set up min/max prior volume
-    limits={}
-    for param in paramList:
-        par_values=emulator.arxiv.get_param_values(param)
-        limits[param]=np.array([min(par_values),max(par_values)])
-    ## Randomly sample prior volume and get fractional error
-    pred_dict={}
-    distances=np.empty(n_points)
-    frac_error=np.empty(n_points)
-    for bb in range(n_points):
-        for param in paramList:
-            pred_dict[param]=np.random.uniform(limits[param][0],limits[param][1])
-        distances[bb]=emulator.get_nearest_distance(pred_dict)
-        p1d,error=emulator.emulate_p1d_Mpc(pred_dict,k_point,return_covar=True)
-        frac_error[bb]=error/p1d
-    sigma_rbf=emulator.gp.param_array[1]
-    sigma_linear=emulator.gp.param_array[0]
-    lengthscale=emulator.gp.param_array[2]
-    ## Plot scatter
-    plt.subplot(2,1,1)
-    plt.scatter(distances,frac_error,s=1.5,label=r"z=%.2f, $\sigma^2_\mathrm{RBF}=%.3f$, $\sigma^2_\mathrm{linear}=%.3f$, $l_\mathrm{RBF}=%.3f$" % (emu.zs[aa],sigma_rbf,sigma_linear,lengthscale))
-    plt.subplot(2,1,2)
-    plt.hist(distances,bins=100,label="z%.2f"% emu.zs[aa],alpha=0.35)
+free_parameters=['ln_tau_0','ln_tau_1']#,'ln_gamma_0','T0_1','T0_2','T0_3']
 
-plt.subplot(2,1,1)
-plt.title(r"$\bar{F}$ rescalings = %s, temp rescalings = %s" % (mF_res, temp_res))
-plt.ylabel("Fractional error")
-plt.legend(loc="upper left",markerscale=2.5)
-plt.subplot(2,1,2)
-plt.xlabel("Euclidean distance to nearest training point")
-plt.tight_layout()
-plt.legend()
-plt.show()
+like=likelihood.Likelihood(data=data,theory=theory,
+                            free_parameters=free_parameters,verbose=False,
+                            prior_Gauss_rms=0.15,min_kp_kms=0.0041)
+
+sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,
+                        free_parameters=free_parameters,verbose=True,
+                        nwalkers=100)
+
+like.plot_p1d()

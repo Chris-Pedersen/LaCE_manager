@@ -58,8 +58,8 @@ class MeanFluxModel(object):
                 xmin=-1.5
                 xmax=-0.5
             elif i==1:
-                xmin=2.5
-                xmax=3.8
+                xmin=2.9
+                xmax=4.5
             else:
                 xmin=-2.0
                 xmax=2.0

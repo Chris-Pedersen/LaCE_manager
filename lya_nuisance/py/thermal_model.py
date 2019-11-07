@@ -69,7 +69,7 @@ class ThermalModel(object):
                 xmin=7
                 xmax=11
             elif i==2:
-                xmin=-1.5
+                xmin=-2.0
                 xmax=-0.5      # note non-trivial order in coefficients
             value=self.ln_T0_coeff[i]
             par = likelihood_parameter.LikelihoodParameter(name=name,

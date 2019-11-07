@@ -36,6 +36,9 @@ def rescale_zs(z):
     ### to between 0 and 1 for the colormap
     return (z-min_z)/(max_z-min_z)
 
+print(realData_z)
+print("ks")
+print(max(data_k))
 plt.figure()
 plt.title("P1Ds in the range 5>z>2 for PD13 (solid) and MP-Gadget (dashed)")
 ## Plot real data

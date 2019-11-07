@@ -19,7 +19,7 @@ class GPEmulator:
                 max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
-                undersample_z=1,emu_type="k_bin",
+                undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
 
         self.kmax_Mpc=kmax_Mpc
@@ -33,6 +33,7 @@ class GPEmulator:
         self.undersample_z=undersample_z
         self.verbose=verbose
         self.asymmetric_kernel=asymmetric_kernel
+        self.z_max=z_max
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -40,7 +41,7 @@ class GPEmulator:
             self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
                         max_arxiv_size=self.max_arxiv_size,verbose=verbose,
                         drop_tau_rescalings=drop_tau_rescalings,
-                        drop_temp_rescalings=drop_temp_rescalings,
+                        drop_temp_rescalings=drop_temp_rescalings,z_max=self.z_max,
                         keep_every_other_rescaling=keep_every_other_rescaling,
                         undersample_z=undersample_z)
         else:
@@ -71,30 +72,42 @@ class GPEmulator:
     def _training_points_k_bin(self,arxiv):
         ''' Method to get the Y training points in the form of the P1D
         at different k values '''
+
         P1D_k=np.empty([len(self.arxiv.data),self.k_bin])
         for aa in range(len(self.arxiv.data)):
-            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin] ## Collect P1D data for all k bins
+            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin]
+
         return P1D_k
 
 
     def _training_points_polyfit(self,arxiv):
         ''' Method to get the Y training points in the form of polyfit 
         coefficients '''
+
         self._fit_p1d_in_arxiv(4,self.kmax_Mpc)
         coeffs=np.empty([len(self.arxiv.data),5]) ## Hardcoded to use 4th degree polynomial
         for aa in range(len(self.arxiv.data)):
             coeffs[aa]=self.arxiv.data[aa]['fit_p1d'] ## Collect P1D data for all k bins
+
         return coeffs
 
 
     def _rescale_params(self,params,paramLimits):
         ''' Rescale a set of parameters to have a unit volume '''
+
         for aa in range(len(params)):
             params[aa]=((params[aa]-paramLimits[aa,0])/(paramLimits[aa,1]-paramLimits[aa,0]))
+
         return params
 
 
     def _buildTrainingSets(self,arxiv,paramList):
+        ''' Build the grids that contain the training parameters
+        This is a nxm grid of X data (n for number of training points, m
+        for number of parameters), and a length nxk set of Y  data, k being
+        the number of k bins for the k bin emulator, or number of polynomial
+        coefficients for the polyfit emulator '''
+
         ## Grid that will contain all training params
         params=np.empty([len(self.arxiv.data),len(paramList)])
 
@@ -109,6 +122,7 @@ class GPEmulator:
         for aa in range(len(self.arxiv.data)):
             for bb in range(len(paramList)):
                 params[aa][bb]=arxiv.data[aa][paramList[bb]] ## Populate parameter grid
+
         return params,trainingPoints
 
 
@@ -129,14 +143,14 @@ class GPEmulator:
         of the provided params, not by defining our own prior volume. Need to decide
         whether or not this is what we want. '''
 
-        params,Ypoints=self._buildTrainingSets(arxiv,paramList)
+        self.X_param_grid,Ypoints=self._buildTrainingSets(arxiv,paramList)
 
         ## Get parameter limits for rescaling
-        self.paramLimits=self._get_param_limits(params)
+        self.paramLimits=self._get_param_limits(self.X_param_grid)
 
         ## Rescaling to unit volume
         for cc in range(len(self.arxiv.data)):
-            params[cc]=self._rescale_params(params[cc],self.paramLimits)
+            self.X_param_grid[cc]=self._rescale_params(self.X_param_grid[cc],self.paramLimits)
         print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
@@ -150,49 +164,69 @@ class GPEmulator:
         kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
         kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
 
-        self.gp = GPy.models.GPRegression(params,normspectra,kernel=kernel,
+        self.gp = GPy.models.GPRegression(self.X_param_grid,normspectra,kernel=kernel,
                         noise_var=self.emu_noise,initialize=False)
 
 
     def _get_param_limits(self,paramGrid):
+        ''' Get the min and max values for each parameter '''
+
         paramLimits=np.empty((np.shape(paramGrid)[1],2))
         for aa in range(len(paramLimits)):
             paramLimits[aa,0]=min(paramGrid[:,aa])
             paramLimits[aa,1]=max(paramGrid[:,aa])
+
         return paramLimits
 
 
     def train(self):
+        ''' Train the GP emulator '''
+
         self.gp.initialize_parameter()
         print("Training GP on %d points" % len(self.arxiv.data))
         status = self.gp.optimize(messages=False)
         print("Optimised")
+
         self.trained=True
 
 
     def printPriorVolume(self):
+        ''' Print the limits for each parameter '''
+
         for aa in range(len(self.paramList)):
             print(self.paramList[aa],self.paramLimits[aa])
 
+    def return_unit_call(self,model):
+        ''' For a given model in dictionary format, return an
+        ordered parameter list with the values rescaled to unit volume
+        '''
+
+        param=[]
+        for aa, par in enumerate(self.paramList):
+            ## Rescale input parameters
+            param.append(model[par])
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        return param
+
 
     def predict(self,model):
-        ## Method to return P1D or polyfit coeffs for a given parameter set
-        ## For the k bin emulator this will be in the training k bins
-        #assert len(model)==len(self.paramList), "Emulator has %d parameters, you have asked for a model with %d" % (len(self.paramList),len(model))
+        ''' Return P1D or polyfit coeffs for a given parameter set
+        For the k bin emulator this will be in the training k bins '''
+
         if self.trained==False:
             print("Emulator not trained, cannot make a prediction")
             return
         param=[]
-        for par in self.paramList:
+        for aa, par in enumerate(self.paramList):
             ## Rescale input parameters
             param.append(model[par])
-        for aa in range(len(self.paramList)):
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
+
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
 
-    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
+    def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False,z=None):
         '''
         Method to return the trained P(k) for an arbitrary set of k bins
         by interpolating the trained data
@@ -230,6 +264,40 @@ class GPEmulator:
         else:
             return interpolated_P
 
+
+    def get_nearest_distance(self,model,z=None):
+        ''' For a given model, get the Euclidean distance to the nearest
+        training point (in the rescaled parameter space)'''
+
+        param=[] ## List of input emulator parameter values
+        ## First rescale the input model to unit volume
+        for aa, par in enumerate(self.paramList):
+            ## Rescale input parameters
+            param.append(model[par])
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        
+        ## Find the closest training point, and find the Euclidean
+        ## distance to that point
+        shortest_distance=99.99 ## Initialise variable
+        for training_point in self.X_param_grid:
+            ## Get Euclidean distance between the training point and
+            ## the prediction point
+            new_distance=np.sqrt(np.sum((training_point-param)**2))
+            if new_distance < shortest_distance:
+                shortest_distance=new_distance
+
+        return shortest_distance
+
+
+    def get_param_dict(self,point_number):
+        ''' Return a dictionary with the emulator parameters
+        for a given training point '''
+        
+        model_dict={}
+        for param in self.paramList:
+            model_dict[param]=self.arxiv.data[point_number][param]
+        
+        return model_dict
 
     def crossValidation(self,testSample=0.25):
         '''
@@ -328,6 +396,7 @@ class GPEmulator:
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
         initParams["asymmetric_kernel"]=self.asymmetric_kernel
+        initParams["z_max"]=self.z_max
 
         saveString=self.basedir+"/saved_emulator_"
 
@@ -388,6 +457,7 @@ class GPEmulator:
         initParams["undersample_z"]=self.undersample_z
         initParams["paramList"]=self.paramList
         initParams["asymmetric_kernel"]=self.asymmetric_kernel
+        initParams["z_max"]=self.z_max
 
         saveString=self.basedir+"/saved_emulator_"
 

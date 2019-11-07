@@ -11,11 +11,12 @@ repo=os.environ['LYA_EMU_REPO']
 basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
 basedir=repo+"/p1d_emulator/sim_suites/emulator_1024_21062019"
 skewers_label='Ns512_wM0.05'
-
+skewers_label='Ns256_wM0.05'
+basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
 
 MF=mean_flux_model.MeanFluxModel()
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=3,
-                            drop_tau_rescalings=True,
+archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=199,
+                            drop_tau_rescalings=True,z_max=4,
                             drop_temp_rescalings=True,skewers_label=skewers_label)
 
 data=np.empty([len(archive.data),5])

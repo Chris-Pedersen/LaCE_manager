@@ -74,6 +74,9 @@ class Likelihood(object):
 
     def parameters_from_sampling_point(self,values):
         """Translate input array of values (in cube) to likelihood parameters"""
+        
+        if values is None:
+            return []
 
         assert len(values)==len(self.free_params),'size mismatch'
         Npar=len(values)
@@ -222,17 +225,25 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,values=None,plot_every_iz=1):
+    def plot_p1d(self,values=None,values2=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
         # get measured bins from data
         k_kms=self.data.k
+        k_emu_kms=np.logspace(np.log10(min(k_kms)),np.log10(max(k_kms)),500)
         zs=self.data.z
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d = self.get_p1d_kms(k_kms,values)
+        emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
+        if values2 is not None:
+            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_emu_kms,values2,return_covar=True)
+
+        emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
+        distances=[]
+        for aa,call in enumerate(emu_calls):
+            distances.append(self.theory.emulator.get_nearest_distance(call,z=self.data.z[aa]))
 
         if self.verbose: print('got P1D from emulator')
 
@@ -243,19 +254,40 @@ class Likelihood(object):
             p1d_data=self.data.get_Pk_iz(iz)
             p1d_cov=self.data.get_cov_iz(iz)
             p1d_theory=emu_p1d[iz]
+            cov_theory=emu_cov[iz]
+            
             if p1d_theory is None:
                 if self.verbose: print(z,'emulator did not provide P1D')
                 continue
             # plot everything
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
-                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,label='z=%.1f'%z)
-            plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col)
+                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,
+                    label="z=%.1f, distance = %.3f" % (z,distances[iz]))
+            #plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
+            #        linestyle="--")
+            plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
+            plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
+
+            ((p1d_theory-np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,alpha=0.35,color=col)
+            if values2 is not None:
+                p1d_theory_mcmc=emu_p1d_2[iz]
+                cov_theory_mcmc=emu_cov_2[iz]
+                plt.errorbar(k_kms,p1d_theory_mcmc*k_kms/np.pi,
+                    yerr=np.sqrt(np.diag(cov_theory_mcmc))*k_kms/np.pi,color=col,
+                    linestyle=":")
+                
+        if values2 is not None:
+            plt.plot(-10,-10,linestyle="-",label="Data",color="k")
+            plt.plot(-10,-10,linestyle="--",label="Likelihood fit",color="k")
+            plt.plot(-10,-10,linestyle=":",label="MCMC best fit",color="k")
         plt.yscale('log')
         plt.legend()
         plt.xlabel('k [s/km]')
         plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
         plt.ylim(0.005,0.6)
+        plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
+        plt.tight_layout()
         plt.show()
 
         return

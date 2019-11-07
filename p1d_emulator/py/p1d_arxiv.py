@@ -12,7 +12,8 @@ class ArxivP1D(object):
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 keep_every_other_rescaling=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
-                no_skewers=False,pick_sim_number=None):
+                no_skewers=False,pick_sim_number=None,drop_sim_number=None,
+                z_max=5.,nsamples=None):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)"""
 
@@ -32,13 +33,18 @@ class ArxivP1D(object):
             self.skewers_label='Ns100_wM0.07'
         self.verbose=verbose
 
+
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number,keep_every_other_rescaling)
+                            pick_sim_number,drop_sim_number,
+                            keep_every_other_rescaling,
+                            z_max,nsamples)
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number,keep_every_other_rescaling):
+                            pick_sim_number,drop_sim_number,
+                            keep_every_other_rescaling,
+                            z_max,nsamples=None):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -50,7 +56,10 @@ class ArxivP1D(object):
             self.cube_data = json.load(json_file)
         if self.verbose:
             print('latin hyper-cube data',self.cube_data)
-        self.nsamples=self.cube_data['nsamples']
+        if nsamples is None:
+            self.nsamples=self.cube_data['nsamples']
+        else:
+            self.nsamples=nsamples
         if self.verbose:
             print('simulation suite has %d samples'%self.nsamples)
 
@@ -62,6 +71,8 @@ class ArxivP1D(object):
 
         # read info from all sims, all snapshots, all rescalings
         for sample in range(start,self.nsamples):
+            if sample is drop_sim_number:
+                continue
             # store parameters for simulation pair / model
             sim_params = self.cube_data['samples']['%d'%sample]
             if self.verbose:
@@ -82,6 +93,8 @@ class ArxivP1D(object):
 
             # to make lighter emulators, we might undersample redshifts
             for snap in range(0,Nz,undersample_z):
+                if zs[snap]>z_max:
+                    continue
 
                 # get linear power parameters describing snapshot
                 linP_params = pair_data['linP_zs'][snap]
@@ -260,6 +273,7 @@ class ArxivP1D(object):
         for key in keys:
             info += ', {} = {:.4f}'.format(key,data[key])
         print(info)
+        return
 
 
     def plot_samples(self,param_1,param_2,
@@ -331,14 +345,12 @@ class ArxivP1D(object):
         fig = plt.figure()
         ax = plt.axes(projection="3d")
         ax.scatter3D(emu_1, emu_2, emu_3, c=emu_z, cmap='brg',s=8)
-        plt.title("Rescalings=%s" % tau_scalings)
         ax.set_xlabel(param_1)
         ax.set_ylabel(param_2)
         ax.set_zlabel(param_3)
         plt.show()
 
         return
-
 
     def sub_arxiv_mf(self,min_mf=0.0,max_mf=1.0):
         """ Return copy of arxiv, with entries in a given mean flux range. """
@@ -367,7 +379,7 @@ class ArxivP1D(object):
 
 
     def get_param_values(self,param,tau_scalings=True,temp_scalings=True):
-        """ Return values for a given parameter, including escalings or not."""
+        """ Return values for a given parameter, including rescalings or not."""
 
         N=len(self.data)
         # mask post-process scalings (optional)

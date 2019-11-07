@@ -29,6 +29,7 @@ class EmceeSampler(object):
             If read_chain_file is provided, read pre-computed chain."""
 
         self.verbose=verbose
+        self.store_distances=False
 
         if like:
             if self.verbose: print('use input likelihood')
@@ -65,6 +66,10 @@ class EmceeSampler(object):
                                                             self.log_prob)
             # setup walkers
             self.p0=self.get_initial_walkers()
+
+        self.distances=[]
+        for aa in range(len(self.like.data.z)):
+            self.distances.append([])
 
         if self.verbose:
             print('done setting up sampler')
@@ -126,9 +131,7 @@ class EmceeSampler(object):
             for i in range(ndim):
                 p=self.like.free_params[i]
                 fid_value=p.value_in_cube()
-                values=scipy.stats.truncnorm.rvs((0.0-fid_value)/rms,
-                            (1.0-fid_value)/rms, scale=rms,
-                            loc=fid_value, size=nwalkers)
+                values=self.get_trunc_norm(fid_value,nwalkers)
                 assert np.all(values >= 0.0)
                 assert np.all(values <= 1.0)
                 p0[:,i]=values
@@ -144,6 +147,16 @@ class EmceeSampler(object):
 
         return p0
 
+    def get_trunc_norm(self,mean,n_samples):
+        """ Wrapper for scipys truncated normal distribution
+        Runs in the range [0,1] with a rms specified on initialisation """
+
+        rms=self.like.prior_Gauss_rms
+        values=scipy.stats.truncnorm.rvs((0.0-mean)/rms,
+                            (1.0-mean)/rms, scale=rms,
+                            loc=mean, size=n_samples)
+        return values
+
 
     def log_prob(self,values):
         """Function that will actually be called by emcee"""
@@ -153,8 +166,21 @@ class EmceeSampler(object):
             if self.verbose:
                 print('parameter values outside hull',values)
                 return -np.inf
+        if self.store_distances:
+            self.add_euclidean_distances(values)
+
         return test_log_prob
 
+    def add_euclidean_distances(self,values):
+        """ For a given set of likelihood parameters
+        find the Euclidean distances to the nearest
+        training point for each emulator call """
+
+        emu_calls=self.like.theory.get_emulator_calls(self.like.parameters_from_sampling_point(values))
+        for aa,call in enumerate(emu_calls):
+            self.distances[aa].append(self.like.theory.emulator.get_nearest_distance(call,z=self.like.data.z[aa]))
+
+        return 
 
     def go_silent(self):
         self.verbose=False
@@ -265,7 +291,7 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cube=False):
+    def plot_corner(self,cube=False,mock_values=False):
         """Make corner plot, using re-normalized values if cube=True"""
 
         # get chain (from sampler or from file)
@@ -286,7 +312,53 @@ class EmceeSampler(object):
                                 cube_values[:,ip]) for ip in range(self.ndim)]
             values=np.array(list_values).transpose()
 
-        corner.corner(values,labels=labels)
-        plt.show()
+        figure = corner.corner(values,labels=labels,
+                                hist_kwargs={"density":True,"color":"blue"})
 
+        # Extract the axes
+        axes = np.array(figure.axes).reshape((self.ndim, self.ndim))
+        if mock_values==True:
+            if cube:
+                list_mock_values=[self.like.free_params[aa].value_in_cube() for aa in range(
+                                                len(self.like.free_params))]
+            else:
+                list_mock_values=[self.like.free_params[aa].value for aa in range(
+                                                len(self.like.free_params))]
+
+            # Loop over the diagonal
+            for i in range(self.ndim):
+                ax = axes[i, i]
+                ax.axvline(list_mock_values[i], color="r")
+                prior=self.get_trunc_norm(self.like.free_params[i].value_in_cube(),
+                                                    100000)
+                if cube:
+                    ax.hist(prior,bins=200,alpha=0.4,color="hotpink",density=True)
+                else:
+                    for aa in range(len(prior)):
+                        prior[aa]=self.like.free_params[i].value_from_cube(prior[aa])
+                    ax.hist(prior,bins=50,alpha=0.4,color="hotpink",density=True)
+
+            # Loop over the histograms
+            for yi in range(self.ndim):
+                for xi in range(yi):
+                    ax = axes[yi, xi]
+                    ax.axvline(list_mock_values[xi], color="r")
+                    ax.axhline(list_mock_values[yi], color="r")
+                    ax.plot(list_mock_values[xi], list_mock_values[yi], "sr")
+
+        plt.show()
         return
+
+    def plot_best_fit(self):
+        """ Plot the P1D of the data, the likelihood fit, and the MCMC best fit
+        the likelihood fit model is fitting the likelihood parameters to the
+        emulator parameters in the given simulation
+        """
+        ## Get best fit values for each parameter
+        chain,lnprob=self.get_chain()
+        mean_value=[]
+        for parameter_distribution in np.swapaxes(chain,0,1):
+            mean_value.append(np.mean(parameter_distribution))
+        self.like.plot_p1d(values=None,values2=mean_value)
+        return
+

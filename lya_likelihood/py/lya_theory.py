@@ -105,10 +105,12 @@ class LyaTheory(object):
             k_Mpc = k_kms * dkms_dMpc
             if return_covar:
                 p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        return_covar=True)
+                                                        return_covar=True,
+                                                        z=z)
             else:
                 p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        return_covar=False)
+                                                        return_covar=False,
+                                                        z=z)
             if p1d_Mpc is None:
                 if self.verbose: print('emulator did not provide P1D')
                 p1d_kms.append(None)

@@ -12,19 +12,23 @@ class ZEmulator:
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 verbose=False,kmax_Mpc=10.0,paramList=None,train=False,
                 max_arxiv_size=None,
-                z_max=5,
+                z_max=5,passArxiv=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 keep_every_other_rescaling=False,
                 emu_type="k_bin",set_noise_var=1e-10,N_mf=10,z_list=None):
 
-        # load full arxiv
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,p1d_label=p1d_label,
-                skewers_label=skewers_label,verbose=verbose,
-                max_arxiv_size=max_arxiv_size,
-                z_max=z_max,
-                drop_tau_rescalings=drop_tau_rescalings,
-                drop_temp_rescalings=drop_temp_rescalings,
-                keep_every_other_rescaling=keep_every_other_rescaling)
+        # read all files with P1D measured in simulation suite
+        if passArxiv==None:
+            self.custom_arxiv=False
+            self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
+                        max_arxiv_size=max_arxiv_size,verbose=verbose,
+                        drop_tau_rescalings=drop_tau_rescalings,
+                        drop_temp_rescalings=drop_temp_rescalings,z_max=z_max,
+                        keep_every_other_rescaling=keep_every_other_rescaling)
+        else:
+            self.custom_arxiv=True
+            print("Loading emulator using a specific arxiv, not the one set in basedir")
+            self.arxiv=passArxiv
 
         self._split_arxiv_up(z_list)
         self.emulators=[]

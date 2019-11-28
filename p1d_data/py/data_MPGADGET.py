@@ -5,11 +5,13 @@ import data_PD2013
 import poly_p1d
 import json
 import matplotlib.pyplot as plt
+import p1d_arxiv
+import recons_cosmo
 
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
-
     def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,
-                        filename="1024_mock_0.json",z_list=None):
+                        sim_number=0,skewers_label=None,
+                        z_list=None):
         """ Read mock P1D from MP-Gadget sims, and return
         using the k bins and covariance from PD2013 """
 
@@ -17,9 +19,10 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         if not basedir:
             assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
             repo=os.environ['LYA_EMU_REPO']
-            basedir=repo+'/p1d_data/data_files/MP-Gadget_data/'
+            basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
+            skewers_label="Ns256_wM0.05"
 
-        z,k,Pk,cov=self._load_p1d(basedir,filename)
+        z,k,Pk,cov=self._load_p1d(basedir,sim_number,skewers_label)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -29,26 +32,42 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
 
-    def _load_p1d(self,basedir,filename):
-        ## Load in dictionaries
-        with open(basedir+filename) as json_file:
-            data_file = json.load(json_file)
-        self.like_params=data_file["like_params"]
-        sim_data = data_file["data"]
-        ## Load PD2013 data
+    def _load_p1d(self,basedir,sim_number,skewers_label):
+        ## Load PD2013 data to get covmats
         PD2013=data_PD2013.P1D_PD2013(blind_data=False)
         k=PD2013.k
         z_PD=PD2013.z
 
-        ## For each redshift, fit the data and return
-        ## P1D(k) with PD2013 bins
-        z=np.array([])
+        ## Load mock data as arxiv object
+        sim_data=p1d_arxiv.ArxivP1D(basedir=basedir,
+                            drop_tau_rescalings=True,z_max=4,
+                            pick_sim_number=sim_number,
+                            drop_temp_rescalings=True,skewers_label=skewers_label)
+
+        z_sim=np.empty(len(sim_data.data))
+
+        ## Get array of redshifts for the sim data
+        for aa,item in enumerate(sim_data.data):
+            z_sim[aa]=item["z"]
+        
+        ## Import cosmology object to get Mpc -> kms conversion factor
+        cosmo=recons_cosmo.ReconstructedCosmology(np.flip(z_sim))
+
+        ## Get k_min for the sim data, & cut k values below that
+        k_min_kms=sim_data.data[0]["k_Mpc"][1]/(cosmo.reconstruct_Hubble_iz(0,cosmo.linP_model_fid)/(1+min(z_sim)))
+
+        Ncull=np.sum(k<k_min_kms)
+        k=k[Ncull:]
+
         Pk=[]
         cov=[]
-        for item in sim_data:
-            z=np.append(z,item["z"])
-            p1d_sim=np.asarray(item["p1d_kms"]) ## I saved the data as lists :/
-            k_sim=np.asarray(item["k_kms"])
+        for aa,item in enumerate(sim_data.data):
+            p1d_Mpc=np.asarray(item["p1d_Mpc"][1:])
+            k_Mpc=np.asarray(item["k_Mpc"][1:])
+            conversion_factor=cosmo.reconstruct_Hubble_iz(len(z_sim)-aa-1,cosmo.linP_model_fid)/(1+z_sim[aa])
+
+            p1d_sim=p1d_Mpc*conversion_factor
+            k_sim=k_Mpc/conversion_factor
 
             ## Only fit where we have PD2013 data
             kfit=(k_sim < 0.02) & (k_sim > 0.001)
@@ -59,8 +78,11 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             Pk.append(p1d_rebin)
             ## Now get covariance from the nearest
             ## z bin in PD2013
-            cov.append(PD2013.get_cov_iz(np.argmin(abs(z_PD-z[-1]))))
-        return z,k,Pk,cov
+            cov_mat=PD2013.get_cov_iz(np.argmin(abs(z_PD-z_sim[-1])))
+            ## Cull low k cov data
+            cov_mat=cov_mat[Ncull:,Ncull:]
+            cov.append(cov_mat)
+        return z_sim,k,Pk,cov
 
 
 def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):

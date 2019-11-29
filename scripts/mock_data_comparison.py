@@ -28,8 +28,9 @@ Script to check how close our fiducial models for each mock data
 sim actually reproduce the mock data
 '''
 
-z_emu=False ## Use a redshift - split emulator?
-test_sim_number=3 ## Pick a sim between 0 and 199
+z_emu=True ## Use a redshift - split emulator?
+drop3ds=True
+test_sim_number=15 ## Pick a sim between 0 and 199
 
 repo=os.environ['LYA_EMU_REPO']
 skewers_label='Ns256_wM0.05'
@@ -38,7 +39,7 @@ basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
 #basedir=repo+"/p1d_emulator/sim_suites/emulator_256_15072019/"
 p1d_label=None
 undersample_z=1
-paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p"]
+paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p","n_p"]
 max_arxiv_size=None
 kmax_Mpc=8
 
@@ -78,16 +79,17 @@ for aa, zz in enumerate(mock.z):
     pred,err=emu.emulate_p1d_Mpc(mock.data[aa],test_k,return_covar=True,z=zz)
     dist=emu.get_nearest_distance(mock.data[aa],z=zz)
     plt.plot(mock.data[aa]["k_Mpc"][1:],mock.data[aa]["p1d_Mpc"][1:]*mock.data[aa]["k_Mpc"][1:],
-    color=col,label="z=%.3f, distance=%.4f" % (mock.z[aa],dist))
+    color=col,label="z=%.3f, distance=%.4f" % (mock.z[aa],dist),marker="o")
     plt.plot(test_k,pred*test_k,color=col,linestyle="dashed")
     plt.fill_between(test_k,(pred+np.sqrt(np.diag(err)))*test_k,(pred-np.sqrt(np.diag(err)))*test_k,color=col,alpha=0.3)
 plt.xlim(min(test_k),max(test_k))
+plt.title("z emulator=%s, no <F> rescalings" % z_emu)
 plt.xlabel(r"$k_\parallel$ [1/Mpc]")
 plt.ylabel(r"$k_\parallel$*P1D($k_\parallel$)")
 plt.legend()
 plt.yscale("log")
 
-if z_emu:
+if z_emu or drop3ds:
     plt.show()
     quit()
 

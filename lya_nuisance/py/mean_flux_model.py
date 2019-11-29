@@ -13,7 +13,8 @@ def mean_flux_Kamble2019(z):
 class MeanFluxModel(object):
     """Use a handful of parameters to model the mean transmitted flux fraction
         (or mean flux) as a function of redshift. 
-         For now, we use a polynomial to describe log(tau_eff) around z_tau."""
+         For now, we use a polynomial to describe log(tau_eff) around z_tau.
+         """
 
     def __init__(self,z_tau=3.0,ln_tau_coeff=None):
         """Construct model with central redshift and (x2,x1,x0) polynomial."""

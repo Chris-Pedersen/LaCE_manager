@@ -135,16 +135,6 @@ class EmceeSampler(object):
                 assert np.all(values >= 0.0)
                 assert np.all(values <= 1.0)
                 p0[:,i]=values
-
-#        #make sure that all walkers are within the convex hull (in lin interp)
-#        for iw in range(nwalkers):
-#            walker=p0[iw]
-#            test=self.log_prob(walker)
-#            while (test == -np.inf):
-#                walker = np.random.rand(ndim)
-#                test=self.log_prob(walker)
-#            p0[iw]=walker
-
         return p0
 
     def get_trunc_norm(self,mean,n_samples):

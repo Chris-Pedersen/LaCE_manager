@@ -31,6 +31,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             z,k,Pk,cov=_select_zs(z,k,Pk,cov,z_list)
 
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
+        self._set_true_values()
 
     def _load_p1d(self,basedir,sim_number,skewers_label):
         ## Load PD2013 data to get covmats
@@ -39,29 +40,29 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         z_PD=PD2013.z
 
         ## Load mock data as arxiv object
-        sim_data=p1d_arxiv.ArxivP1D(basedir=basedir,
+        self.mock_data=p1d_arxiv.ArxivP1D(basedir=basedir,
                             drop_tau_rescalings=True,z_max=4,
                             pick_sim_number=sim_number,
                             drop_temp_rescalings=True,skewers_label=skewers_label)
 
-        z_sim=np.empty(len(sim_data.data))
+        z_sim=np.empty(len(self.mock_data.data))
 
         ## Get array of redshifts for the sim data
-        for aa,item in enumerate(sim_data.data):
+        for aa,item in enumerate(self.mock_data.data):
             z_sim[aa]=item["z"]
         
         ## Import cosmology object to get Mpc -> kms conversion factor
         cosmo=recons_cosmo.ReconstructedCosmology(np.flip(z_sim))
 
         ## Get k_min for the sim data, & cut k values below that
-        k_min_kms=sim_data.data[0]["k_Mpc"][1]/(cosmo.reconstruct_Hubble_iz(0,cosmo.linP_model_fid)/(1+min(z_sim)))
+        k_min_kms=self.mock_data.data[0]["k_Mpc"][1]/(cosmo.reconstruct_Hubble_iz(0,cosmo.linP_model_fid)/(1+min(z_sim)))
 
         Ncull=np.sum(k<k_min_kms)
         k=k[Ncull:]
 
         Pk=[]
         cov=[]
-        for aa,item in enumerate(sim_data.data):
+        for aa,item in enumerate(self.mock_data.data):
             p1d_Mpc=np.asarray(item["p1d_Mpc"][1:])
             k_Mpc=np.asarray(item["k_Mpc"][1:])
             conversion_factor=cosmo.reconstruct_Hubble_iz(len(z_sim)-aa-1,cosmo.linP_model_fid)/(1+z_sim[aa])
@@ -84,6 +85,20 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             cov.append(cov_mat)
         return z_sim,k,Pk,cov
 
+    def _set_true_values(self):
+        """ For each emulator parameter, generate an array of
+        true values from the arxiv """
+
+        self.truth={} ## Dictionary to hold true values
+        paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p","n_p"]
+        for param in paramList:
+            self.truth[param]=[]
+        
+        for item in self.mock_data.data:
+            for param in paramList:
+                self.truth[param].append(item[param])
+
+        return
 
 def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
     """Drop redshift bins below zmin or above zmax"""

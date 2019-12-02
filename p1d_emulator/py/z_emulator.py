@@ -32,6 +32,7 @@ class ZEmulator:
 
         self._split_arxiv_up(z_list)
         self.emulators=[]
+        self.paramList=paramList
 
         for arxiv in self.arxiv_list:
             emu=gp_emulator.GPEmulator(verbose=verbose,
@@ -41,6 +42,7 @@ class ZEmulator:
             self.emulators.append(emu)
 
         self.training_k_bins=self.emulators[0].training_k_bins
+
 
 
     def _split_arxiv_up(self,z_list):

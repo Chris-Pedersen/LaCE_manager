@@ -359,6 +359,7 @@ class simpleLikelihood(object):
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
         self.ignore_emu_cov=ignore_emu_cov
+        self.emulator=emulator
 
         if data:
             self.data=data
@@ -385,6 +386,7 @@ class simpleLikelihood(object):
         for name in free_parameters:
             ## Set up parameter object
             like_param=likelihood_parameter.LikelihoodParameter(name=name,
+                                        value=1.,
                                         min_value=0.5,max_value=1.5)
             self.free_params.append(like_param)
 
@@ -516,7 +518,7 @@ class simpleLikelihood(object):
             # will call emulator for this model
             model=emu_calls[iz]
             # emulate p1d
-            dkms_dMpc=self.theory.cosmo.reconstruct_Hubble_iz(iz)/(1+z)
+            dkms_dMpc=self.theory.cosmo.reconstruct_Hubble_iz(iz,self.theory.cosmo.linP_model_fid)/(1+z)
             k_Mpc = k_kms * dkms_dMpc
             if return_covar:
                 p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
@@ -571,8 +573,68 @@ class simpleLikelihood(object):
                 model[par_name]=self.data.truth[par_name][iz]
             ## For each parameter we are varying, modify the
             ## emulator call
-            for like_param in self.free_params:
-                model[like_param.name]*=like_param.value_from_cube
+            for like_param in like_params:
+                model[like_param.name]*=like_param.value_from_cube(like_param.value)
             emu_calls.append(model)
-                
+            
         return emu_calls
+
+    def plot_p1d(self,values=None,values2=None,plot_every_iz=1):
+        """Plot P1D in theory vs data. If plot_every_iz >1,
+            plot only few redshift bins"""
+
+        # get measured bins from data
+        k_kms=self.data.k
+        k_emu_kms=np.logspace(np.log10(min(k_kms)),np.log10(max(k_kms)),500)
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
+        if values2 is not None:
+            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_emu_kms,values2,return_covar=True)
+
+        if self.verbose: print('got P1D from emulator')
+
+        # plot only few redshifts for clarity
+        for iz in range(0,Nz,plot_every_iz):
+            # acess data for this redshift
+            z=zs[iz]
+            p1d_data=self.data.get_Pk_iz(iz)
+            p1d_cov=self.data.get_cov_iz(iz)
+            p1d_theory=emu_p1d[iz]
+            cov_theory=emu_cov[iz]
+            
+            if p1d_theory is None:
+                if self.verbose: print(z,'emulator did not provide P1D')
+                continue
+            # plot everything
+            col = plt.cm.jet(iz/(Nz-1))
+            plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,marker="o",ls="none",
+                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,ms=2,
+                    label="z=%.1f" % (z))
+            plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
+            plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
+            ((p1d_theory-np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,alpha=0.5,color=col)
+            if values2 is not None:
+                p1d_theory_mcmc=emu_p1d_2[iz]
+                cov_theory_mcmc=emu_cov_2[iz]
+                plt.errorbar(k_emu_kms,p1d_theory_mcmc*k_emu_kms/np.pi,
+                    yerr=np.sqrt(np.diag(cov_theory_mcmc))*k_emu_kms/np.pi,color=col,
+                    linestyle=":",alpha=0.3)
+                
+        if values2 is not None:
+            plt.plot(-10,-10,linestyle="-",label="Data",color="k")
+            plt.plot(-10,-10,linestyle="--",label="Emulator prediction",color="k")
+            plt.plot(-10,-10,linestyle=":",label="MCMC best fit",color="k")
+        plt.yscale('log')
+        plt.legend()
+        plt.xlabel('k [s/km]')
+        plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
+        plt.ylim(0.005,0.6)
+        plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
+        plt.tight_layout()
+        plt.show()
+
+        return
+

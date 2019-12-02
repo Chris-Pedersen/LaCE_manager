@@ -22,7 +22,7 @@ import data_MPGADGET
 import z_emulator
 import p1d_arxiv
 
-test_sim_number=17
+test_sim_number=44
 
 # read P1D measurement
 z_list=np.array([2.0,2.75,3.25,4.0])
@@ -66,11 +66,11 @@ free_parameters=['mF','gamma']
 
 like=likelihood.simpleLikelihood(data=data,emulator=emu,
                             free_parameters=free_parameters,verbose=False,
-                            prior_Gauss_rms=0.15)
+                            prior_Gauss_rms=0.05)
 
 sampler = emcee_sampler.EmceeSampler(like=like,
                         free_parameters=free_parameters,verbose=True,
-                        nwalkers=100)
+                        nwalkers=20)
 
 
 for p in sampler.like.free_params:
@@ -79,7 +79,7 @@ for p in sampler.like.free_params:
 
 sampler.like.go_silent()
 sampler.store_distances=True
-sampler.run_burn_in(nsteps=20)
+sampler.run_burn_in(nsteps=10)
 #sampler.run_chains(nsteps=200)
 '''
 plt.figure()
@@ -92,8 +92,8 @@ plt.legend()
 plt.show()
 '''
 
-sampler.run_chains(nsteps=20)
+sampler.run_chains(nsteps=40)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.sampler.acceptance_fraction)))
 
-sampler.plot_corner(cube=True,mock_values=True)
+sampler.plot_corner(cube=False,mock_values=True)
 sampler.plot_best_fit()

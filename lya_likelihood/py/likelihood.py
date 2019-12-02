@@ -574,7 +574,7 @@ class simpleLikelihood(object):
             ## For each parameter we are varying, modify the
             ## emulator call
             for like_param in like_params:
-                model[like_param.name]*=like_param.value_from_cube(like_param.value)
+                model[like_param.name]*=like_param.value
             emu_calls.append(model)
             
         return emu_calls

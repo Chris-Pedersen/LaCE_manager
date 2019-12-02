@@ -64,12 +64,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         cov=[]
         ## Latest commit
         for aa,item in enumerate(self.mock_data.data):
-            #print("These need to match:")
-            #print("Data z:", z_sim[aa])
-            #print("Theory z:", cosmo.zs[aa])
-            #print("Archive z:", item["z"])
-
-            
+            ## Archive in reverse..
             p1d_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["p1d_Mpc"][1:])
             k_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["k_Mpc"][1:])
             conversion_factor=cosmo.reconstruct_Hubble_iz(aa,cosmo.linP_model_fid)/(1+z_sim[aa])
@@ -90,6 +85,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             ## Cull low k cov data
             cov_mat=cov_mat[Ncull:,Ncull:]
             cov.append(cov_mat)
+
         return z_sim,k,Pk,cov
     
     def _set_true_values(self):
@@ -106,52 +102,6 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
                 self.truth[param].insert(0,item[param])
 
         return
-
-'''
-        ## My new version
-        for aa,item in enumerate(self.mock_data.data):
-            p1d_Mpc=np.asarray(item["p1d_Mpc"][1:])
-            k_Mpc=np.asarray(item["k_Mpc"][1:])
-            conversion_factor=cosmo.reconstruct_Hubble_iz(len(z_sim)-aa-1,cosmo.linP_model_fid)/(1+z_sim[aa])
-'''
-
-
-'''
-
-        ## Old
-        for aa in range(len(self.mock_data.data)):
-
-
-
-
-
-            ## This indexing is really gross but hey ho
-            ## Problem was that the arxiv entries were stored in reverse redshift
-            ## order..
-            p1d_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["p1d_Mpc"][1:])
-            k_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["k_Mpc"][1:])
-            conversion_factor=cosmo.reconstruct_Hubble_iz(len(z_sim)-aa-1,cosmo.linP_model_fid)/(1+z_sim[aa])
-
-            ## Convert to km/s
-            p1d_sim=p1d_Mpc*conversion_factor
-            k_sim=k_Mpc/conversion_factor
-
-            ## Only fit where we have PD2013 data
-            kfit=(k_sim < 0.02) & (k_sim > 0.001)
-            #print(k_sim)
-            lnP_fit = np.polyfit(np.log(k_sim[kfit]),np.log(p1d_sim[kfit]), 4)
-            poly=np.poly1d(lnP_fit)
-            p1d_rebin=np.exp((poly(np.log(k))))
-            Pk.append(p1d_rebin)
-            ## Now get covariance from the nearest
-            ## z bin in PD2013
-            cov_mat=PD2013.get_cov_iz(np.argmin(abs(z_PD-z_sim[-1])))
-            ## Cull low k cov data
-            cov_mat=cov_mat[Ncull:,Ncull:]
-            cov.append(cov_mat)
-'''
-
-
 
 def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
     """Drop redshift bins below zmin or above zmax"""

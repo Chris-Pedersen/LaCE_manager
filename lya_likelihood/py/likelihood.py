@@ -224,7 +224,7 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def plot_p1d(self,values=None,values2=None,plot_every_iz=1):
+    def plot_p1d(self,values=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
@@ -236,8 +236,6 @@ class Likelihood(object):
 
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
-        if values2 is not None:
-            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_emu_kms,values2,return_covar=True)
 
         emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
         distances=[]
@@ -269,17 +267,9 @@ class Likelihood(object):
             plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
 
             ((p1d_theory-np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,alpha=0.35,color=col)
-            if values2 is not None:
-                p1d_theory_mcmc=emu_p1d_2[iz]
-                cov_theory_mcmc=emu_cov_2[iz]
-                plt.errorbar(k_kms,p1d_theory_mcmc*k_kms/np.pi,
-                    yerr=np.sqrt(np.diag(cov_theory_mcmc))*k_kms/np.pi,color=col,
-                    linestyle=":")
                 
-        if values2 is not None:
-            plt.plot(-10,-10,linestyle="-",label="Data",color="k")
-            plt.plot(-10,-10,linestyle="--",label="Likelihood fit",color="k")
-            plt.plot(-10,-10,linestyle=":",label="MCMC best fit",color="k")
+        plt.plot(-10,-10,linestyle="-",label="Data",color="k")
+        plt.plot(-10,-10,linestyle=":",label="Fit",color="k")
         plt.yscale('log')
         plt.legend()
         plt.xlabel('k [s/km]')
@@ -579,7 +569,7 @@ class simpleLikelihood(object):
             
         return emu_calls
 
-    def plot_p1d(self,values=None,values2=None,plot_every_iz=1):
+    def plot_p1d(self,values=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
@@ -591,8 +581,6 @@ class simpleLikelihood(object):
 
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
-        if values2 is not None:
-            emu_p1d_2, emu_cov_2 = self.get_p1d_kms(k_emu_kms,values2,return_covar=True)
 
         if self.verbose: print('got P1D from emulator')
 
@@ -616,17 +604,9 @@ class simpleLikelihood(object):
             plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
             plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
             ((p1d_theory-np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,alpha=0.5,color=col)
-            if values2 is not None:
-                p1d_theory_mcmc=emu_p1d_2[iz]
-                cov_theory_mcmc=emu_cov_2[iz]
-                plt.errorbar(k_emu_kms,p1d_theory_mcmc*k_emu_kms/np.pi,
-                    yerr=np.sqrt(np.diag(cov_theory_mcmc))*k_emu_kms/np.pi,color=col,
-                    linestyle=":",alpha=0.3)
                 
-        if values2 is not None:
-            plt.plot(-10,-10,linestyle="-",label="Data",color="k")
-            plt.plot(-10,-10,linestyle="--",label="Emulator prediction",color="k")
-            plt.plot(-10,-10,linestyle=":",label="MCMC best fit",color="k")
+        plt.plot(-10,-10,linestyle="-",label="Data",color="k")
+        plt.plot(-10,-10,linestyle="--",label="Fit",color="k")
         plt.yscale('log')
         plt.legend()
         plt.xlabel('k [s/km]')

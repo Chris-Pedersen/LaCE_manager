@@ -349,6 +349,7 @@ class EmceeSampler(object):
         mean_value=[]
         for parameter_distribution in np.swapaxes(chain,0,1):
             mean_value.append(np.mean(parameter_distribution))
-        self.like.plot_p1d(values=None,values2=mean_value)
+        print("Mean values:", mean_value)
+        self.like.plot_p1d(values=mean_value)
         return
 

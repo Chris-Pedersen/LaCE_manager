@@ -7,6 +7,7 @@ from scipy.interpolate import interp1d
 import poly_p1d
 import os
 import json
+from scipy.spatial import Delaunay
 
 class GPEmulator:
     """
@@ -20,7 +21,8 @@ class GPEmulator:
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
-                passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
+                passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
+                checkHulls=True):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -67,6 +69,9 @@ class GPEmulator:
             if self.trained==False:
                 if self.verbose: print('will train GP emulator')
                 self.train()
+
+        self.checkHulls=checkHulls ## Print all this?
+        self.hull=Delaunay(self.X_param_grid)
 
 
     def _training_points_k_bin(self,arxiv):
@@ -209,6 +214,16 @@ class GPEmulator:
         return param
 
 
+    def check_in_hull(self,model):
+        param=[]
+        for aa, par in enumerate(self.paramList):
+            ## Rescale input parameters
+            param.append(model[par])
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        
+        return self.hull.find_simplex(np.array(param).reshape(1,-1))<0
+        
+
     def predict(self,model):
         ''' Return P1D or polyfit coeffs for a given parameter set
         For the k bin emulator this will be in the training k bins '''
@@ -221,6 +236,9 @@ class GPEmulator:
             ## Rescale input parameters
             param.append(model[par])
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        if self.checkHulls:
+            if self.hull.find_simplex(np.array(param).reshape(1,-1))<0:
+                print("Model is outside convex hull:", model)
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
 
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)

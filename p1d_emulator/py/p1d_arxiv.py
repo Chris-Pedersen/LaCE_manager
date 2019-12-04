@@ -10,7 +10,7 @@ class ArxivP1D(object):
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                keep_every_other_rescaling=False,
+                keep_every_other_rescaling=False,nearest_tau=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
                 z_max=5.,nsamples=None):
@@ -39,6 +39,9 @@ class ArxivP1D(object):
                             pick_sim_number,drop_sim_number,
                             keep_every_other_rescaling,
                             z_max,nsamples)
+        
+        if nearest_tau:
+            self._keep_nearest_tau()
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
@@ -225,7 +228,6 @@ class ArxivP1D(object):
 
         return
 
-
     def _keep_every_other_rescaling(self):
         """Keep only every other rescaled entry"""
 
@@ -248,6 +250,15 @@ class ArxivP1D(object):
         """Keep only entries with scale_tau=1"""
 
         data = [x for x in self.data if x['scale_tau']==1.0]
+        self.data = data
+        return
+
+    def _keep_nearest_tau(self):
+        """ Keep only entries with the nearest tau scalings
+        Hardcoding this to 0.7 and 1.4 for now, which we used
+        in the 200 x 256**3 suite"""
+
+        data = [x for x in self.data if x['scale_tau']==1.0 or x['scale_tau']==0.7 or x['scale_tau']==1.4]
         self.data = data
         return
 

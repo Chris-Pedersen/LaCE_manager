@@ -14,7 +14,7 @@ class ZEmulator:
                 max_arxiv_size=None,
                 z_max=5,passArxiv=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                keep_every_other_rescaling=False,
+                keep_every_other_rescaling=False,checkHulls=False,
                 emu_type="k_bin",set_noise_var=1e-10,N_mf=10,z_list=None):
 
         # read all files with P1D measured in simulation suite
@@ -38,7 +38,7 @@ class ZEmulator:
             emu=gp_emulator.GPEmulator(verbose=verbose,
                     kmax_Mpc=kmax_Mpc,paramList=paramList,train=train,
                     emu_type=emu_type,set_noise_var=set_noise_var,
-                    passArxiv=arxiv)
+                    passArxiv=arxiv,checkHulls=checkHulls)
             self.emulators.append(emu)
 
         self.training_k_bins=self.emulators[0].training_k_bins

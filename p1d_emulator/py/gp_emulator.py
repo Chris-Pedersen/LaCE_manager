@@ -22,7 +22,7 @@ class GPEmulator:
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
-                checkHulls=True):
+                checkHulls=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir

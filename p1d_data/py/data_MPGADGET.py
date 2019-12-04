@@ -7,6 +7,7 @@ import json
 import matplotlib.pyplot as plt
 import p1d_arxiv
 import recons_cosmo
+from scipy.interpolate import interp1d
 
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,
@@ -69,16 +70,12 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             k_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["k_Mpc"][1:])
             conversion_factor=cosmo.reconstruct_Hubble_iz(aa,cosmo.linP_model_fid)/(1+z_sim[aa])
 
-            p1d_sim=p1d_Mpc*conversion_factor
-            k_sim=k_Mpc/conversion_factor
+            interpolator=interp1d(k_Mpc,p1d_Mpc, "cubic")
+            k_interp=k*conversion_factor
+            interpolated_P=interpolator(k_interp)
+            p1d_sim=interpolated_P*conversion_factor
 
-            ## Only fit where we have PD2013 data
-            kfit=(k_sim < 0.02) & (k_sim > 0.001)
-            #print(k_sim)
-            lnP_fit = np.polyfit(np.log(k_sim[kfit]),np.log(p1d_sim[kfit]), 4)
-            poly=np.poly1d(lnP_fit)
-            p1d_rebin=np.exp((poly(np.log(k))))
-            Pk.append(p1d_rebin)
+            Pk.append(p1d_sim)
             ## Now get covariance from the nearest
             ## z bin in PD2013
             cov_mat=PD2013.get_cov_iz(np.argmin(abs(z_PD-z_sim[aa])))

@@ -23,6 +23,9 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
             skewers_label="Ns256_wM0.05"
 
+        self.basedir=basedir
+        self.sim_number=sim_number
+
         z,k,Pk,cov=self._load_p1d(basedir,sim_number,skewers_label)
 
         # drop low-z or high-z bins

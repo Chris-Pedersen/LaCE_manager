@@ -33,6 +33,8 @@ class ZEmulator:
         self._split_arxiv_up(z_list)
         self.emulators=[]
         self.paramList=paramList
+        self.kmax_Mpc=kmax_Mpc
+        self.emu_type=emu_type
 
         for arxiv in self.arxiv_list:
             emu=gp_emulator.GPEmulator(verbose=verbose,
@@ -98,3 +100,4 @@ class ZEmulator:
         assert z in self.zs, "cannot work for z=%.1f" % z
 
         return self.emulators[self.zs.index(z)].get_nearest_distance(model,z=z)
+        

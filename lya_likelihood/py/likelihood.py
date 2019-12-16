@@ -8,7 +8,9 @@ class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
     def __init__(self,data=None,theory=None,emulator=None,
-                    free_parameters=None,verbose=False,
+                    free_parameters=None,
+                    free_param_limits=None,
+                    verbose=False,
                     prior_Gauss_rms=0.2,
                     min_kp_kms=None,ignore_emu_cov=False):
         """Setup likelihood from theory and data. Options:
@@ -39,7 +41,7 @@ class Likelihood(object):
         # setup parameters
         if not free_parameters:
             free_parameters=['ln_tau_0']
-        self.set_free_parameters(free_parameters)
+        self.set_free_parameters(free_parameters,free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
@@ -350,6 +352,7 @@ class simpleLikelihood(object):
         self.prior_Gauss_rms=prior_Gauss_rms
         self.ignore_emu_cov=ignore_emu_cov
         self.emulator=emulator
+        self.simpleLike=True
 
         if data:
             self.data=data
@@ -368,16 +371,22 @@ class simpleLikelihood(object):
         ## An actual list of the objects is below, named self.free_params
         self.set_free_parameters(self.free_parameters)
         
-    def set_free_parameters(self,free_parameters):
+    def set_free_parameters(self,free_parameters,limits=None):
         """ Set the parameters we want to vary - these will have the same
         names as the emulator parameters """
 
         self.free_params=[]
-        for name in free_parameters:
+        for aa,name in enumerate(free_parameters):
+            if limits==None:
+                min=0.5
+                max=1.5
+            else:
+                min=limits[aa][0]
+                max=limits[aa][1]
             ## Set up parameter object
             like_param=likelihood_parameter.LikelihoodParameter(name=name,
                                         value=1.,
-                                        min_value=0.5,max_value=1.5)
+                                        min_value=min,max_value=max)
             self.free_params.append(like_param)
 
         return
@@ -599,22 +608,21 @@ class simpleLikelihood(object):
             # plot everything
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,marker="o",ls="none",
-                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,ms=2,
+                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,ms=4.5,
                     label="z=%.1f" % (z))
             plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
             plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
             ((p1d_theory-np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,alpha=0.5,color=col)
                 
-        plt.plot(-10,-10,linestyle="-",label="Data",color="k")
-        plt.plot(-10,-10,linestyle="--",label="Fit",color="k")
+        plt.plot(-10,-10,marker="o",linestyle="none",label="Simulation",color="k")
+        plt.plot(-10,-10,linestyle="--",label="Emulator prediction",color="k")
         plt.yscale('log')
         plt.legend()
-        plt.xlabel('k [s/km]')
+        plt.xlabel(r'$k_\parallel$ [s/km]')
         plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
         plt.ylim(0.005,0.6)
         plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
         plt.tight_layout()
-        plt.show()
 
         return
 

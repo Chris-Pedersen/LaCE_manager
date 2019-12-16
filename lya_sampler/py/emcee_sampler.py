@@ -11,6 +11,7 @@ import corner
 import simplest_emulator
 import linear_emulator
 import gp_emulator
+import z_emulator
 import data_PD2013
 import mean_flux_model
 import thermal_model
@@ -18,6 +19,8 @@ import lya_theory
 import likelihood
 import likelihood_parameter
 import scipy.stats
+import p1d_arxiv
+import data_MPGADGET
 
 
 class EmceeSampler(object):
@@ -31,29 +34,27 @@ class EmceeSampler(object):
         self.verbose=verbose
         self.store_distances=False
 
-        if like:
-            if self.verbose: print('use input likelihood')
-            self.like=like
-            if free_parameters:
-                self.like.set_free_parameters(free_parameters)
-        else:
-            if self.verbose: print('use default likelihood')
-            data=data_PD2013.P1D_PD2013(blind_data=True)
-            zs=data.z
-            theory=lya_theory.LyaTheory(zs,emulator=emulator)
-            self.like=likelihood.Likelihood(data=data,theory=theory,
-                            free_parameters=free_parameters,verbose=False)
-
-        # number of free parameters to sample
-        self.ndim=len(self.like.free_params)
-
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
             self.read_chain_from_file(read_chain_file)
             self.nwalkers=None
             self.sampler=None
             self.p0=None
-        else:
+        else: 
+            if like:
+                if self.verbose: print('use input likelihood')
+                self.like=like
+                if free_parameters:
+                    self.like.set_free_parameters(free_parameters)
+            else:
+                if self.verbose: print('use default likelihood')
+                data=data_PD2013.P1D_PD2013(blind_data=True)
+                zs=data.z
+                theory=lya_theory.LyaTheory(zs,emulator=emulator)
+                self.like=likelihood.Likelihood(data=data,theory=theory,
+                                free_parameters=free_parameters,verbose=False)
+            # number of free parameters to sample
+            self.ndim=len(self.like.free_params)
             self.chain_from_file=None
             # number of walkers
             if nwalkers:
@@ -66,6 +67,23 @@ class EmceeSampler(object):
                                                             self.log_prob)
             # setup walkers
             self.p0=self.get_initial_walkers()
+
+        '''
+        if like:
+            if self.verbose: print('use input likelihood')
+            self.like=like
+            if free_parameters:
+                self.like.set_free_parameters(free_parameters)
+        else:
+            if self.verbose: print('use default likelihood')
+            data=data_PD2013.P1D_PD2013(blind_data=True)
+            zs=data.z
+            theory=lya_theory.LyaTheory(zs,emulator=emulator)
+            self.like=likelihood.Likelihood(data=data,theory=theory,
+                            free_parameters=free_parameters,verbose=False)
+        '''
+
+
 
         self.distances=[]
         for aa in range(len(self.like.data.z)):
@@ -190,69 +208,160 @@ class EmceeSampler(object):
         return chain,lnprob
 
 
-    def read_chain_from_file(self,filename):
+    def read_chain_from_file(self,chain_number):
         """Read chain from file, and check parameters"""
 
-        # start by reading parameters from file
-        input_params=[]
-        param_filename=filename+".params"
-        param_file=open(param_filename,'r')
-        for line in param_file:
-            info=line.split()
-            name=info[0]
-            min_value=float(info[1])
-            max_value=float(info[2])
-            param=likelihood_parameter.LikelihoodParameter(name=name,
-                                    min_value=min_value,max_value=max_value)
-            input_params.append(param)
+        repo=os.environ['LYA_EMU_REPO']
+        self.save_directory=repo+"/lya_sampler/chains/chain_"+str(chain_number)
 
-        # check that paramters are the same
-        for ip in range(self.ndim):
-            par=self.like.free_params[ip]
-            assert par.is_same_parameter(input_params[ip]),"wrong parameters"
+        with open(self.save_directory+"/config.json") as json_file:  
+            config = json.load(json_file)
 
-        # read chain itself
-        chain_filename=filename+".chain"
-        chain=np.loadtxt(chain_filename,unpack=False)
-        lnprob_filename=filename+".lnprob"
-        lnprob=np.loadtxt(lnprob_filename,unpack=False)
+        ## Set up the arxiv
+        archive=p1d_arxiv.ArxivP1D(basedir=config["basedir"],
+                            drop_tau_rescalings=config["drop_tau_rescalings"],
+                            drop_temp_rescalings=config["drop_temp_rescalings"],
+                            z_max=config["z_max"],
+                            drop_sim_number=config["data_sim_number"],
+                            p1d_label=config["p1d_label"],                            
+                            skewers_label=config["skewers_label"],
+                            undersample_cube=config["undersample_cube"])
 
-        # if only 1 parameter, reshape chain to be ndarray as the others
-        if len(chain.shape) == 1:
-            N=len(chain)
-            self.chain_from_file={'chain':chain.reshape(N,1)}
+
+        ## Set up the emulators
+        if config["z_emulator"]:
+            emulator=z_emulator.ZEmulator(paramList=config["paramList"],
+                                train=False,
+                                emu_type=config["emu_type"],
+                                kmax_Mpc=config["kmax_Mpc"],
+                                passArxiv=archive)
+            ## Now loop over emulators, passing the saved hyperparameters
+            for aa,emu in enumerate(emulator.emulators):
+                ## Load emulator hyperparams..
+                emu.load_hyperparams(np.asarray(config["emu_hyperparameters"][aa]))
         else:
-            self.chain_from_file={'chain':chain}
-        self.chain_from_file['lnprob']=lnprob
+            emulator=gp_emulator.GPEmulator(paramList=config["paramList"],
+                                train=False,
+                                emu_type=config["emu_type"],
+                                kmax_Mpc=config["kmax_Mpc"],
+                                passArxiv=archive)
+            emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
-        # make sure you read file with same number of parameters
-        chain_shape=self.chain_from_file['chain'].shape
-        assert self.ndim == chain_shape[1],"mismatch"
-        assert chain_shape[0] == len(self.chain_from_file['lnprob']),"mismatch"
+        ## Set up mock data
+        data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"])
+
+        ## Set up likelihood
+        free_param_list=[]
+        limits_list=[]
+        for item in config["free_params"]:
+            free_param_list.append(item[0])
+            limits_list.append([item[1],item[2]])
+        if config["simpleLike"]==True:
+            self.like=likelihood.simpleLikelihood(data=data,emulator=emulator,
+                            free_parameters=free_param_list,
+                            verbose=False,
+                            prior_Gauss_rms=config["prior_Gauss_rms"])
+        else:
+            self.like=likelihood.Likelihood(data=data,emulator=emulator,
+                            free_parameters=free_param_list,
+                            verbose=False,
+                            prior_Gauss_rms=config["prior_Gauss_rms"])
+
+        ## Load chains
+        self.chain_from_file={}
+        self.chain_from_file["chain"]=np.asarray(config["flatchain"])
+        self.chain_from_file["lnprob"]=np.asarray(config["lnprob"])
+
+
+        print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
+
+        self.ndim=len(self.like.free_params)
 
         return
 
+    def _setup_chain_folder(self):
+        """ Set up a directory to save files for this
+        sampler run """
 
-    def write_chain_to_file(self,filename):
+        repo=os.environ['LYA_EMU_REPO']
+        base_string=repo+"/lya_sampler/chains/chain_"
+        chain_count=1
+        sampler_directory=base_string+str(chain_count)
+        while os.path.isdir(sampler_directory):
+            chain_count+=1
+            sampler_directory=base_string+str(chain_count)
+
+        os.mkdir(sampler_directory)
+        if self.verbose:
+            print("Made directory: ", sampler_directory)
+        self.save_directory=sampler_directory
+
+        return 
+
+    def _write_dict_to_text(self,saveDict):
+        """ Write the settings for this chain
+        to a more easily readable .txt file """
+
+        with open(self.save_directory+'info.txt', 'w') as f:
+            print(saveDict, file=f)
+
+        return
+
+    def write_chain_to_file(self):
         """Write flat chain to file"""
+        
+        self._setup_chain_folder()
 
-        if not self.sampler: raise ValueError('sampler not properly setup')
+        saveDict={}
+        ## Arxiv settings
+        saveDict["basedir"]=self.like.theory.emulator.arxiv.basedir
+        saveDict["skewers_label"]=self.like.theory.emulator.arxiv.skewers_label
+        saveDict["p1d_label"]=self.like.theory.emulator.arxiv.p1d_label
+        saveDict["drop_tau_rescalings"]=self.like.theory.emulator.arxiv.drop_tau_rescalings
+        saveDict["drop_temp_rescalings"]=self.like.theory.emulator.arxiv.drop_temp_rescalings
+        saveDict["nearest_tau"]=self.like.theory.emulator.arxiv.nearest_tau
+        saveDict["z_max"]=self.like.theory.emulator.arxiv.z_max
+        saveDict["undersample_cube"]=self.like.theory.emulator.arxiv.undersample_cube
 
-        # start by writing parameters info to file
-        param_filename=filename+".params"
-        param_file = open(param_filename,'w')
+        ## Emulator settings
+        saveDict["paramList"]=self.like.theory.emulator.paramList
+        saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
+        if self.like.theory.emulator.emulators is not None:
+            z_emulator=True
+            emu_hyperparams=[]
+            for emu in self.like.theory.emulator.emulators:
+                emu_hyperparams.append(emu.gp.param_array.tolist())
+        else:
+            z_emulator=False
+            emu_hyperparams=self.like.theory.emulator.gp.param_array.tolist()
+        saveDict["z_emulator"]=z_emulator
+        saveDict["emu_hyperparameters"]=emu_hyperparams
+        saveDict["emu_type"]=self.like.theory.emulator.emu_type
+
+        ## Likelihood & data settings
+        saveDict["prior_Gauss_rms"]=self.like.prior_Gauss_rms
+        saveDict["ignore_emu_cov"]=self.like.ignore_emu_cov
+        saveDict["data_basedir"]=self.like.data.basedir
+        saveDict["data_sim_number"]=self.like.data.sim_number
+        if self.like.simpleLike:
+            saveDict["simpleLike"]=True
+        else:
+            saveDict["simpleLike"]=False
+        free_params_save=[]
         for par in self.like.free_params:
-            info_str="{} {} {} \n".format(par.name,par.min_value,par.max_value)
-            param_file.write(info_str)
-        param_file.close()
+            free_params_save.append([par.name,par.min_value,par.max_value])
+        saveDict["free_params"]=free_params_save
 
-        # now write chain itself
-        chain_filename=filename+".chain"
-        np.savetxt(chain_filename,self.sampler.flatchain)
+        ## Sampler stuff
+        saveDict["burn_in"]=self.burnin_nsteps
+        saveDict["nwalkers"]=self.nwalkers
+        saveDict["lnprob"]=self.sampler.flatlnprobability.tolist()
+        saveDict["flatchain"]=self.sampler.flatchain.tolist()
 
-        # finally write log likelihood in file
-        lnprob_filename=filename+".lnprob"
-        np.savetxt(lnprob_filename,self.sampler.flatlnprobability)
+        ## Save dictionary to json file in the
+        ## appropriate directory
+        with open(self.save_directory+"/config.json", "w") as json_file:
+            json.dump(saveDict,json_file)
 
         return
 
@@ -336,6 +445,8 @@ class EmceeSampler(object):
                     ax.axhline(list_mock_values[yi], color="r")
                     ax.plot(list_mock_values[xi], list_mock_values[yi], "sr")
 
+        if self.save_directory:
+            plt.savefig(self.save_directory+"/corner.pdf")
         plt.show()
         return
 
@@ -351,5 +462,8 @@ class EmceeSampler(object):
             mean_value.append(np.mean(parameter_distribution))
         print("Mean values:", mean_value)
         self.like.plot_p1d(values=mean_value)
+        if self.save_directory:
+            plt.savefig(self.save_directory+"/best_fit.pdf")
+        plt.show()
         return
 

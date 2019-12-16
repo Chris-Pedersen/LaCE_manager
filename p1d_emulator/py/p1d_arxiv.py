@@ -13,9 +13,12 @@ class ArxivP1D(object):
                 keep_every_other_rescaling=False,nearest_tau=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
-                z_max=5.,nsamples=None):
+                z_max=5.,nsamples=None,undersample_cube=1):
         """Load arxiv from base sim directory and (optional) label
-            identifying skewer configuration (number, width)"""
+            identifying skewer configuration (number, width)
+
+            reduce_arxiv = None will take the full arxiv, 1 will take every other sim
+            in the Latin hypercube, 2 will take every 4th """
 
         if basedir:
             self.basedir=basedir
@@ -32,13 +35,18 @@ class ArxivP1D(object):
         else:
             self.skewers_label='Ns100_wM0.07'
         self.verbose=verbose
+        self.drop_tau_rescalings=drop_tau_rescalings
+        self.drop_temp_rescalings=drop_temp_rescalings
+        self.nearest_tau=nearest_tau
+        self.z_max=z_max
+        self.undersample_cube=undersample_cube
 
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number,drop_sim_number,
                             keep_every_other_rescaling,
-                            z_max,nsamples)
+                            z_max,undersample_cube,nsamples)
         
         if nearest_tau:
             self._keep_nearest_tau()
@@ -47,7 +55,7 @@ class ArxivP1D(object):
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number,drop_sim_number,
                             keep_every_other_rescaling,
-                            z_max,nsamples=None):
+                            z_max,undersample_cube,nsamples=None):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
@@ -73,7 +81,7 @@ class ArxivP1D(object):
             start=0
 
         # read info from all sims, all snapshots, all rescalings
-        for sample in range(start,self.nsamples):
+        for sample in range(start,self.nsamples,undersample_cube):
             if sample is drop_sim_number:
                 continue
             # store parameters for simulation pair / model

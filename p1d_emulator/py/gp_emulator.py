@@ -64,11 +64,7 @@ class GPEmulator:
         self.trained=False
 
         if train==True:
-            ## First try load the emulator
-            self.loadEmulator()
-            if self.trained==False:
-                if self.verbose: print('will train GP emulator')
-                self.train()
+            self.train()
 
         self.checkHulls=checkHulls ## Print all this?
         self.hull=Delaunay(self.X_param_grid)
@@ -503,3 +499,23 @@ class GPEmulator:
         if self.verbose:
             print("Could not find a matching emulator to load")
 
+    def load_hyperparams(self,hyperparams):
+        """ Just load the emulator hyperparameters. Here we are
+        assuming that the arxiv given through passArxiv has the exact
+        set up that the hyperparameters were originally trained on
+        """
+
+        if self.trained:
+            print("Cannot load hyperparameters after training")
+            return
+        
+        self.gp.update_model(False)
+        self.gp.initialize_parameter()
+        self.gp[:]=hyperparams
+        self.gp.update_model(True)
+        self.trained=True
+        if self.verbose:
+            print("Emulator hyperparameters loaded")
+        
+        return
+        

@@ -83,7 +83,7 @@ class EmceeSampler(object):
                             free_parameters=free_parameters,verbose=False)
         '''
 
-
+        self.gr_convergence=[[],[]]
 
         self.distances=[]
         for aa in range(len(self.like.data.z)):
@@ -124,8 +124,11 @@ class EmceeSampler(object):
 
         pos=self.burnin_pos
         for i, result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
-            if i % nprint == 0:
+            if (i % nprint == 0) and (i != 0):
                 print(i,np.mean(result[0],axis=0))
+                #print(self.gelman_rubin_convergence_statistic(self.sampler.chain))
+                self.gr_convergence[0].append(i)
+                self.gr_convergence[1].append(self.gelman_rubin_convergence_statistic(self.sampler.chain[:,:i,:]))
 
         return
 
@@ -153,7 +156,9 @@ class EmceeSampler(object):
                 assert np.all(values >= 0.0)
                 assert np.all(values <= 1.0)
                 p0[:,i]=values
+
         return p0
+
 
     def get_trunc_norm(self,mean,n_samples):
         """ Wrapper for scipys truncated normal distribution
@@ -163,6 +168,7 @@ class EmceeSampler(object):
         values=scipy.stats.truncnorm.rvs((0.0-mean)/rms,
                             (1.0-mean)/rms, scale=rms,
                             loc=mean, size=n_samples)
+
         return values
 
 
@@ -179,6 +185,7 @@ class EmceeSampler(object):
 
         return test_log_prob
 
+
     def add_euclidean_distances(self,values):
         """ For a given set of likelihood parameters
         find the Euclidean distances to the nearest
@@ -189,6 +196,7 @@ class EmceeSampler(object):
             self.distances[aa].append(self.like.theory.emulator.get_nearest_distance(call,z=self.like.data.z[aa]))
 
         return 
+
 
     def go_silent(self):
         self.verbose=False
@@ -205,7 +213,49 @@ class EmceeSampler(object):
             if not self.sampler: raise ValueError('sampler not properly setup')
             chain=self.sampler.flatchain
             lnprob=self.sampler.flatlnprobability
+
         return chain,lnprob
+        
+
+    def gelman_rubin_convergence_statistic(self, chains): 
+        """ Gelman rubin convergence.
+        Chain dimensions are walkers, steps, parameters """
+
+        n_walkers = chains.shape[0]
+        n_steps = chains.shape[1]
+
+        within_chain_variance = np.mean(np.var(chains, axis = 1, ddof = 1), axis = 0) #dimensions: Parameters
+
+        chain_means = np.mean(chains, axis = 1)
+        between_chain_variance = np.var(chain_means, axis = 0, ddof = 1) * n_steps
+
+        posterior_marginal_variance = ((n_steps - 1) * within_chain_variance / n_steps) + ((n_walkers + 1) * between_chain_variance / n_steps / n_walkers)
+
+        return np.sqrt(posterior_marginal_variance / within_chain_variance)
+
+
+    def plot_gelman_rubin_convergence(self):
+        """ Plot the PSRF for each parameter as a function of
+        iteration number """
+
+        plt.figure()
+        for aa,par in enumerate(self.like.free_parameters):
+            ## Create a list of the PSRF for each param
+            psrf=[]
+            for bb in range(len(self.gr_convergence[0])):
+                psrf.append(self.gr_convergence[1][bb][aa])
+            plt.plot(self.gr_convergence[0],psrf,label=par)
+
+        plt.title("%d walkers" % self.nwalkers)
+        plt.xlabel("Number of steps")
+        plt.ylabel("PSRF")
+        plt.legend()
+        if self.save_directory:
+            plt.savefig(self.save_directory+"/psrf.pdf")
+        else:
+            plt.show()
+
+        return
 
 
     def read_chain_from_file(self,chain_number):
@@ -248,7 +298,8 @@ class EmceeSampler(object):
             emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
         ## Set up mock data
-        data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"])
+        data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"],
+                                    z_list=np.asarray(config["z_list"]))
 
         ## Set up likelihood
         free_param_list=[]
@@ -279,6 +330,7 @@ class EmceeSampler(object):
 
         return
 
+
     def _setup_chain_folder(self):
         """ Set up a directory to save files for this
         sampler run """
@@ -298,14 +350,21 @@ class EmceeSampler(object):
 
         return 
 
+
     def _write_dict_to_text(self,saveDict):
         """ Write the settings for this chain
         to a more easily readable .txt file """
+        
+        ## What keys don't we want to include in the info file
+        dontPrint=["lnprob","flatchain"]
 
-        with open(self.save_directory+'info.txt', 'w') as f:
-            print(saveDict, file=f)
+        with open(self.save_directory+'/info.txt', 'w') as f:
+            for item in saveDict.keys():
+                if item not in dontPrint:
+                    f.write("%s: %s\n" % (item,str(saveDict[item])))
 
         return
+
 
     def write_chain_to_file(self):
         """Write flat chain to file"""
@@ -340,6 +399,7 @@ class EmceeSampler(object):
 
         ## Likelihood & data settings
         saveDict["prior_Gauss_rms"]=self.like.prior_Gauss_rms
+        saveDict["z_list"]=self.like.theory.zs.tolist()
         saveDict["ignore_emu_cov"]=self.like.ignore_emu_cov
         saveDict["data_basedir"]=self.like.data.basedir
         saveDict["data_sim_number"]=self.like.data.sim_number
@@ -362,6 +422,14 @@ class EmceeSampler(object):
         ## appropriate directory
         with open(self.save_directory+"/config.json", "w") as json_file:
             json.dump(saveDict,json_file)
+
+        self._write_dict_to_text(saveDict)
+
+        ## Save plots
+        self.plot_best_fit()
+        self.plot_prediction()
+        self.plot_corner()
+        self.plot_gelman_rubin_convergence()
 
         return
 
@@ -390,7 +458,7 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cube=False,mock_values=False):
+    def plot_corner(self,cube=False,mock_values=True):
         """Make corner plot, using re-normalized values if cube=True"""
 
         # get chain (from sampler or from file)
@@ -447,14 +515,17 @@ class EmceeSampler(object):
 
         if self.save_directory:
             plt.savefig(self.save_directory+"/corner.pdf")
-        plt.show()
+        else:
+            plt.show()
         return
 
+
     def plot_best_fit(self):
-        """ Plot the P1D of the data, the likelihood fit, and the MCMC best fit
-        the likelihood fit model is fitting the likelihood parameters to the
-        emulator parameters in the given simulation
+
+        """ Plot the P1D of the data and the emulator prediction
+        for the MCMC best fit
         """
+
         ## Get best fit values for each parameter
         chain,lnprob=self.get_chain()
         mean_value=[]
@@ -462,8 +533,27 @@ class EmceeSampler(object):
             mean_value.append(np.mean(parameter_distribution))
         print("Mean values:", mean_value)
         self.like.plot_p1d(values=mean_value)
+        plt.title("MCMC best fit")
         if self.save_directory:
             plt.savefig(self.save_directory+"/best_fit.pdf")
-        plt.show()
+        else:
+            plt.show()
+
         return
+
+    def plot_prediction(self):
+
+        """ Plot the P1D of the data and the emulator prediction
+        for the fiducial model """
+
+        plt.figure()
+        self.like.plot_p1d(values=None)
+        plt.title("Fiducial model")
+        if self.save_directory:
+            plt.savefig(self.save_directory+"/fiducial.pdf")
+        else:
+            plt.show()
+
+        return
+
 

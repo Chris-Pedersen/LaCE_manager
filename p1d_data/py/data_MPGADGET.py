@@ -138,7 +138,7 @@ def _select_zs(z_in,k_in,Pk_in,cov_in,zs):
         args=np.append(args,np.argmin(abs(z_in-z)))
 
     ## Remove duplicates
-    args=np.flip(np.unique(args))
+    args=np.unique(args)
 
     z_out=np.empty(len(args))
     cov_out=[]

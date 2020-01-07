@@ -85,6 +85,16 @@ class EmceeSampler(object):
 
         self.gr_convergence=[[],[]]
 
+        ## Dictionary to convert likelihood parameters into latex strings
+        self.param_dict={
+                        "Delta2_p":"$\Delta^2_p$",
+                        "mF":"$F$",
+                        "gamma":"$\gamma$",
+                        "sigT_Mpc":"$\sigma_T$",
+                        "kF_Mpc":"$k_F$",
+                        "n_p":"$n_p$"
+                        }
+
         self.distances=[]
         for aa in range(len(self.like.data.z)):
             self.distances.append([])
@@ -203,7 +213,7 @@ class EmceeSampler(object):
         self.like.go_silent()
 
 
-    def get_chain(self):
+    def get_chain(self,cube=True):
         """Figure out whether chain has been read from file, or computed"""
 
         if not self.chain_from_file is None:
@@ -213,6 +223,12 @@ class EmceeSampler(object):
             if not self.sampler: raise ValueError('sampler not properly setup')
             chain=self.sampler.flatchain
             lnprob=self.sampler.flatlnprobability
+
+        if cube == False:
+            cube_values=chain
+            list_values=[self.like.free_params[ip].value_from_cube(
+                                cube_values[:,ip]) for ip in range(self.ndim)]
+            chain=np.array(list_values).transpose()
 
         return chain,lnprob
         
@@ -385,7 +401,7 @@ class EmceeSampler(object):
         ## Emulator settings
         saveDict["paramList"]=self.like.theory.emulator.paramList
         saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
-        if self.like.theory.emulator.emulators is not None:
+        if self.like.theory.emulator.emulators:
             z_emulator=True
             emu_hyperparams=[]
             for emu in self.like.theory.emulator.emulators:
@@ -462,7 +478,7 @@ class EmceeSampler(object):
         """Make corner plot, using re-normalized values if cube=True"""
 
         # get chain (from sampler or from file)
-        chain,lnprob=self.get_chain()
+        values,lnprob=self.get_chain(cube=cube)
 
         labels=[]
         for p in self.like.free_params:
@@ -470,15 +486,6 @@ class EmceeSampler(object):
                 labels.append(p.name+' in cube')
             else:
                 labels.append(p.name)
-
-        if cube:
-            values=chain
-        else:
-            cube_values=chain
-            list_values=[self.like.free_params[ip].value_from_cube(
-                                cube_values[:,ip]) for ip in range(self.ndim)]
-            values=np.array(list_values).transpose()
-
         figure = corner.corner(values,labels=labels,
                                 hist_kwargs={"density":True,"color":"blue"})
 
@@ -540,6 +547,7 @@ class EmceeSampler(object):
             plt.show()
 
         return
+
 
     def plot_prediction(self):
 

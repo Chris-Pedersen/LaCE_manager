@@ -48,7 +48,8 @@ class GPEmulator:
                         undersample_z=undersample_z)
         else:
             self.custom_arxiv=True
-            print("Loading emulator using a specific arxiv, not the one set in basedir")
+            if self.verbose:
+                print("Loading emulator using a specific arxiv, not the one set in basedir")
             self.arxiv=passArxiv
 
         ## Find max k bin
@@ -68,6 +69,7 @@ class GPEmulator:
 
         self.checkHulls=checkHulls ## Print all this?
         self.hull=Delaunay(self.X_param_grid)
+        self.emulators=None ## Flag that this is an individual emulator object
 
 
     def _training_points_k_bin(self,arxiv):
@@ -152,7 +154,8 @@ class GPEmulator:
         ## Rescaling to unit volume
         for cc in range(len(self.arxiv.data)):
             self.X_param_grid[cc]=self._rescale_params(self.X_param_grid[cc],self.paramLimits)
-        print("Rescaled params to unity volume")
+        if self.verbose:
+            print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
         self.scalefactors = np.median(Ypoints, axis=0)

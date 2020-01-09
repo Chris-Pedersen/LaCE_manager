@@ -68,21 +68,7 @@ class EmceeSampler(object):
             # setup walkers
             self.p0=self.get_initial_walkers()
 
-        '''
-        if like:
-            if self.verbose: print('use input likelihood')
-            self.like=like
-            if free_parameters:
-                self.like.set_free_parameters(free_parameters)
-        else:
-            if self.verbose: print('use default likelihood')
-            data=data_PD2013.P1D_PD2013(blind_data=True)
-            zs=data.z
-            theory=lya_theory.LyaTheory(zs,emulator=emulator)
-            self.like=likelihood.Likelihood(data=data,theory=theory,
-                            free_parameters=free_parameters,verbose=False)
-        '''
-
+        ## Array to hold PSRF as a function of iteration number
         self.gr_convergence=[[],[]]
 
         ## Dictionary to convert likelihood parameters into latex strings
@@ -94,6 +80,14 @@ class EmceeSampler(object):
                         "kF_Mpc":"$k_F$",
                         "n_p":"$n_p$"
                         }
+
+        ## Set up list of parameter names in tex format for plotting
+        self.paramstrings=[]
+        self.truth=[] ## Truth value for chainconsumer plots
+        for param in self.like.free_parameters:
+            self.paramstrings.append(self.param_dict[param])
+        for param in self.like.free_params:
+            self.truth.append(param.value)
 
         self.distances=[]
         for aa in range(len(self.like.data.z)):

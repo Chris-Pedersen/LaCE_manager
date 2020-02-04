@@ -22,7 +22,8 @@ class GPEmulator:
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
-                checkHulls=False):
+                checkHulls=False,set_hyperparams=None,
+                paramLimits=None):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -36,6 +37,7 @@ class GPEmulator:
         self.verbose=verbose
         self.asymmetric_kernel=asymmetric_kernel
         self.z_max=z_max
+        self.paramLimits=paramLimits
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -149,7 +151,8 @@ class GPEmulator:
         self.X_param_grid,Ypoints=self._buildTrainingSets(arxiv,paramList)
 
         ## Get parameter limits for rescaling
-        self.paramLimits=self._get_param_limits(self.X_param_grid)
+        if self.paramLimits is None:
+            self.paramLimits=self._get_param_limits(self.X_param_grid)
 
         ## Rescaling to unit volume
         for cc in range(len(self.arxiv.data)):
@@ -199,6 +202,7 @@ class GPEmulator:
 
         for aa in range(len(self.paramList)):
             print(self.paramList[aa],self.paramLimits[aa])
+
 
     def return_unit_call(self,model):
         ''' For a given model in dictionary format, return an

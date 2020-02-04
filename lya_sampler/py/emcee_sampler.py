@@ -319,7 +319,7 @@ class EmceeSampler(object):
         """ Plot autocorrelation time as a function of
         sample numer """
 
-        n = 100 * np.arange(1, len(self.autocorr))
+        n = 100 * np.arange(1, len(self.autocorr)+1)
         plt.plot(n, n / 100.0, "--k")
         plt.plot(n, self.autocorr)
         plt.xlim(0, n.max())

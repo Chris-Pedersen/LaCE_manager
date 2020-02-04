@@ -37,9 +37,10 @@ class EmceeSampler(object):
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
             self.read_chain_from_file(read_chain_file)
-            self.nwalkers=None
+            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
             self.sampler=None
             self.p0=None
+            self.sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim, self.log_prob, backend=self.backend)
         else: 
             if like:
                 if self.verbose: print('use input likelihood')
@@ -56,6 +57,14 @@ class EmceeSampler(object):
             # number of free parameters to sample
             self.ndim=len(self.like.free_params)
             self.chain_from_file=None
+
+            self.save_directory=None
+            self._setup_chain_folder()
+
+            ## Setup backend
+            self.backend = emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+
+
             # number of walkers
             if nwalkers:
                 self.nwalkers=nwalkers
@@ -64,9 +73,12 @@ class EmceeSampler(object):
             if self.verbose: print('setup with',self.nwalkers,'walkers')
             # setup sampler
             self.sampler = emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                            self.log_prob)
+                                                            self.log_prob,
+                                                            backend=self.backend)
             # setup walkers
             self.p0=self.get_initial_walkers()
+
+            
 
         ## Array to hold PSRF as a function of iteration number
         self.gr_convergence=[[],[]]
@@ -103,23 +115,29 @@ class EmceeSampler(object):
         if not self.sampler: raise ValueError('sampler not properly setup')
 
         if self.verbose: print('start burn-in, will do',nsteps,'steps')
+    
+        pos=self.p0
+        self.burnin_pos = self.sampler.run_mcmc(pos, nsteps)
 
+        ''' ## Pre emcee 3.0.2 stuff..
         pos=self.p0
         for i,result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
             pos=result[0]
             if self.verbose and (i % nprint == 0):
                 print(i,np.mean(pos,axis=0))
+        '''
 
         if self.verbose: print('finished burn-in')
 
         self.burnin_nsteps=nsteps
-        self.burnin_pos=pos
     
         return
 
 
-    def run_chains(self,nsteps,nprint=20):
-        """Run actual chains, starting from end of burn-in"""
+    def run_chains(self,nsteps):
+        """Run actual chains, starting from end of burn-in
+        Run either to nsteps, or will stop when autocorrelation time
+        indicates convergence """
 
         if not self.sampler: raise ValueError('sampler not properly setup')
 
@@ -127,12 +145,41 @@ class EmceeSampler(object):
         self.sampler.reset()
 
         pos=self.burnin_pos
+
+        # We'll track how the average autocorrelation time estimate changes
+        self.autocorr = np.array([])
+
+        # This will be useful to testing convergence
+        old_tau = np.inf
+
+        # Now we'll sample for up to max_n steps
+        for sample in self.sampler.sample(pos, iterations=nsteps, progress=True):
+            # Only check convergence every 100 steps
+            if self.sampler.iteration % 100:
+                continue
+
+            # Compute the autocorrelation time so far
+            # Using tol=0 means that we'll always get an estimate even
+            # if it isn't trustworthy
+            tau = self.sampler.get_autocorr_time(tol=0)
+            self.autocorr= np.append(self.autocorr,np.mean(tau))
+
+            # Check convergence
+            converged = np.all(tau * 100 < self.sampler.iteration)
+            converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+            if converged:
+                break
+            old_tau = tau
+
+
+        ''' ## Pre emcee 3.0.2 stuff again...
         for i, result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
             if (i % nprint == 0) and (i != 0):
                 print(i,np.mean(result[0],axis=0))
                 #print(self.gelman_rubin_convergence_statistic(self.sampler.chain))
                 self.gr_convergence[0].append(i)
                 self.gr_convergence[1].append(self.gelman_rubin_convergence_statistic(self.sampler.chain[:,:i,:]))
+        '''
 
         return
 
@@ -260,8 +307,27 @@ class EmceeSampler(object):
         plt.xlabel("Number of steps")
         plt.ylabel("PSRF")
         plt.legend()
-        if self.save_directory:
+        if self.save_directory is not None:
             plt.savefig(self.save_directory+"/psrf.pdf")
+        else:
+            plt.show()
+
+        return
+
+
+    def plot_autocorrelation_time(self):
+        """ Plot autocorrelation time as a function of
+        sample numer """
+
+        n = 100 * np.arange(1, len(self.autocorr))
+        plt.plot(n, n / 100.0, "--k")
+        plt.plot(n, self.autocorr)
+        plt.xlim(0, n.max())
+        plt.ylim(0, self.autocorr.max() + 0.1 * (self.autocorr.max() - self.autocorr.min()))
+        plt.xlabel("number of steps")
+        plt.ylabel(r"mean $\hat{\tau}$")
+        if self.save_directory is not None:
+            plt.savefig(self.save_directory+"/autocorr_time.pdf")
         else:
             plt.show()
 
@@ -337,6 +403,8 @@ class EmceeSampler(object):
         print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
 
         self.ndim=len(self.like.free_params)
+        self.nwalkers=config["nwalkers"]
+        self.burnin_nsteps=config["burn_in"]
 
         return
 
@@ -439,7 +507,7 @@ class EmceeSampler(object):
         self.plot_best_fit()
         self.plot_prediction()
         self.plot_corner()
-        self.plot_gelman_rubin_convergence()
+        self.plot_autocorrelation_time()
 
         return
 
@@ -514,7 +582,7 @@ class EmceeSampler(object):
                     ax.axhline(list_mock_values[yi], color="r")
                     ax.plot(list_mock_values[xi], list_mock_values[yi], "sr")
 
-        if self.save_directory:
+        if self.save_directory is not None:
             plt.savefig(self.save_directory+"/corner.pdf")
         else:
             plt.show()
@@ -535,7 +603,7 @@ class EmceeSampler(object):
         print("Mean values:", mean_value)
         self.like.plot_p1d(values=mean_value)
         plt.title("MCMC best fit")
-        if self.save_directory:
+        if self.save_directory is not None:
             plt.savefig(self.save_directory+"/best_fit.pdf")
         else:
             plt.show()
@@ -551,7 +619,7 @@ class EmceeSampler(object):
         plt.figure()
         self.like.plot_p1d(values=None)
         plt.title("Fiducial model")
-        if self.save_directory:
+        if self.save_directory is not None:
             plt.savefig(self.save_directory+"/fiducial.pdf")
         else:
             plt.show()

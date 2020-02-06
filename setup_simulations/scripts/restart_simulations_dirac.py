@@ -4,7 +4,7 @@ import json
 import configargparse
 from shutil import copy
 sys.path.append('/home/dc-pede1/Codes/MP-Gadget-Master/tools/')
-import write_submit_simulation_dirac as wsd
+import write_restart_simulation_dirac as rsd
 
 # get options from command line
 parser = configargparse.ArgumentParser()

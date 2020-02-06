@@ -507,14 +507,10 @@ class GPEmulator:
             print("Could not find a matching emulator to load")
 
     def load_hyperparams(self,hyperparams):
-        """ Just load the emulator hyperparameters. Here we are
-        assuming that the arxiv given through passArxiv has the exact
-        set up that the hyperparameters were originally trained on
+        """ Just load the emulator hyperparameters. Careful with
+        this to make sure the hyperparameters are optimised
+        in the same unit volume as the training data!
         """
-
-        if self.trained:
-            print("Cannot load hyperparameters after training")
-            return
         
         self.gp.update_model(False)
         self.gp.initialize_parameter()

@@ -38,8 +38,8 @@ class EmceeSampler(object):
             if self.verbose: print('will read chain from file',read_chain_file)
             self.read_chain_from_file(read_chain_file)
             self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
-            self.sampler=None
             self.p0=None
+            self.burnin_pos=None
             self.sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim, self.log_prob, backend=self.backend)
         else: 
             if like:
@@ -142,44 +142,54 @@ class EmceeSampler(object):
         if not self.sampler: raise ValueError('sampler not properly setup')
 
         # reset and run actual chains
-        self.sampler.reset()
+        if self.burnin_pos is not None:
+            ## If we are starting from scratch
+            self.sampler.reset()
+            pos=self.burnin_pos
+            # We'll track how the average autocorrelation time estimate changes
+            self.autocorr = np.array([])
+            # This will be useful to testing convergence
+            old_tau = np.inf
 
-        pos=self.burnin_pos
+            # Now we'll sample for up to max_n steps
+            for sample in self.sampler.sample(pos, iterations=nsteps, progress=True):
+                # Only check convergence every 100 steps
+                if self.sampler.iteration % 100:
+                    continue
 
-        # We'll track how the average autocorrelation time estimate changes
-        self.autocorr = np.array([])
+                # Compute the autocorrelation time so far
+                # Using tol=0 means that we'll always get an estimate even
+                # if it isn't trustworthy
+                tau = self.sampler.get_autocorr_time(tol=0)
+                self.autocorr= np.append(self.autocorr,np.mean(tau))
 
-        # This will be useful to testing convergence
-        old_tau = np.inf
+                # Check convergence
+                converged = np.all(tau * 100 < self.sampler.iteration)
+                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+                if converged:
+                    break
+                old_tau = tau
+        else:
+            ## If we are loading a sampler that has already made progress
+            oldtau = self.autocorr[-1]
+            # Now we'll sample for up to max_n steps
+            for sample in self.sampler.sample(None, iterations=nsteps, progress=True):
+                # Only check convergence every 100 steps
+                if self.sampler.iteration % 100:
+                    continue
 
-        # Now we'll sample for up to max_n steps
-        for sample in self.sampler.sample(pos, iterations=nsteps, progress=True):
-            # Only check convergence every 100 steps
-            if self.sampler.iteration % 100:
-                continue
+                # Compute the autocorrelation time so far
+                # Using tol=0 means that we'll always get an estimate even
+                # if it isn't trustworthy
+                tau = self.sampler.get_autocorr_time(tol=0)
+                self.autocorr= np.append(self.autocorr,np.mean(tau))
 
-            # Compute the autocorrelation time so far
-            # Using tol=0 means that we'll always get an estimate even
-            # if it isn't trustworthy
-            tau = self.sampler.get_autocorr_time(tol=0)
-            self.autocorr= np.append(self.autocorr,np.mean(tau))
-
-            # Check convergence
-            converged = np.all(tau * 100 < self.sampler.iteration)
-            converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-            if converged:
-                break
-            old_tau = tau
-
-
-        ''' ## Pre emcee 3.0.2 stuff again...
-        for i, result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
-            if (i % nprint == 0) and (i != 0):
-                print(i,np.mean(result[0],axis=0))
-                #print(self.gelman_rubin_convergence_statistic(self.sampler.chain))
-                self.gr_convergence[0].append(i)
-                self.gr_convergence[1].append(self.gelman_rubin_convergence_statistic(self.sampler.chain[:,:i,:]))
-        '''
+                # Check convergence
+                converged = np.all(tau * 100 < self.sampler.iteration)
+                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+                if converged:
+                    break
+                old_tau = tau
 
         return
 
@@ -318,6 +328,8 @@ class EmceeSampler(object):
     def plot_autocorrelation_time(self):
         """ Plot autocorrelation time as a function of
         sample numer """
+        
+        plt.figure()
 
         n = 100 * np.arange(1, len(self.autocorr)+1)
         plt.plot(n, n / 100.0, "--k")
@@ -405,6 +417,7 @@ class EmceeSampler(object):
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
         self.burnin_nsteps=config["burn_in"]
+        self.autocorr=np.asarray(config["autocorr"])
 
         return
 
@@ -422,8 +435,7 @@ class EmceeSampler(object):
             sampler_directory=base_string+str(chain_count)
 
         os.mkdir(sampler_directory)
-        if self.verbose:
-            print("Made directory: ", sampler_directory)
+        print("Made directory: ", sampler_directory)
         self.save_directory=sampler_directory
 
         return 
@@ -446,8 +458,6 @@ class EmceeSampler(object):
 
     def write_chain_to_file(self):
         """Write flat chain to file"""
-        
-        self._setup_chain_folder()
 
         saveDict={}
         ## Arxiv settings
@@ -478,7 +488,7 @@ class EmceeSampler(object):
         ## Likelihood & data settings
         saveDict["prior_Gauss_rms"]=self.like.prior_Gauss_rms
         saveDict["z_list"]=self.like.theory.zs.tolist()
-        saveDict["ignore_emu_cov"]=self.like.ignore_emu_cov
+        saveDict["emu_cov_factor"]=self.like.emu_cov_factor
         saveDict["data_basedir"]=self.like.data.basedir
         saveDict["data_sim_number"]=self.like.data.sim_number
         if self.like.simpleLike:
@@ -495,6 +505,7 @@ class EmceeSampler(object):
         saveDict["nwalkers"]=self.nwalkers
         saveDict["lnprob"]=self.sampler.flatlnprobability.tolist()
         saveDict["flatchain"]=self.sampler.flatchain.tolist()
+        saveDict["autocorr"]=self.autocorr.tolist()
 
         ## Save dictionary to json file in the
         ## appropriate directory
@@ -518,6 +529,7 @@ class EmceeSampler(object):
 
         # get chain (from sampler or from file)
         chain,lnprob=self.get_chain()
+        plt.figure()
 
         for ip in range(self.ndim):
             param=self.like.free_params[ip]
@@ -597,6 +609,7 @@ class EmceeSampler(object):
 
         ## Get best fit values for each parameter
         chain,lnprob=self.get_chain()
+        plt.figure()
         mean_value=[]
         for parameter_distribution in np.swapaxes(chain,0,1):
             mean_value.append(np.mean(parameter_distribution))

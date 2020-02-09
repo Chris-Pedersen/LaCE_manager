@@ -72,12 +72,12 @@ echo -e "\nnumtasks=$numtasks, numnodes=$numnodes, mpi_tasks_per_node=$mpi_tasks
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 
 eval $CMD 
-'''%(simdir,root_output,simdir,root_output,nodes,32*nodes,time,simdir,simdir)
+'''%(simdir,root_output,simdir,root_output,nodes,32*nodes,time,simdir)
     return submit_string
     
 
 def write_simulation_script(script_name,simdir,nodes,time,
-                root_output='slurm_simulation'):
+                root_output='slurm_restart'):
     """ Generate a SLURM file to run both GenIC and MP-Gadget for a sim."""
 
     submit_string=get_submit_string(simdir,nodes,time,root_output)

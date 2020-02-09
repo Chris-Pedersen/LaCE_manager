@@ -57,15 +57,15 @@ for sample in range(nsamples):
 
     # write submission script to both simulations
     plus_submit=plus_dir+'/restart.sub'
-    rsd.write_restart_simulation_script(script_name=plus_submit,
+    rsd.write_simulation_script(script_name=plus_submit,
                     simdir=plus_dir,nodes=nodes,time=time)
     minus_submit=minus_dir+'/restart.sub'
-    rsd.write_restart_simulation_script(script_name=minus_submit,
+    rsd.write_simulation_script(script_name=minus_submit,
                     simdir=minus_dir,nodes=nodes,time=time)
 
     if args.run:
         total_nodes=2*args.nodes*nsamples
-        if total_nodes < 1000:
+        if total_nodes < 10000:
             print('will submit scripts, for a total of {} nodes'.format(total_nodes))
             cmd_plus='sbatch '+plus_submit+' > '+plus_dir+'/info_sim_sub'
             os.system(cmd_plus)

@@ -12,15 +12,16 @@ class Likelihood(object):
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,ignore_emu_cov=False):
+                    min_kp_kms=None,emu_cov_factor=1):
         """Setup likelihood from theory and data. Options:
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
-            - ignore_emu_cov will ignore emulator covariance in likelihood."""
+            - emu_cov_factor adjusts the contribution from emulator covariance
+            set between 0 and 1. """
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
-        self.ignore_emu_cov=ignore_emu_cov
+        self.emu_cov_factor=emu_cov_factor
 
         if data:
             self.data=data
@@ -110,7 +111,7 @@ class Likelihood(object):
             emulator covariance"""
 
         log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    add_emu_cov=False)
+                                    emu_cov_factor=0)
         if log_like is None:
             return None
         else:
@@ -118,10 +119,9 @@ class Likelihood(object):
 
 
     def get_log_like(self,values=None,ignore_log_det_cov=True,
-                        add_emu_cov=False):
+                        emu_=False):
         """Compute log(likelihood), including determinant of covariance
-            unless you are setting ignore_log_det_cov=True.
-            If add_emu_cov, include emulator uncertainty to the covariance."""
+            unless you are setting ignore_log_det_cov=True."""
 
         # get measured bins from data
         k_kms=self.data.k
@@ -129,7 +129,7 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
         if self.verbose: print('got P1D from emulator')
 
         # compute log like contribution from each redshift bin
@@ -147,10 +147,7 @@ class Likelihood(object):
             p1d=self.data.get_Pk_iz(iz)
             data_cov=self.data.get_cov_iz(iz)
             # add covariance from emulator
-            if add_emu_cov:
-                cov = data_cov + emu_covar[iz]
-            else:
-                cov = data_cov
+            cov = data_cov + self.emu_cov_factor*emu_covar[iz]
 
             # compute chi2 for this redshift bin
             icov = np.linalg.inv(cov)
@@ -176,7 +173,7 @@ class Likelihood(object):
 
         # compute log_like (option to ignore emulator covariance)
         log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    add_emu_cov=not self.ignore_emu_cov)
+                                    emu_cov_factor=self.emu_cov_factor)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
@@ -342,15 +339,16 @@ class simpleLikelihood(object):
     def __init__(self,data=None,theory=None,emulator=None,
                     free_parameters=None,verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,ignore_emu_cov=False):
+                    min_kp_kms=None,emu_cov_factor=1):
         """Setup likelihood from theory and data. Options:
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
-            - ignore_emu_cov will ignore emulator covariance in likelihood."""
+            - emu_cov_factor adjusts the contribution from emulator covariance
+            set between 0 and 1. """
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
-        self.ignore_emu_cov=ignore_emu_cov
+        self.emu_cov_factor=emu_cov_factor
         self.emulator=emulator
         self.simpleLike=True
 
@@ -402,7 +400,7 @@ class simpleLikelihood(object):
 
         # compute log_like (option to ignore emulator covariance)
         log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    add_emu_cov=not self.ignore_emu_cov)
+                                    emu_cov_factor=self.emu_cov_factor)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
@@ -435,7 +433,7 @@ class simpleLikelihood(object):
             emulator covariance"""
 
         log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    add_emu_cov=False)
+                                    emu_cov_factor=1)
         if log_like is None:
             return None
         else:
@@ -443,10 +441,9 @@ class simpleLikelihood(object):
 
 
     def get_log_like(self,values=None,ignore_log_det_cov=True,
-                        add_emu_cov=False):
+                        emu_cov_factor=1):
         """Compute log(likelihood), including determinant of covariance
-            unless you are setting ignore_log_det_cov=True.
-            If add_emu_cov, include emulator uncertainty to the covariance."""
+            unless you are setting ignore_log_det_cov=True.."""
 
         # get measured bins from data
         k_kms=self.data.k
@@ -472,10 +469,7 @@ class simpleLikelihood(object):
             p1d=self.data.get_Pk_iz(iz)
             data_cov=self.data.get_cov_iz(iz)
             # add covariance from emulator
-            if add_emu_cov:
-                cov = data_cov + emu_covar[iz]
-            else:
-                cov = data_cov
+            cov = data_cov + self.emu_cov_factor*emu_covar[iz]
 
             # compute chi2 for this redshift bin
             icov = np.linalg.inv(cov)

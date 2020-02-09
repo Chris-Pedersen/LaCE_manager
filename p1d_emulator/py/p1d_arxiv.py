@@ -95,7 +95,6 @@ class ArxivP1D(object):
             pair_json=pair_dir+'/parameter.json'
             with open(pair_json) as json_file:  
                 pair_data = json.load(json_file)
-            #print(sample,'pair data',pair_data)
             zs=pair_data['zs']
             Nz=len(zs)
             if self.verbose:
@@ -103,10 +102,9 @@ class ArxivP1D(object):
                 print('undersample_z =',undersample_z)
 
             # to make lighter emulators, we might undersample redshifts
-            for snap in range(0,Nz,undersample_z):
+            for snap in range(0,Nz,undersample_z):       
                 if zs[snap]>z_max:
                     continue
-
                 # get linear power parameters describing snapshot
                 linP_params = pair_data['linP_zs'][snap]
                 snap_p1d_data = {}

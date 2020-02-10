@@ -456,7 +456,7 @@ class EmceeSampler(object):
         to a more easily readable .txt file """
         
         ## What keys don't we want to include in the info file
-        dontPrint=["lnprob","flatchain"]
+        dontPrint=["lnprob","flatchain","autocorr"]
 
         with open(self.save_directory+'/info.txt', 'w') as f:
             for item in saveDict.keys():

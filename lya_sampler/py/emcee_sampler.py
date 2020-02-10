@@ -27,12 +27,14 @@ class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
     def __init__(self,like=None,emulator=None,free_parameters=None,
-                        nwalkers=None,read_chain_file=None,verbose=False):
+                        nwalkers=None,read_chain_file=None,verbose=False,
+                        progress=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
 
         self.verbose=verbose
         self.store_distances=False
+        self.progress=progress
 
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
@@ -152,10 +154,14 @@ class EmceeSampler(object):
             old_tau = np.inf
 
             # Now we'll sample for up to max_n steps
-            for sample in self.sampler.sample(pos, iterations=nsteps, progress=True):
+            for sample in self.sampler.sample(pos, iterations=nsteps,           
+                                    progress=self.progress):
                 # Only check convergence every 100 steps
                 if self.sampler.iteration % 100:
                     continue
+
+                if self.progress==False:
+                    print("Step %d out of %d " % (self.sampler.iteration, nsteps))
 
                 # Compute the autocorrelation time so far
                 # Using tol=0 means that we'll always get an estimate even
@@ -173,10 +179,14 @@ class EmceeSampler(object):
             ## If we are loading a sampler that has already made progress
             oldtau = self.autocorr[-1]
             # Now we'll sample for up to max_n steps
-            for sample in self.sampler.sample(None, iterations=nsteps, progress=True):
+            for sample in self.sampler.sample(None, iterations=nsteps,
+                                    progress=self.progress):
                 # Only check convergence every 100 steps
                 if self.sampler.iteration % 100:
                     continue
+
+                if self.progress==False:
+                    print("Step %d out of %d " % (self.sampler.iteration, nsteps))
 
                 # Compute the autocorrelation time so far
                 # Using tol=0 means that we'll always get an estimate even

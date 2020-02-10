@@ -2,6 +2,8 @@ import numpy as np
 import sys
 import os
 import json
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import cProfile
@@ -43,6 +45,7 @@ parser.add_argument('--nsteps', type=int,help='Max number of steps to run (assum
 parser.add_argument('--burn_in', type=int,help='Number of burn in steps')
 parser.add_argument('--prior_Gauss_rms',type=float, help='Width of Gaussian prior')
 parser.add_argument('--emu_cov_factor', type=float,help='Factor between 0 and 1 to vary the contribution from emulator covariance')
+parser.add_argument('--emu_noise_var', type=float,help='Emulator noise variable')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -74,13 +77,14 @@ if args.z_emulator==False:
     emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     passArxiv=archive,
                                     verbose=False,paramList=paramList,train=True,
-                                    emu_type="k_bin", checkHulls=False,
+                                    emu_type="k_bin", checkHulls=False,set_noise_var=args.emu_noise_var,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings)
 else:
     emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     verbose=False,paramList=paramList,train=True,
                                     emu_type="k_bin",passArxiv=archive,checkHulls=False,
+                                    set_noise_var=args.emu_noise_var,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings)
 
@@ -95,7 +99,7 @@ like=likelihood.simpleLikelihood(data=data,emulator=emu,
 
 sampler = emcee_sampler.EmceeSampler(like=like,
                         free_parameters=free_parameters,verbose=True,
-                        nwalkers=args.nwalkers)
+                        nwalkers=args.nwalkers,progress=False)
 
 
 for p in sampler.like.free_params:

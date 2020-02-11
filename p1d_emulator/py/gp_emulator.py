@@ -38,6 +38,8 @@ class GPEmulator:
         self.asymmetric_kernel=asymmetric_kernel
         self.z_max=z_max
         self.paramLimits=paramLimits
+        self.crossval=False ## Flag to check whether or not a prediction is
+                            ## inside the training set
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -242,6 +244,12 @@ class GPEmulator:
         if self.checkHulls:
             if self.hull.find_simplex(np.array(param).reshape(1,-1))<0:
                 print("Model is outside convex hull:", model)
+        ## Check if model is inside training set
+        if self.crossval==True:
+            isin=np.isin(param,self.X_param_grid)
+            if np.sum(isin)==len(param):
+                print("Emulator call is inside training set!!!")
+
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
 
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
@@ -319,70 +327,7 @@ class GPEmulator:
             model_dict[param]=self.arxiv.data[point_number][param]
         
         return model_dict
-
-    def crossValidation(self,testSample=0.25):
-        '''
-        Method to run a cross validation test on the given
-        data arxiv.
-        '''
-        print("Running cross-validation")
-        if self.trained:
-            print("Cannot run cross validation on an already-trained emulator.")
-            quit()
-
-        ## We are now training the emulator on a customised arxiv
-        self.custom_arxiv=True
-
-        ## Split the arxiv into test and training samples
-        test=[] ## List for test data
-        numTest=int(len(self.arxiv.data)*testSample)
-        numTrain=len(self.arxiv.data)-numTest
-        for aa in range(numTest):
-            test.append(self.arxiv.data.pop(np.random.randint(len(self.arxiv.data))))
-
-        ## Rebuild parameter grids using the new reduced arxiv
-        self._build_interp(self.arxiv,self.paramList)
-        self.train()
-
-        accuracy=np.array([])
-        if self.emu_type=="k_bin":
-            for aa in range(len(test)):
-                ## Set up model for emu calls
-                model={}
-                for parameter in self.paramList:
-                    model[parameter]=test[aa][parameter]
-                ## Make emu calls for each test point
-                pred,err=self.predict(model)
-                ## Find inaccuracy/error
-                accuracy=np.append(accuracy,(pred-test[aa]["p1d_Mpc"][:self.k_bin])/err)
-        elif self.emu_type=="polyfit":
-            for aa in range(len(test)):
-                ## Set up model for emu calls
-                model={}
-                for parameter in self.paramList:
-                    model[parameter]=test[aa][parameter]
-                ## Make emu calls for each test point
-                pred,err=self.predict(model)
-                poly=np.poly1d(pred)
-                err=np.abs(err)
-                interpolated_P=np.exp(poly(np.log(self.training_k_bins)))
-                err=(err[0]*interpolated_P**4+err[1]*interpolated_P**3+err[2]*interpolated_P**2+err[3]*interpolated_P)
-                ## Find inaccuracy/error
-                accuracy=np.append(accuracy,(interpolated_P-test[aa]["p1d_Mpc"][:self.k_bin])/err)
-
-        ## Generate mock Gaussian to overlay
-        x=np.linspace(-6,6,200)
-        y=(np.exp(-0.5*(x*x)))/np.sqrt(2*np.pi)
-
-        ## Plot results
-        plt.figure()
-        plt.title("%d training, %d test samples, noise=%.1e" % (numTrain,numTest,self.emu_noise))
-        plt.hist(accuracy,bins=500,density=True)
-        plt.plot(x,y)
-        plt.xlim(-6,6)
-        plt.xlabel("(predicted-truth)/std")
-        plt.show()
-
+        
 
     def saveEmulator(self):
         ''' Method to save a trained emulator. The emulator
@@ -521,4 +466,6 @@ class GPEmulator:
             print("Emulator hyperparameters loaded")
         
         return
-        
+
+    def drop_
+

@@ -1,9 +1,9 @@
+import matplotlib
+matplotlib.use("Agg")
 import numpy as np
 import sys
 import os
 import json
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import cProfile
@@ -50,6 +50,14 @@ args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
 
+print('--- print options from parser ---')
+print(args)
+print("----------")
+print(parser.format_help())
+print("----------")
+print(parser.format_values()) 
+print("----------")
+
 # read P1D measurement
 #z_list=np.array([2.0,2.75,3.25,4.0])
 data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number)
@@ -67,26 +75,27 @@ free_parameters=args.free_parameters
 kmax_Mpc=args.kmax_Mpc
 
 archive=p1d_arxiv.ArxivP1D(basedir=basedir,
-                            drop_tau_rescalings=True,z_max=args.z_max,
-                            drop_sim_number=test_sim_number,nearest_tau=True,
-                            drop_temp_rescalings=True,skewers_label=skewers_label,
-                            undersample_cube=1)
+                            drop_tau_rescalings=args.drop_tau_rescalings,z_max=args.z_max,
+                            drop_sim_number=test_sim_number,nearest_tau=args.nearest_tau,
+                            drop_temp_rescalings=args.drop_temp_rescalings,skewers_label=skewers_label,
+                            undersample_cube=args.undersample_cube)
 
 
 if args.z_emulator==False:
     emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     passArxiv=archive,
                                     verbose=False,paramList=paramList,train=True,
-                                    emu_type="k_bin", checkHulls=False,set_noise_var=args.emu_noise_var,
+                                    emu_type="k_bin", checkHulls=False,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
-                                    drop_temp_rescalings=args.drop_temp_rescalings)
+                                    drop_temp_rescalings=args.drop_temp_rescalings,
+				    set_noise_var=args.emu_noise_var)
 else:
     emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     verbose=False,paramList=paramList,train=True,
                                     emu_type="k_bin",passArxiv=archive,checkHulls=False,
-                                    set_noise_var=args.emu_noise_var,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
-                                    drop_temp_rescalings=args.drop_temp_rescalings)
+                                    drop_temp_rescalings=args.drop_temp_rescalings,
+				    set_noise_var=args.emu_noise_var)
 
 
 
@@ -99,8 +108,9 @@ like=likelihood.simpleLikelihood(data=data,emulator=emu,
 
 sampler = emcee_sampler.EmceeSampler(like=like,
                         free_parameters=free_parameters,verbose=True,
-                        nwalkers=args.nwalkers,progress=False)
-
+                        nwalkers=args.nwalkers)
+## Copy the config file to the save folder
+shutil.copy(sys.argv[2],sampler.save_directory+"/"+sys.argv[2])
 
 for p in sampler.like.free_params:
     print(p.name,p.value,p.min_value,p.max_value)
@@ -113,10 +123,5 @@ sampler.run_burn_in(nsteps=args.burn_in)
 sampler.run_chains(nsteps=args.nsteps)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.sampler.acceptance_fraction)))
 
-
 sampler.write_chain_to_file()
-sampler.plot_corner(cube=False,mock_values=True)
-sampler.plot_best_fit()
 
-## Finally copy the config file to the save folder
-shutil.copy(sys.argv[2],sampler.save_directory+"/"+sys.argv[2])

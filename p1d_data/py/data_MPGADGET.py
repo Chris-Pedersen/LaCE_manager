@@ -20,7 +20,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         if not basedir:
             assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
             repo=os.environ['LYA_EMU_REPO']
-            basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
+            basedir="/p1d_emulator/sim_suites/emulator_256_28082019/"
             skewers_label="Ns256_wM0.05"
 
         self.basedir=basedir

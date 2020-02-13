@@ -20,12 +20,11 @@ class ArxivP1D(object):
             reduce_arxiv = None will take the full arxiv, 1 will take every other sim
             in the Latin hypercube, 2 will take every 4th """
 
-        if basedir:
-            self.basedir=basedir
-        else:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            repo=os.environ['LYA_EMU_REPO']
-            self.basedir=repo+'/p1d_emulator/sim_suites/emulator_512_18062019/'
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+
+        self.basedir=basedir
+        self.fulldir=repo+basedir
         if p1d_label:
             self.p1d_label=p1d_label
         else:
@@ -62,7 +61,7 @@ class ArxivP1D(object):
         self.data=[]
 
         # read file containing information about latin hyper-cube
-        cube_json=self.basedir+'/latin_hypercube.json'
+        cube_json=self.fulldir+'/latin_hypercube.json'
         with open(cube_json) as json_file:  
             self.cube_data = json.load(json_file)
         if self.verbose:
@@ -91,7 +90,7 @@ class ArxivP1D(object):
             model_dict ={'sample':sample,'sim_param':sim_params}
 
             # read number of snapshots (should be the same in all sims)
-            pair_dir=self.basedir+'/sim_pair_%d'%sample
+            pair_dir=self.fulldir+'/sim_pair_%d'%sample
             pair_json=pair_dir+'/parameter.json'
             with open(pair_json) as json_file:  
                 pair_data = json.load(json_file)

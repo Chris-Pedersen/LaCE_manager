@@ -9,6 +9,7 @@ import os
 import json
 from scipy.spatial import Delaunay
 
+
 class GPEmulator:
     """
     Gaussian process emulator to emulate P1D from a simulation suite.
@@ -327,7 +328,7 @@ class GPEmulator:
             model_dict[param]=self.arxiv.data[point_number][param]
         
         return model_dict
-        
+
 
     def saveEmulator(self):
         ''' Method to save a trained emulator. The emulator
@@ -466,6 +467,3 @@ class GPEmulator:
             print("Emulator hyperparameters loaded")
         
         return
-
-    def drop_
-

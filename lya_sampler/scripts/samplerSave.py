@@ -66,23 +66,21 @@ zs=data.z
 repo=os.environ['LYA_EMU_REPO']
 skewers_label=args.skewers_label
 #skewers_label=None
-basedir=repo+args.basedir
-#basedir=repo+"/p1d_emulator/sim_suites/emulator_256_15072019/"
 p1d_label=None
 undersample_z=args.undersample_z
 paramList=args.free_parameters
 free_parameters=args.free_parameters
 kmax_Mpc=args.kmax_Mpc
 
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,
+archive=p1d_arxiv.ArxivP1D(basedir=args.basedir,
                             drop_tau_rescalings=args.drop_tau_rescalings,z_max=args.z_max,
                             drop_sim_number=test_sim_number,nearest_tau=args.nearest_tau,
                             drop_temp_rescalings=args.drop_temp_rescalings,skewers_label=skewers_label,
-                            undersample_cube=args.undersample_cube)
+                            undersample_cube=args.undersample_cube,undersample_z=args.undersample_z)
 
 
 if args.z_emulator==False:
-    emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,z_max=args.z_max,
+    emu=gp_emulator.GPEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     passArxiv=archive,
                                     verbose=False,paramList=paramList,train=True,
                                     emu_type="k_bin", checkHulls=False,
@@ -90,7 +88,7 @@ if args.z_emulator==False:
                                     drop_temp_rescalings=args.drop_temp_rescalings,
 				    set_noise_var=args.emu_noise_var)
 else:
-    emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,z_max=args.z_max,
+    emu=z_emulator.ZEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     verbose=False,paramList=paramList,train=True,
                                     emu_type="k_bin",passArxiv=archive,checkHulls=False,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
@@ -107,8 +105,9 @@ like=likelihood.simpleLikelihood(data=data,emulator=emu,
 #like.plot_p1d()
 
 sampler = emcee_sampler.EmceeSampler(like=like,
-                        free_parameters=free_parameters,verbose=True,
+                        free_parameters=free_parameters,verbose=False,
                         nwalkers=args.nwalkers)
+
 ## Copy the config file to the save folder
 shutil.copy(sys.argv[2],sampler.save_directory+"/"+sys.argv[2])
 

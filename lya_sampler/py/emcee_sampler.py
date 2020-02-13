@@ -80,10 +80,6 @@ class EmceeSampler(object):
             # setup walkers
             self.p0=self.get_initial_walkers()
 
-            
-
-        ## Array to hold PSRF as a function of iteration number
-        self.gr_convergence=[[],[]]
 
         ## Dictionary to convert likelihood parameters into latex strings
         self.param_dict={
@@ -292,47 +288,6 @@ class EmceeSampler(object):
             chain=np.array(list_values).transpose()
 
         return chain,lnprob
-        
-
-    def gelman_rubin_convergence_statistic(self, chains): 
-        """ Gelman rubin convergence.
-        Chain dimensions are walkers, steps, parameters """
-
-        n_walkers = chains.shape[0]
-        n_steps = chains.shape[1]
-
-        within_chain_variance = np.mean(np.var(chains, axis = 1, ddof = 1), axis = 0) #dimensions: Parameters
-
-        chain_means = np.mean(chains, axis = 1)
-        between_chain_variance = np.var(chain_means, axis = 0, ddof = 1) * n_steps
-
-        posterior_marginal_variance = ((n_steps - 1) * within_chain_variance / n_steps) + ((n_walkers + 1) * between_chain_variance / n_steps / n_walkers)
-
-        return np.sqrt(posterior_marginal_variance / within_chain_variance)
-
-
-    def plot_gelman_rubin_convergence(self):
-        """ Plot the PSRF for each parameter as a function of
-        iteration number """
-
-        plt.figure()
-        for aa,par in enumerate(self.like.free_parameters):
-            ## Create a list of the PSRF for each param
-            psrf=[]
-            for bb in range(len(self.gr_convergence[0])):
-                psrf.append(self.gr_convergence[1][bb][aa])
-            plt.plot(self.gr_convergence[0],psrf,label=par)
-
-        plt.title("%d walkers" % self.nwalkers)
-        plt.xlabel("Number of steps")
-        plt.ylabel("PSRF")
-        plt.legend()
-        if self.save_directory is not None:
-            plt.savefig(self.save_directory+"/psrf.pdf")
-        else:
-            plt.show()
-
-        return
 
 
     def plot_autocorrelation_time(self):
@@ -358,7 +313,8 @@ class EmceeSampler(object):
 
     def read_chain_from_file(self,chain_number):
         """Read chain from file, and check parameters"""
-
+        
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
         self.save_directory=repo+"/lya_sampler/chains/chain_"+str(chain_number)
 

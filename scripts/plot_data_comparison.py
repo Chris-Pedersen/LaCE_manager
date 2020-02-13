@@ -49,8 +49,6 @@ for iz in range(len(realData_z)):
                     yerr=np.sqrt(np.diag(cov))*data_k,
                     color=cm(rescale_zs(realData_z[iz])))
     plt.yscale("log")
-    ## Print minimum % error
-    percent_error=np.sqrt(np.diag(cov))/
 '''
 ## Plot simulated data
 for item in sim_data:

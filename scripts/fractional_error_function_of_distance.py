@@ -25,23 +25,10 @@ n_points=10000
 mF_res=False
 temp_res=False
 # read P1D measurement
-z_list=np.array([2.0,2.75,3.25,4.0])
-data=data_MPGADGET.P1D_MPGADGET(z_list=z_list,filename="1024_mock_0.json")
-data._cull_data(0.0075)
+data=data_MPGADGET.P1D_MPGADGET()
 zs=data.z
 
 k_mpc=data.k*80
-
-tau_values=[data.like_params["ln_tau_1"],data.like_params["ln_tau_0"]]
-gamma_values=[data.like_params["ln_gamma_1"],data.like_params["ln_gamma_0"]]
-T0_values=[data.like_params["T0_1"],data.like_params["T0_2"],data.like_params["T0_3"]]
-kF_values=[data.like_params["ln_kF_1"],data.like_params["ln_kF_0"]]
-
-
-mf_model=mean_flux_model.MeanFluxModel(ln_tau_coeff=tau_values)
-thermal_model=thermal_model.ThermalModel(ln_gamma_coeff=gamma_values,
-                                ln_T0_coeff=T0_values)
-kF_model=pressure_model.PressureModel(ln_kF_coeff=kF_values)
 
 repo=os.environ['LYA_EMU_REPO']
 skewers_label='Ns256_wM0.05'
@@ -58,7 +45,7 @@ kmax_Mpc=8
 emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,z_max=4,
                                 verbose=False,paramList=paramList,train=True,
-                                emu_type="k_bin",z_list=z_list,
+                                emu_type="k_bin",
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
 
@@ -81,6 +68,8 @@ for aa, emulator in enumerate(emu.emulators):
             pred_dict[param]=np.random.uniform(limits[param][0],limits[param][1])
         distances[bb]=emulator.get_nearest_distance(pred_dict)
         p1d,error=emulator.emulate_p1d_Mpc(pred_dict,k_point,return_covar=True)
+        inside_hull=emulator.check_in_hull(pred_dict)
+        print(inside_hull)
         frac_error[bb]=error/p1d
     sigma_rbf=emulator.gp.param_array[1]
     sigma_linear=emulator.gp.param_array[0]

@@ -30,7 +30,7 @@ sim actually reproduce the mock data
 
 z_emu=True ## Use a redshift - split emulator?
 drop3ds=True
-test_sim_number=15 ## Pick a sim between 0 and 199
+test_sim_number=145 ## Pick a sim between 0 and 199
 
 repo=os.environ['LYA_EMU_REPO']
 skewers_label='Ns256_wM0.05'

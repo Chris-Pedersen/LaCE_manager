@@ -8,14 +8,14 @@ import recons_cosmo
 import fit_linP
 
 repo=os.environ['LYA_EMU_REPO']
-basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
-basedir=repo+"/p1d_emulator/sim_suites/emulator_1024_21062019"
-skewers_label='Ns512_wM0.05'
+#basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
+#basedir=repo+"/p1d_emulator/sim_suites/emulator_1024_21062019"
+#skewers_label='Ns512_wM0.05'
 skewers_label='Ns256_wM0.05'
 basedir=repo+"/p1d_emulator/sim_suites/emulator_256_28082019/"
 
 MF=mean_flux_model.MeanFluxModel()
-archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=199,
+archive=p1d_arxiv.ArxivP1D(basedir=basedir,pick_sim_number=35,
                             drop_tau_rescalings=True,z_max=4,
                             drop_temp_rescalings=True,skewers_label=skewers_label)
 
@@ -105,23 +105,23 @@ fit_zs=np.linspace(zs[0],zs[-1],200)
 
 plt.figure(figsize=(8,15))
 plt.subplot(4,1,1)
-plt.plot(zs,T0,label="Simulation")
+plt.plot(zs,T0,label="Simulation",marker="o")
 plt.plot(fit_zs,get_T0(fit_zs,fit_T0[0],fit_T0[1],fit_T0[2]),label="Model")
 plt.ylabel("T0")
 plt.legend()
 
 plt.subplot(4,1,2)
-plt.plot(zs,gamma)
+plt.plot(zs,gamma,marker="o")
 plt.plot(fit_zs,get_gamma(fit_zs,fit_gamma[0],fit_gamma[1]))
 plt.ylabel("gamma")
 
 plt.subplot(4,1,3)
-plt.plot(zs,mF)
+plt.plot(zs,mF,marker="o")
 plt.plot(fit_zs,get_mean_flux(fit_zs,fit_mF[0],fit_mF[1]))
 plt.ylabel("<F>")
 
 plt.subplot(4,1,4)
-plt.plot(zs,kF_kms)
+plt.plot(zs,kF_kms,marker="o")
 plt.plot(fit_zs,get_kF_kms(fit_zs,fit_kF_kms[0],fit_kF_kms[1]))
 plt.ylabel("kF_kms")
 plt.xlabel("z")

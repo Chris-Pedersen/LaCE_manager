@@ -14,8 +14,9 @@ class ZEmulator:
                 max_arxiv_size=None,
                 z_max=5,passArxiv=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                keep_every_other_rescaling=False,
-                emu_type="k_bin",set_noise_var=1e-10,N_mf=10,z_list=None):
+                keep_every_other_rescaling=False,checkHulls=False,
+                emu_type="k_bin",set_noise_var=1e-10,N_mf=10,z_list=None,
+                paramLimits=None):
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -32,15 +33,20 @@ class ZEmulator:
 
         self._split_arxiv_up(z_list)
         self.emulators=[]
+        self.paramList=paramList
+        self.kmax_Mpc=kmax_Mpc
+        self.emu_type=emu_type
+        self.paramLimits=paramLimits
 
         for arxiv in self.arxiv_list:
             emu=gp_emulator.GPEmulator(verbose=verbose,
                     kmax_Mpc=kmax_Mpc,paramList=paramList,train=train,
                     emu_type=emu_type,set_noise_var=set_noise_var,
-                    passArxiv=arxiv)
+                    passArxiv=arxiv,checkHulls=checkHulls,paramLimits=self.paramLimits)
             self.emulators.append(emu)
 
         self.training_k_bins=self.emulators[0].training_k_bins
+
 
 
     def _split_arxiv_up(self,z_list):
@@ -96,3 +102,4 @@ class ZEmulator:
         assert z in self.zs, "cannot work for z=%.1f" % z
 
         return self.emulators[self.zs.index(z)].get_nearest_distance(model,z=z)
+        

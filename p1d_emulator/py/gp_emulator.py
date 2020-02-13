@@ -7,6 +7,8 @@ from scipy.interpolate import interp1d
 import poly_p1d
 import os
 import json
+from scipy.spatial import Delaunay
+
 
 class GPEmulator:
     """
@@ -20,7 +22,9 @@ class GPEmulator:
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
-                passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False):
+                passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
+                checkHulls=False,set_hyperparams=None,
+                paramLimits=None):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -34,6 +38,9 @@ class GPEmulator:
         self.verbose=verbose
         self.asymmetric_kernel=asymmetric_kernel
         self.z_max=z_max
+        self.paramLimits=paramLimits
+        self.crossval=False ## Flag to check whether or not a prediction is
+                            ## inside the training set
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -46,7 +53,8 @@ class GPEmulator:
                         undersample_z=undersample_z)
         else:
             self.custom_arxiv=True
-            print("Loading emulator using a specific arxiv, not the one set in basedir")
+            if self.verbose:
+                print("Loading emulator using a specific arxiv, not the one set in basedir")
             self.arxiv=passArxiv
 
         ## Find max k bin
@@ -62,11 +70,11 @@ class GPEmulator:
         self.trained=False
 
         if train==True:
-            ## First try load the emulator
-            self.loadEmulator()
-            if self.trained==False:
-                if self.verbose: print('will train GP emulator')
-                self.train()
+            self.train()
+
+        self.checkHulls=checkHulls ## Print all this?
+        self.hull=Delaunay(self.X_param_grid)
+        self.emulators=None ## Flag that this is an individual emulator object
 
 
     def _training_points_k_bin(self,arxiv):
@@ -146,12 +154,14 @@ class GPEmulator:
         self.X_param_grid,Ypoints=self._buildTrainingSets(arxiv,paramList)
 
         ## Get parameter limits for rescaling
-        self.paramLimits=self._get_param_limits(self.X_param_grid)
+        if self.paramLimits is None:
+            self.paramLimits=self._get_param_limits(self.X_param_grid)
 
         ## Rescaling to unit volume
         for cc in range(len(self.arxiv.data)):
             self.X_param_grid[cc]=self._rescale_params(self.X_param_grid[cc],self.paramLimits)
-        print("Rescaled params to unity volume")
+        if self.verbose:
+            print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
         self.scalefactors = np.median(Ypoints, axis=0)
@@ -196,6 +206,7 @@ class GPEmulator:
         for aa in range(len(self.paramList)):
             print(self.paramList[aa],self.paramLimits[aa])
 
+
     def return_unit_call(self,model):
         ''' For a given model in dictionary format, return an
         ordered parameter list with the values rescaled to unit volume
@@ -209,6 +220,16 @@ class GPEmulator:
         return param
 
 
+    def check_in_hull(self,model):
+        param=[]
+        for aa, par in enumerate(self.paramList):
+            ## Rescale input parameters
+            param.append(model[par])
+            param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        
+        return self.hull.find_simplex(np.array(param).reshape(1,-1))<0
+        
+
     def predict(self,model):
         ''' Return P1D or polyfit coeffs for a given parameter set
         For the k bin emulator this will be in the training k bins '''
@@ -221,6 +242,15 @@ class GPEmulator:
             ## Rescale input parameters
             param.append(model[par])
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
+        if self.checkHulls:
+            if self.hull.find_simplex(np.array(param).reshape(1,-1))<0:
+                print("Model is outside convex hull:", model)
+        ## Check if model is inside training set
+        if self.crossval==True:
+            isin=np.isin(param,self.X_param_grid)
+            if np.sum(isin)==len(param):
+                print("Emulator call is inside training set!!!")
+
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
 
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
@@ -298,69 +328,6 @@ class GPEmulator:
             model_dict[param]=self.arxiv.data[point_number][param]
         
         return model_dict
-
-    def crossValidation(self,testSample=0.25):
-        '''
-        Method to run a cross validation test on the given
-        data arxiv.
-        '''
-        print("Running cross-validation")
-        if self.trained:
-            print("Cannot run cross validation on an already-trained emulator.")
-            quit()
-
-        ## We are now training the emulator on a customised arxiv
-        self.custom_arxiv=True
-
-        ## Split the arxiv into test and training samples
-        test=[] ## List for test data
-        numTest=int(len(self.arxiv.data)*testSample)
-        numTrain=len(self.arxiv.data)-numTest
-        for aa in range(numTest):
-            test.append(self.arxiv.data.pop(np.random.randint(len(self.arxiv.data))))
-
-        ## Rebuild parameter grids using the new reduced arxiv
-        self._build_interp(self.arxiv,self.paramList)
-        self.train()
-
-        accuracy=np.array([])
-        if self.emu_type=="k_bin":
-            for aa in range(len(test)):
-                ## Set up model for emu calls
-                model={}
-                for parameter in self.paramList:
-                    model[parameter]=test[aa][parameter]
-                ## Make emu calls for each test point
-                pred,err=self.predict(model)
-                ## Find inaccuracy/error
-                accuracy=np.append(accuracy,(pred-test[aa]["p1d_Mpc"][:self.k_bin])/err)
-        elif self.emu_type=="polyfit":
-            for aa in range(len(test)):
-                ## Set up model for emu calls
-                model={}
-                for parameter in self.paramList:
-                    model[parameter]=test[aa][parameter]
-                ## Make emu calls for each test point
-                pred,err=self.predict(model)
-                poly=np.poly1d(pred)
-                err=np.abs(err)
-                interpolated_P=np.exp(poly(np.log(self.training_k_bins)))
-                err=(err[0]*interpolated_P**4+err[1]*interpolated_P**3+err[2]*interpolated_P**2+err[3]*interpolated_P)
-                ## Find inaccuracy/error
-                accuracy=np.append(accuracy,(interpolated_P-test[aa]["p1d_Mpc"][:self.k_bin])/err)
-
-        ## Generate mock Gaussian to overlay
-        x=np.linspace(-6,6,200)
-        y=(np.exp(-0.5*(x*x)))/np.sqrt(2*np.pi)
-
-        ## Plot results
-        plt.figure()
-        plt.title("%d training, %d test samples, noise=%.1e" % (numTrain,numTest,self.emu_noise))
-        plt.hist(accuracy,bins=500,density=True)
-        plt.plot(x,y)
-        plt.xlim(-6,6)
-        plt.xlabel("(predicted-truth)/std")
-        plt.show()
 
 
     def saveEmulator(self):
@@ -485,3 +452,18 @@ class GPEmulator:
         if self.verbose:
             print("Could not find a matching emulator to load")
 
+    def load_hyperparams(self,hyperparams):
+        """ Just load the emulator hyperparameters. Careful with
+        this to make sure the hyperparameters are optimised
+        in the same unit volume as the training data!
+        """
+        
+        self.gp.update_model(False)
+        self.gp.initialize_parameter()
+        self.gp[:]=hyperparams
+        self.gp.update_model(True)
+        self.trained=True
+        if self.verbose:
+            print("Emulator hyperparameters loaded")
+        
+        return

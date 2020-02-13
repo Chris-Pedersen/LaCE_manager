@@ -24,19 +24,10 @@ import z_emulator
 
 # read P1D measurement
 z_list=np.array([2.0,2.75,3.25,4.0])
-data=data_MPGADGET.P1D_MPGADGET(z_list=z_list,filename="1024_mock_2.json")
+data=data_MPGADGET.P1D_MPGADGET(sim_number=17)
 zs=data.z
 
-tau_values=[data.like_params["ln_tau_1"],data.like_params["ln_tau_0"]]
-gamma_values=[data.like_params["ln_gamma_1"],data.like_params["ln_gamma_0"]]
-T0_values=[data.like_params["T0_1"],data.like_params["T0_2"],data.like_params["T0_3"]]
-kF_values=[data.like_params["ln_kF_1"],data.like_params["ln_kF_0"]]
 
-
-mf_model=mean_flux_model.MeanFluxModel(ln_tau_coeff=tau_values)
-thermal_model=thermal_model.ThermalModel(ln_gamma_coeff=gamma_values,
-                                ln_T0_coeff=T0_values)
-kF_model=pressure_model.PressureModel(ln_kF_coeff=kF_values)
 
 repo=os.environ['LYA_EMU_REPO']
 skewers_label='Ns256_wM0.05'
@@ -57,7 +48,7 @@ emu=z_emulator.ZEmulator(basedir,p1d_label,skewers_label,
                                 emu_type="polyfit",z_list=z_list,
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
-'''
+
 emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                                 max_arxiv_size=max_arxiv_size,z_max=4,
                                 verbose=False,paramList=paramList,train=True,
@@ -66,9 +57,7 @@ emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                                 drop_temp_rescalings=True)
 
 
-theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
-                                            kF_model_fid=kF_model,
-                                            mf_model_fid=mf_model)
+theory=lya_theory.LyaTheory(zs,emulator=emu)
 
 free_parameters=['ln_tau_0','ln_tau_1','ln_gamma_0','T0_1','T0_2','T0_3']
 
@@ -99,10 +88,10 @@ plt.ylabel("Counts")
 plt.legend()
 plt.show()
 
-'''
+
 sampler.run_chains(nsteps=50)
 print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.sampler.acceptance_fraction)))
 
 sampler.plot_corner(cube=True,mock_values=True)
-sampler.plot_best_fit()
+#sampler.plot_best_fit()
 '''

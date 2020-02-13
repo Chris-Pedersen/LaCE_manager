@@ -18,7 +18,9 @@ The following modules are required:
 
 `matplotlib`
 
-`emcee`
+`emcee` version 3.0.2 (not earlier ones, they are significantly different apparently)
+
+`tqdm` to work with emcee progress bar
 
 `corner`
 

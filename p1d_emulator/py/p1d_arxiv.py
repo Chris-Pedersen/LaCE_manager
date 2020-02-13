@@ -10,19 +10,21 @@ class ArxivP1D(object):
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
-                keep_every_other_rescaling=False,
+                keep_every_other_rescaling=False,nearest_tau=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
-                z_max=5.,nsamples=None):
+                z_max=5.,nsamples=None,undersample_cube=1):
         """Load arxiv from base sim directory and (optional) label
-            identifying skewer configuration (number, width)"""
+            identifying skewer configuration (number, width)
 
-        if basedir:
-            self.basedir=basedir
-        else:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            repo=os.environ['LYA_EMU_REPO']
-            self.basedir=repo+'/p1d_emulator/sim_suites/emulator_512_18062019/'
+            reduce_arxiv = None will take the full arxiv, 1 will take every other sim
+            in the Latin hypercube, 2 will take every 4th """
+
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+
+        self.basedir=basedir
+        self.fulldir=repo+basedir
         if p1d_label:
             self.p1d_label=p1d_label
         else:
@@ -32,26 +34,34 @@ class ArxivP1D(object):
         else:
             self.skewers_label='Ns100_wM0.07'
         self.verbose=verbose
+        self.drop_tau_rescalings=drop_tau_rescalings
+        self.drop_temp_rescalings=drop_temp_rescalings
+        self.nearest_tau=nearest_tau
+        self.z_max=z_max
+        self.undersample_cube=undersample_cube
 
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number,drop_sim_number,
                             keep_every_other_rescaling,
-                            z_max,nsamples)
+                            z_max,undersample_cube,nsamples)
+        
+        if nearest_tau:
+            self._keep_nearest_tau()
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number,drop_sim_number,
                             keep_every_other_rescaling,
-                            z_max,nsamples=None):
+                            z_max,undersample_cube,nsamples=None):
         """Setup arxiv by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
         self.data=[]
 
         # read file containing information about latin hyper-cube
-        cube_json=self.basedir+'/latin_hypercube.json'
+        cube_json=self.fulldir+'/latin_hypercube.json'
         with open(cube_json) as json_file:  
             self.cube_data = json.load(json_file)
         if self.verbose:
@@ -70,7 +80,7 @@ class ArxivP1D(object):
             start=0
 
         # read info from all sims, all snapshots, all rescalings
-        for sample in range(start,self.nsamples):
+        for sample in range(start,self.nsamples,undersample_cube):
             if sample is drop_sim_number:
                 continue
             # store parameters for simulation pair / model
@@ -80,11 +90,10 @@ class ArxivP1D(object):
             model_dict ={'sample':sample,'sim_param':sim_params}
 
             # read number of snapshots (should be the same in all sims)
-            pair_dir=self.basedir+'/sim_pair_%d'%sample
+            pair_dir=self.fulldir+'/sim_pair_%d'%sample
             pair_json=pair_dir+'/parameter.json'
             with open(pair_json) as json_file:  
                 pair_data = json.load(json_file)
-            #print(sample,'pair data',pair_data)
             zs=pair_data['zs']
             Nz=len(zs)
             if self.verbose:
@@ -92,10 +101,9 @@ class ArxivP1D(object):
                 print('undersample_z =',undersample_z)
 
             # to make lighter emulators, we might undersample redshifts
-            for snap in range(0,Nz,undersample_z):
+            for snap in range(0,Nz,undersample_z):       
                 if zs[snap]>z_max:
                     continue
-
                 # get linear power parameters describing snapshot
                 linP_params = pair_data['linP_zs'][snap]
                 snap_p1d_data = {}
@@ -225,7 +233,6 @@ class ArxivP1D(object):
 
         return
 
-
     def _keep_every_other_rescaling(self):
         """Keep only every other rescaled entry"""
 
@@ -248,6 +255,15 @@ class ArxivP1D(object):
         """Keep only entries with scale_tau=1"""
 
         data = [x for x in self.data if x['scale_tau']==1.0]
+        self.data = data
+        return
+
+    def _keep_nearest_tau(self):
+        """ Keep only entries with the nearest tau scalings
+        Hardcoding this to 0.7 and 1.4 for now, which we used
+        in the 200 x 256**3 suite"""
+
+        data = [x for x in self.data if x['scale_tau']==1.0 or x['scale_tau']==0.7 or x['scale_tau']==1.4]
         self.data = data
         return
 

@@ -1,0 +1,22 @@
+nwalkers: 40
+basedir: /home/chris/Projects/LyaCosmoParams/p1d_emulator/sim_suites/emulator_256_28082019/
+drop_tau_rescalings: True
+skewers_label: Ns256_wM0.05
+data_sim_number: 50
+z_max: 4
+z_emulator: True
+data_basedir: /home/chris/Projects/LyaCosmoParams/p1d_emulator/sim_suites/emulator_256_28082019/
+free_params: [['mF', 0.5, 1.5], ['Delta2_p', 0.5, 1.5], ['sigT_Mpc', 0.5, 1.5], ['gamma', 0.5, 1.5], ['kF_Mpc', 0.5, 1.5], ['n_p', 0.5, 1.5]]
+p1d_label: p1d
+nearest_tau: True
+ignore_emu_cov: False
+kmax_Mpc: 10.0
+undersample_cube: 2
+burn_in: 1000
+emu_hyperparameters: [[2.9492381862167987, 0.09617675932268936, 0.5104922456297574, 1.0001185412946854e-10], [0.7770787383000193, 0.11370464698025604, 0.5281500354694313, 1.0000764646562077e-10], [0.8120234373377473, 0.16736951148745316, 0.5965630063147881, 1.0001525041432989e-10], [1.0995489026216247, 0.34645150018738724, 0.6902027605622776, 1.000229177390544e-10], [2.548750507191256, 2.1647522616075534, 0.8767579121873181, 1.0003048591772204e-10], [2.445685773515377, 3.900297147725871, 0.8981758537337979, 1.0003899131357979e-10], [3.95344924209161, 7.919123472974427, 0.9864514431565261, 1.0005037346889178e-10], [8.928621313957395, 7.298484081272651, 0.8457632025134634, 1.0006834001189343e-10]]
+simpleLike: True
+drop_temp_rescalings: True
+paramList: ['mF', 'sigT_Mpc', 'gamma', 'kF_Mpc', 'Delta2_p', 'n_p']
+prior_Gauss_rms: 0.15
+emu_type: k_bin
+z_list: [2.0, 2.25, 2.5, 2.75, 3.25, 3.5, 3.75, 4.0]

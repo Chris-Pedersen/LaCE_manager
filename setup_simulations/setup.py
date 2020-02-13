@@ -12,6 +12,6 @@ setup(name="setup_sims",
     py_modules=['read_genic','read_gadget','write_config','gen_UVB',
                 'latin_hypercube','sim_params_cosmo',
                 'sim_params_space','write_submit_simulation_dirac',
-		'thermal_evolution'],
+		'thermal_evolution','write_restart_simulation_dirac'],
     package_dir={'': 'py'})
 

@@ -44,15 +44,19 @@ plt.title("P1Ds in the range 5>z>2 for PD13 (solid) and MP-Gadget (dashed)")
 ## Plot real data
 for iz in range(len(realData_z)):
     p1d=realData.get_Pk_iz(iz)
-    plt.semilogy(data_k,data_k*p1d,color=cm(rescale_zs(realData_z[iz])))
-
+    cov=realData.get_cov_iz(iz)
+    plt.errorbar(data_k,data_k*p1d,
+                    yerr=np.sqrt(np.diag(cov))*data_k,
+                    color=cm(rescale_zs(realData_z[iz])))
+    plt.yscale("log")
+'''
 ## Plot simulated data
 for item in sim_data:
     p1d=np.asarray(item["p1d_kms"])
     k=np.asarray(item["k_kms"])
     z=item["z"]
     plt.semilogy(k,p1d*k,color=cm(rescale_zs(z)),linestyle="dashed")
-
+'''
 plt.ylabel("k*p1d(k)")
 plt.xlabel("k s/km")
 plt.xlim(min(data_k)-0.001,max(data_k)+0.001)

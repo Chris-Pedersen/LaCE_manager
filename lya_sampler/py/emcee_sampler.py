@@ -21,6 +21,10 @@ import likelihood_parameter
 import scipy.stats
 import p1d_arxiv
 import data_MPGADGET
+import multiprocessing as mg
+import itertools
+from multiprocessing import Pool
+from multiprocessing import Process
 
 
 class EmceeSampler(object):
@@ -105,7 +109,77 @@ class EmceeSampler(object):
 
         if self.verbose:
             print('done setting up sampler')
-        
+
+    def run_sampler(self,burn_in,max_steps,log_func,parallel=False):
+        """ Set up sampler, run burn in, run chains,
+        return chains """
+
+        # We'll track how the average autocorrelation time estimate changes
+        self.autocorr = np.array([])
+        # This will be useful to testing convergence
+        old_tau = np.inf
+
+        if parallel==False:
+            ## Get initial walkers
+            p0=self.get_initial_walkers()
+            sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
+                                                    self.log_prob,
+                                                    backend=self.backend)
+            for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
+                                    progress=self.progress):
+                # Only check convergence every 100 steps
+                if sampler.iteration % 100:
+                    continue
+
+                if self.progress==False:
+                    print("Step %d out of %d " % (sampler.iteration, burn_in+max_steps))
+
+                # Compute the autocorrelation time so far
+                # Using tol=0 means that we'll always get an estimate even
+                # if it isn't trustworthy
+                tau = sampler.get_autocorr_time(tol=0)
+                self.autocorr= np.append(self.autocorr,np.mean(tau))
+
+                # Check convergence
+                converged = np.all(tau * 100 < sampler.iteration)
+                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+                if converged:
+                    break
+                old_tau = tau
+
+        else:
+            p0=self.get_initial_walkers()
+            with Pool() as pool:
+                sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
+                                                        log_func,
+                                                        backend=self.backend,
+                                                        pool=pool)
+                for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
+                                        progress=self.progress):
+                    # Only check convergence every 100 steps
+                    if sampler.iteration % 100:
+                        continue
+
+                    if self.progress==False:
+                        print("Step %d out of %d " % (sampler.iteration, burn_in+max_steps))
+
+                    # Compute the autocorrelation time so far
+                    # Using tol=0 means that we'll always get an estimate even
+                    # if it isn't trustworthy
+                    tau = sampler.get_autocorr_time(tol=0)
+                    self.autocorr= np.append(self.autocorr,np.mean(tau))
+
+                    # Check convergence
+                    converged = np.all(tau * 100 < sampler.iteration)
+                    converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+                    if converged:
+                        break
+                    old_tau = tau
+
+            ## Run parallel version
+
+        return 
+
 
     def run_burn_in(self,nsteps,nprint=20):
         """Start sample from initial points, for nsteps"""
@@ -604,5 +678,3 @@ class EmceeSampler(object):
             plt.show()
 
         return
-
-

@@ -67,10 +67,6 @@ class EmceeSampler(object):
             self.save_directory=None
             self._setup_chain_folder()
 
-            ## Setup backend
-            self.backend = emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
-
-
             # number of walkers
             if nwalkers:
                 self.nwalkers=nwalkers
@@ -78,9 +74,6 @@ class EmceeSampler(object):
                 self.nwalkers=10*self.ndim
             if self.verbose: print('setup with',self.nwalkers,'walkers')
             # setup sampler
-            self.sampler = emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                            self.log_prob,
-                                                            backend=self.backend)
             # setup walkers
             self.p0=self.get_initial_walkers()
 
@@ -107,13 +100,13 @@ class EmceeSampler(object):
         for aa in range(len(self.like.data.z)):
             self.distances.append([])
 
-        if self.verbose:
-            print('done setting up sampler')
 
     def run_sampler(self,burn_in,max_steps,log_func,parallel=False):
         """ Set up sampler, run burn in, run chains,
         return chains """
 
+
+        self.burnin_nsteps=burn_in
         # We'll track how the average autocorrelation time estimate changes
         self.autocorr = np.array([])
         # This will be useful to testing convergence
@@ -123,12 +116,11 @@ class EmceeSampler(object):
             ## Get initial walkers
             p0=self.get_initial_walkers()
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    self.log_prob,
-                                                    backend=self.backend)
+                                                    log_func)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                     progress=self.progress):
                 # Only check convergence every 100 steps
-                if sampler.iteration % 100:
+                if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                     continue
 
                 if self.progress==False:
@@ -137,7 +129,7 @@ class EmceeSampler(object):
                 # Compute the autocorrelation time so far
                 # Using tol=0 means that we'll always get an estimate even
                 # if it isn't trustworthy
-                tau = sampler.get_autocorr_time(tol=0)
+                tau = sampler.get_autocorr_time(tol=0,discard=burn_in)
                 self.autocorr= np.append(self.autocorr,np.mean(tau))
 
                 # Check convergence
@@ -152,12 +144,11 @@ class EmceeSampler(object):
             with Pool() as pool:
                 sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                         log_func,
-                                                        backend=self.backend,
                                                         pool=pool)
                 for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                         progress=self.progress):
                     # Only check convergence every 100 steps
-                    if sampler.iteration % 100:
+                    if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                         continue
 
                     if self.progress==False:
@@ -166,7 +157,7 @@ class EmceeSampler(object):
                     # Compute the autocorrelation time so far
                     # Using tol=0 means that we'll always get an estimate even
                     # if it isn't trustworthy
-                    tau = sampler.get_autocorr_time(tol=0)
+                    tau = sampler.get_autocorr_time(tol=0,discard=burn_in)
                     self.autocorr= np.append(self.autocorr,np.mean(tau))
 
                     # Check convergence
@@ -176,108 +167,16 @@ class EmceeSampler(object):
                         break
                     old_tau = tau
 
-            ## Run parallel version
+        ## Save chains
+        self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
+        self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
 
         return 
-
-
-    def run_burn_in(self,nsteps,nprint=20):
-        """Start sample from initial points, for nsteps"""
-
-        if not self.sampler: raise ValueError('sampler not properly setup')
-
-        if self.verbose: print('start burn-in, will do',nsteps,'steps')
-    
-        pos=self.p0
-        self.burnin_pos = self.sampler.run_mcmc(pos, nsteps)
-
-        ''' ## Pre emcee 3.0.2 stuff..
-        pos=self.p0
-        for i,result in enumerate(self.sampler.sample(pos,iterations=nsteps)):
-            pos=result[0]
-            if self.verbose and (i % nprint == 0):
-                print(i,np.mean(pos,axis=0))
-        '''
-
-        if self.verbose: print('finished burn-in')
-
-        self.burnin_nsteps=nsteps
-    
-        return
-
-
-    def run_chains(self,nsteps):
-        """Run actual chains, starting from end of burn-in
-        Run either to nsteps, or will stop when autocorrelation time
-        indicates convergence """
-
-        if not self.sampler: raise ValueError('sampler not properly setup')
-
-        # reset and run actual chains
-        if self.burnin_pos is not None:
-            ## If we are starting from scratch
-            self.sampler.reset()
-            pos=self.burnin_pos
-            # We'll track how the average autocorrelation time estimate changes
-            self.autocorr = np.array([])
-            # This will be useful to testing convergence
-            old_tau = np.inf
-
-            # Now we'll sample for up to max_n steps
-            for sample in self.sampler.sample(pos, iterations=nsteps,           
-                                    progress=self.progress):
-                # Only check convergence every 100 steps
-                if self.sampler.iteration % 100:
-                    continue
-
-                if self.progress==False:
-                    print("Step %d out of %d " % (self.sampler.iteration, nsteps))
-
-                # Compute the autocorrelation time so far
-                # Using tol=0 means that we'll always get an estimate even
-                # if it isn't trustworthy
-                tau = self.sampler.get_autocorr_time(tol=0)
-                self.autocorr= np.append(self.autocorr,np.mean(tau))
-
-                # Check convergence
-                converged = np.all(tau * 100 < self.sampler.iteration)
-                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                if converged:
-                    break
-                old_tau = tau
-        else:
-            ## If we are loading a sampler that has already made progress
-            oldtau = self.autocorr[-1]
-            # Now we'll sample for up to max_n steps
-            for sample in self.sampler.sample(None, iterations=nsteps,
-                                    progress=self.progress):
-                # Only check convergence every 100 steps
-                if self.sampler.iteration % 100:
-                    continue
-
-                if self.progress==False:
-                    print("Step %d out of %d " % (self.sampler.iteration, nsteps))
-
-                # Compute the autocorrelation time so far
-                # Using tol=0 means that we'll always get an estimate even
-                # if it isn't trustworthy
-                tau = self.sampler.get_autocorr_time(tol=0)
-                self.autocorr= np.append(self.autocorr,np.mean(tau))
-
-                # Check convergence
-                converged = np.all(tau * 100 < self.sampler.iteration)
-                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                if converged:
-                    break
-                old_tau = tau
-
-        return
 
 
     def get_initial_walkers(self):
         """Setup initial states of walkers in sensible points"""
 
-        if not self.sampler: raise ValueError('sampler not properly setup')
 
         ndim=self.ndim
         nwalkers=self.nwalkers
@@ -351,9 +250,8 @@ class EmceeSampler(object):
             chain=self.chain_from_file['chain']
             lnprob=self.chain_from_file['lnprob']
         else:
-            if not self.sampler: raise ValueError('sampler not properly setup')
-            chain=self.sampler.flatchain
-            lnprob=self.sampler.flatlnprobability
+            chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
+            lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
 
         if cube == False:
             cube_values=chain
@@ -543,8 +441,8 @@ class EmceeSampler(object):
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps
         saveDict["nwalkers"]=self.nwalkers
-        saveDict["lnprob"]=self.sampler.flatlnprobability.tolist()
-        saveDict["flatchain"]=self.sampler.flatchain.tolist()
+        saveDict["lnprob"]=self.lnprob.tolist()
+        saveDict["flatchain"]=self.chain.tolist()
         saveDict["autocorr"]=self.autocorr.tolist()
 
         ## Save dictionary to json file in the

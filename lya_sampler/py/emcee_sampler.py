@@ -43,10 +43,9 @@ class EmceeSampler(object):
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
             self.read_chain_from_file(read_chain_file)
-            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
             self.p0=None
             self.burnin_pos=None
-            self.sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim, self.log_prob, backend=self.backend)
+            self.sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim, self.log_prob)
         else: 
             if like:
                 if self.verbose: print('use input likelihood')
@@ -268,7 +267,7 @@ class EmceeSampler(object):
         
         plt.figure()
 
-        n = 100 * np.arange(1, len(self.autocorr)+1)
+        n = 100 * np.arange(self.burnin_nsteps, len(self.autocorr)+1)
         plt.plot(n, n / 100.0, "--k")
         plt.plot(n, self.autocorr)
         plt.xlim(0, n.max())

@@ -24,7 +24,7 @@ class GPEmulator:
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
                 checkHulls=False,set_hyperparams=None,
-                paramLimits=None):
+                paramLimits=None,rbf_only=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -41,6 +41,7 @@ class GPEmulator:
         self.paramLimits=paramLimits
         self.crossval=False ## Flag to check whether or not a prediction is
                             ## inside the training set
+        self.rbf_only=rbf_only
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -171,8 +172,11 @@ class GPEmulator:
 
         #Standard squared-exponential kernel with a different length scale for each parameter, as
         #they may have very different physical properties.
-        kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
-        kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
+        if self.rbf_only==False:
+            kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
+            kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
+        else:
+            kernel = GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
 
         self.gp = GPy.models.GPRegression(self.X_param_grid,normspectra,kernel=kernel,
                         noise_var=self.emu_noise,initialize=False)

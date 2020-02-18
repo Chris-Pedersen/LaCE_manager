@@ -45,7 +45,6 @@ class EmceeSampler(object):
             self.read_chain_from_file(read_chain_file)
             self.p0=None
             self.burnin_pos=None
-            self.sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim, self.log_prob)
         else: 
             if like:
                 if self.verbose: print('use input likelihood')
@@ -292,24 +291,26 @@ class EmceeSampler(object):
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
 
+        if self.verbose: print("Building arxiv")
         ## Set up the arxiv
         archive=p1d_arxiv.ArxivP1D(basedir=config["basedir"],
                             drop_tau_rescalings=config["drop_tau_rescalings"],
                             drop_temp_rescalings=config["drop_temp_rescalings"],
+                            nearest_tau=config["nearest_tau"],
                             z_max=config["z_max"],
                             drop_sim_number=config["data_sim_number"],
                             p1d_label=config["p1d_label"],                            
                             skewers_label=config["skewers_label"],
                             undersample_cube=config["undersample_cube"])
 
-
+        if self.verbose: print("Setting up emulator")
         ## Set up the emulators
         if config["z_emulator"]:
             emulator=z_emulator.ZEmulator(paramList=config["paramList"],
                                 train=False,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
-                                passArxiv=archive)
+                                passArxiv=archive,verbose=self.verbose)
             ## Now loop over emulators, passing the saved hyperparameters
             for aa,emu in enumerate(emulator.emulators):
                 ## Load emulator hyperparams..
@@ -319,13 +320,14 @@ class EmceeSampler(object):
                                 train=False,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
-                                passArxiv=archive)
+                                passArxiv=archive,verbose=self.verbose)
             emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"],
                                     z_list=np.asarray(config["z_list"]))
 
+        if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
         free_param_list=[]
         limits_list=[]
@@ -343,6 +345,7 @@ class EmceeSampler(object):
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"])
 
+        if self.verbose: print("Load sampler data")
         ## Load chains
         self.chain_from_file={}
         self.chain_from_file["chain"]=np.asarray(config["flatchain"])
@@ -397,6 +400,7 @@ class EmceeSampler(object):
         """Write flat chain to file"""
 
         saveDict={}
+
         ## Arxiv settings
         saveDict["basedir"]=self.like.theory.emulator.arxiv.basedir
         saveDict["skewers_label"]=self.like.theory.emulator.arxiv.skewers_label

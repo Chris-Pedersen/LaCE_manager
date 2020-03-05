@@ -323,9 +323,15 @@ class EmceeSampler(object):
                                 passArxiv=archive,verbose=self.verbose)
             emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
+        try:
+            data_cov=config["data_cov_factor"]
+        except:
+            data_cov=1.
+
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"],
-                                    z_list=np.asarray(config["z_list"]))
+                                    z_list=np.asarray(config["z_list"]),
+                                    data_cov_factor=data_cov)
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -432,6 +438,7 @@ class EmceeSampler(object):
         saveDict["emu_cov_factor"]=self.like.emu_cov_factor
         saveDict["data_basedir"]=self.like.data.basedir
         saveDict["data_sim_number"]=self.like.data.sim_number
+        saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         if self.like.simpleLike:
             saveDict["simpleLike"]=True
         else:

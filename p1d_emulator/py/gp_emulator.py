@@ -248,11 +248,12 @@ class GPEmulator:
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
         if self.checkHulls:
             if self.hull.find_simplex(np.array(param).reshape(1,-1))<0:
-                print("Model is outside convex hull:", model)
+                #print("Model is outside convex hull:", model)
+                return
         ## Check if model is inside training set
         if self.crossval==True:
             isin=np.isin(param,self.X_param_grid)
-            if np.sum(isin)==len(param):
+            if np.sum(isin)==len(param): ## Check all parameters
                 print("Emulator call is inside training set!!!")
 
         pred,err=self.gp.predict(np.array(param).reshape(1,-1))
@@ -276,8 +277,10 @@ class GPEmulator:
                 print(max(self.training_k_bins))
                 print("Warning! Your requested k bins are higher than the training values.")
         pred,err=self.predict(model)
+        ## Use cubic interpolation to return prediction for arbitrary
+        ## k bins
         if self.emu_type=="k_bin":
-            interpolator=interp1d(self.training_k_bins,pred, "cubic")
+            interpolator=interp1d(self.training_k_bins,pred,"cubic")
             interpolated_P=interpolator(k_Mpc)
         elif self.emu_type=="polyfit":
             poly=np.poly1d(pred)

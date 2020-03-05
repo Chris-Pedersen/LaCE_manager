@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,
                         sim_number=0,skewers_label=None,
-                        z_list=None):
+                        z_list=None,data_cov_factor=1.):
         """ Read mock P1D from MP-Gadget sims, and return
         using the k bins and covariance from PD2013 """
 
@@ -26,7 +26,8 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.basedir=basedir
         self.sim_number=sim_number
 
-        z,k,Pk,cov=self._load_p1d(basedir,sim_number,skewers_label)
+        z,k,Pk,cov=self._load_p1d(basedir,sim_number,skewers_label,
+                    data_cov_factor=data_cov_factor)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -37,7 +38,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
         self._set_true_values()
 
-    def _load_p1d(self,basedir,sim_number,skewers_label):
+    def _load_p1d(self,basedir,sim_number,skewers_label,data_cov_factor):
         ## Load PD2013 data to get covmats
         PD2013=data_PD2013.P1D_PD2013(blind_data=False)
         k=PD2013.k
@@ -83,7 +84,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             ## z bin in PD2013
             cov_mat=PD2013.get_cov_iz(np.argmin(abs(z_PD-z_sim[aa])))
             ## Cull low k cov data
-            cov_mat=cov_mat[Ncull:,Ncull:]
+            cov_mat=data_cov_factor*cov_mat[Ncull:,Ncull:]
             cov.append(cov_mat)
 
         return z_sim,k,Pk,cov

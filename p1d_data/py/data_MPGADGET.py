@@ -25,7 +25,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
         self.basedir=basedir
         self.sim_number=sim_number
-        self.data_cov_factor
+        self.data_cov_factor=data_cov_factor
 
         z,k,Pk,cov=self._load_p1d(basedir,sim_number,skewers_label,
                     data_cov_factor=self.data_cov_factor)

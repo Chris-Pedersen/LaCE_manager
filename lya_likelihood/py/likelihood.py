@@ -118,6 +118,39 @@ class Likelihood(object):
             return -2.0*log_like
 
 
+    def get_covmats(self,values=None):
+        """ Return the data and emulator covmats for a given
+        set of likelihood parameters. Will return a list of the
+        covmats at each z """
+
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        log_like=0
+
+        data_covar=[]
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute chi2 for z={}'.format(z))
+            # get data
+            data_covar.append(self.data.get_cov_iz(iz))
+
+        return data_covar, emu_covar
+
+
     def get_log_like(self,values=None,ignore_log_det_cov=True,
                         emu_=False):
         """Compute log(likelihood), including determinant of covariance
@@ -439,6 +472,38 @@ class simpleLikelihood(object):
         else:
             return -2.0*log_like
 
+
+    def get_covmats(self,values=None):
+        """ Return the data and emulator covmats for a given
+        set of likelihood parameters. Will return a list of the
+        covmats at each z """
+
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        log_like=0
+
+        data_covar=[]
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute chi2 for z={}'.format(z))
+            # get data
+            data_covar.append(self.data.get_cov_iz(iz))
+
+        return data_covar, emu_covar
 
     def get_log_like(self,values=None,ignore_log_det_cov=True,
                         emu_cov_factor=1):

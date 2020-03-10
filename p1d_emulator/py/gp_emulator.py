@@ -154,7 +154,7 @@ class GPEmulator:
         of the provided params, not by defining our own prior volume. Need to decide
         whether or not this is what we want. '''
 
-        self.X_param_grid,Ypoints=self._buildTrainingSets(arxiv,paramList)
+        self.X_param_grid,self.Ypoints=self._buildTrainingSets(arxiv,paramList)
 
         ## Get parameter limits for rescaling
         if self.paramLimits is None:
@@ -167,10 +167,10 @@ class GPEmulator:
             print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
-        self.scalefactors = np.median(Ypoints, axis=0)
+        self.scalefactors = np.median(self.Ypoints, axis=0)
 
         #Normalise by the median value
-        normspectra = (Ypoints/self.scalefactors) -1.
+        self.normspectra = (self.Ypoints/self.scalefactors) -1.
 
         if self.rbf_only==False:
             kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
@@ -182,15 +182,14 @@ class GPEmulator:
             ## Build a GP for each k bin
             self.gp=[]
             for aa in range(len(self.training_k_bins)):
-                p1d_k=normspectra[:,aa]
-                print(p1d_k)
+                p1d_k=self.normspectra[:,aa]
                 self.gp.append(GPy.models.GPRegression(self.X_param_grid,
                         p1d_k[:,None],
                         kernel=kernel,
                         noise_var=self.emu_noise,
                         initialize=False))
         else:
-            self.gp = GPy.models.GPRegression(self.X_param_grid,normspectra,
+            self.gp = GPy.models.GPRegression(self.X_param_grid,self.normspectra,
                     kernel=kernel,
                     noise_var=self.emu_noise,
                     initialize=False)

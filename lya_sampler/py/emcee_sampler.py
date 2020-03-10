@@ -344,12 +344,14 @@ class EmceeSampler(object):
             self.like=likelihood.simpleLikelihood(data=data,emulator=emulator,
                             free_parameters=free_param_list,
                             verbose=False,
-                            prior_Gauss_rms=config["prior_Gauss_rms"])
+                            prior_Gauss_rms=config["prior_Gauss_rms"],
+                            emu_cov_factor=config["emu_cov_factor"])
         else:
             self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_parameters=free_param_list,
                             verbose=False,
-                            prior_Gauss_rms=config["prior_Gauss_rms"])
+                            prior_Gauss_rms=config["prior_Gauss_rms"],
+                            emu_cov_factor=config["emu_cov_factor"])
 
         if self.verbose: print("Load sampler data")
         ## Load chains

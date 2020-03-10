@@ -24,7 +24,8 @@ class GPEmulator:
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
                 checkHulls=False,set_hyperparams=None,
-                paramLimits=None,rbf_only=False):
+                paramLimits=None,rbf_only=False,
+                emu_per_k=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -42,6 +43,7 @@ class GPEmulator:
         self.crossval=False ## Flag to check whether or not a prediction is
                             ## inside the training set
         self.rbf_only=rbf_only
+        self.emu_per_k=emu_per_k
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -170,16 +172,30 @@ class GPEmulator:
         #Normalise by the median value
         normspectra = (Ypoints/self.scalefactors) -1.
 
-        #Standard squared-exponential kernel with a different length scale for each parameter, as
-        #they may have very different physical properties.
         if self.rbf_only==False:
             kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
             kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
         else:
             kernel = GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
-
-        self.gp = GPy.models.GPRegression(self.X_param_grid,normspectra,kernel=kernel,
-                        noise_var=self.emu_noise,initialize=False)
+        
+        if self.emu_per_k:
+            ## Build a GP for each k bin
+            self.gp=[]
+            for aa in range(len(self.training_k_bins)):
+                p1d_k=normspectra[:,aa]
+                print(p1d_k)
+                self.gp.append(GPy.models.GPRegression(self.X_param_grid,
+                        p1d_k[:,None],
+                        kernel=kernel,
+                        noise_var=self.emu_noise,
+                        initialize=False))
+        else:
+            self.gp = GPy.models.GPRegression(self.X_param_grid,normspectra,
+                    kernel=kernel,
+                    noise_var=self.emu_noise,
+                    initialize=False)
+        
+        return
 
 
     def _get_param_limits(self,paramGrid):
@@ -196,12 +212,22 @@ class GPEmulator:
     def train(self):
         ''' Train the GP emulator '''
 
-        self.gp.initialize_parameter()
-        print("Training GP on %d points" % len(self.arxiv.data))
-        status = self.gp.optimize(messages=False)
-        print("Optimised")
+
+        if self.emu_per_k:
+            for gp in self.gp:
+                gp.initialize_parameter()
+                print("Training GP on %d points" % len(self.arxiv.data))
+                status = gp.optimize(messages=False)
+                print("Optimised")
+        else:
+            self.gp.initialize_parameter()
+            print("Training GP on %d points" % len(self.arxiv.data))
+            status = self.gp.optimize(messages=False)
+            print("Optimised")
 
         self.trained=True
+
+        return
 
 
     def printPriorVolume(self):
@@ -256,7 +282,15 @@ class GPEmulator:
             if np.sum(isin)==len(param): ## Check all parameters
                 print("Emulator call is inside training set!!!")
 
-        pred,err=self.gp.predict(np.array(param).reshape(1,-1))
+        if self.emu_per_k:
+            pred=np.array([])
+            err=np.array([])
+            for gp in self.gp:
+                pred_single,err_single=gp.predict(np.array(param).reshape(1,-1))
+                pred=np.append(pred,pred_single)
+                err=np.append(err,err_single)
+        else:
+            pred,err=self.gp.predict(np.array(param).reshape(1,-1))
 
         return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
@@ -292,9 +326,13 @@ class GPEmulator:
             if self.emu_type=="k_bin":
                 error_interp=interp1d(self.training_k_bins,err, "cubic")
                 error=error_interp(k_Mpc)
-                # for now, assume that we have fully correlated errors
-                covar = np.outer(error, error)
-                #covar = np.diag(error**2)
+
+                if self.emu_per_k:
+                    covar=np.diag(error**2)
+                else:
+                    ## For now, assume that we have fully correlated errors
+                    ## when using same hyperparams
+                    covar = np.outer(error, error)
                 return interpolated_P, covar
             else:
                 return interpolated_P, covar

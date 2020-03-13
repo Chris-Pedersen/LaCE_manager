@@ -61,12 +61,10 @@ print("----------")
 
 # read P1D measurement
 #z_list=np.array([2.0,2.75,3.25,4.0])
-data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number)
+data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number,data_cov_factor=0.1)
 zs=data.z
 
-repo=os.environ['LYA_EMU_REPO']
 skewers_label=args.skewers_label
-#skewers_label=None
 p1d_label=None
 undersample_z=args.undersample_z
 paramList=args.free_parameters

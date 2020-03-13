@@ -60,7 +60,7 @@ print("----------")
 
 # read P1D measurement
 #z_list=np.array([2.0,2.75,3.25,4.0])
-data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number)
+data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number,data_cov_factor=0.1)
 zs=data.z
 
 repo=os.environ['LYA_EMU_REPO']
@@ -102,7 +102,8 @@ like=likelihood.simpleLikelihood(data=data,emulator=emu,
                             prior_Gauss_rms=args.prior_Gauss_rms,
                             emu_cov_factor=args.emu_cov_factor)
 
-#like.plot_p1d()
+
+like.plot_p1d()
 
 sampler = emcee_sampler.EmceeSampler(like=like,
                         free_parameters=free_parameters,verbose=False,

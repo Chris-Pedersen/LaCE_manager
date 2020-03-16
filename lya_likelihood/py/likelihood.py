@@ -505,8 +505,7 @@ class simpleLikelihood(object):
 
         return data_covar, emu_covar
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True,
-                        emu_cov_factor=self.emu_cov_factor):
+    def get_log_like(self,values=None,ignore_log_det_cov=True):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True.."""
 
@@ -534,7 +533,7 @@ class simpleLikelihood(object):
             p1d=self.data.get_Pk_iz(iz)
             data_cov=self.data.get_cov_iz(iz)
             # add covariance from emulator
-            cov = data_cov + emu_cov_factor*emu_covar[iz]
+            cov = data_cov + self.emu_cov_factor*emu_covar[iz]
 
             # compute chi2 for this redshift bin
             icov = np.linalg.inv(cov)

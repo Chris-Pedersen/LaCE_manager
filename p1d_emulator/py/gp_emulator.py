@@ -496,11 +496,17 @@ class GPEmulator:
         if self.verbose:
             print("Could not find a matching emulator to load")
 
-    def load_hyperparams(self,hyperparams):
-        """ Just load the emulator hyperparameters. Careful with
-        this to make sure the hyperparameters are optimised
-        in the same unit volume as the training data!
+    def load_hyperparams(self,hyperparams,paramLimits=None):
+        """ Load a specific set of emulator hyperparameters.
+        Also have option to load an associated set of parameter limits.
+        Will rebuilt the X training grid new parameter limits are passed
         """
+
+        ## If we give a new set of paramlimits
+        ## also reconstruct the training data
+        if paramLimits is not None:
+            self.paramLimits=paramLimits
+            self._build_interp(self.arxiv,self.paramList)
         
         self.gp.update_model(False)
         self.gp.initialize_parameter()

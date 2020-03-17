@@ -34,19 +34,20 @@ class SnapshotAdmin(object):
             self.scales_tau=[1.0]
 
 
-    def get_all_flux_power(self):
+    def get_all_flux_power(self,simdir=None):
         """Loop over all skewers, and return flux power for each"""
 
-        # get box size from GenIC file, to normalize power
-        if 'simdir' in self.data:
-            simdir = self.data['simdir']
-        elif 'basedir' in self.data:
-            simdir = self.data['basedir']
+        if simdir is not None:
+            # get box size from GenIC file, to normalize power
+            if 'simdir' in self.data:
+                simdir = self.data['simdir']
+            elif 'basedir' in self.data:
+                simdir = self.data['basedir']
 
         genic_file=simdir+'/paramfile.genic'
         L_Mpc=read_genic.L_Mpc_from_paramfile(genic_file,verbose=True)
 
-        skewers_dir=self.data['skewers_dir']
+        skewers_dir=simdir+"output/skewers/"
         snap_num=self.data['snap_num']
 
         # will loop over all temperature models in snapshot

@@ -1,5 +1,5 @@
 import numpy as np
-import argparse
+import configargparse
 import os
 # our modules below
 import snapshot_admin
@@ -16,16 +16,20 @@ us spamming the queue with thousands of jobs
 """
 
 # get options from command line
-parser = argparse.ArgumentParser()
+parser = configargparse.ArgumentParser()
+parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
 parser.add_argument('--basedir', type=str, help='Path to simulation suite',required=True)
 parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers per side',required=False)
-parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separated list of optical depth scalings to use.',required=False)
+parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--p1d_label', type=str, default=None, help='String identifying P1D measurement and / or tau scaling.',required=False)
 args = parser.parse_args()
 
 
-scales_tau=[float(scale) for scale in args.scales_tau.split(',')]
+print(args.scales_tau)
+
+scales_tau=[float(scale) for scale in args.scales_tau[1:-1].split(',')]
+
 print('will scale tau by',scales_tau)
 
 # read information about the hypercube
@@ -42,10 +46,11 @@ nsamples=cube_data['nsamples']
 # for each sample, extract skewers for each snapshot
 for sample in range(nsamples):
     # full path to folder for this particular simulation pair
-    pair_dir=args.basedir+'/sim_pair_'+str(sample)
-    skewers_dir=pair_dir+'/output/skewers/'
-    print('writing scripts for pair in',pair_dir)
+    sim_dir=args.basedir+'/sim_pair_'+str(sample)
     for sim in ['sim_plus','sim_minus']:
+        pair_dir=sim_dir+"/"+sim
+        skewers_dir=pair_dir+'/output/skewers/'
+    
         # get redshifts / snapshots Gadget parameter file 
         paramfile=pair_dir+'/paramfile.gadget'
         zs=read_gadget.redshifts_from_paramfile(paramfile)
@@ -58,14 +63,14 @@ for sample in range(nsamples):
                 # read json file with filtering data
                 with open(kF_json) as json_data:
                     kF_data = json.load(json_data)
-                kF_Mpc=kF_data['kF_Mpc'][args.snap_num]
+                kF_Mpc=kF_data['kF_Mpc'][snap]
                 print('read kF_Mpc =',kF_Mpc)
             else:
                 kF_Mpc=None
 
             # read file containing information of all temperature rescalings in snapshot
             snap_filename=skewers_dir+'/'+extract_skewers.get_snapshot_json_filename(
-                        num=args.snap_num,n_skewers=args.n_skewers,
+                        num=snap,n_skewers=args.n_skewers,
                         width_Mpc=args.width_Mpc)
             
             # create an object that will deal with all skewers in the snapshot
@@ -73,7 +78,7 @@ for sample in range(nsamples):
                                 scales_tau=scales_tau,
                                 kF_Mpc=kF_Mpc)
             # measure flux power for all tau scalings, for all temperature scalings
-            arxiv_p1d=snapshot.get_all_flux_power()
+            arxiv_p1d=snapshot.get_all_flux_power(pair_dir)
 
             # write all measured power in a JSON file
             snapshot.write_p1d_json(p1d_label=args.p1d_label)

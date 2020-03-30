@@ -25,7 +25,8 @@ class GPEmulator:
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
                 checkHulls=False,set_hyperparams=None,
                 paramLimits=None,rbf_only=False,
-                emu_per_k=False):
+                emu_per_k=False,
+                reduce_var=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -44,6 +45,8 @@ class GPEmulator:
                             ## inside the training set
         self.rbf_only=rbf_only
         self.emu_per_k=emu_per_k
+        self.reduce_var=reduce_var ## emulate k*P1D(k)/(1+z)^3.8
+                                   ## only works with k bin emulator
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -62,7 +65,7 @@ class GPEmulator:
 
         ## Find max k bin
         self.k_bin=int(np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc)))
-        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
+        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][1:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
         	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
@@ -75,8 +78,12 @@ class GPEmulator:
         if train==True:
             self.train()
 
-        self.checkHulls=checkHulls ## Print all this?
-        self.hull=Delaunay(self.X_param_grid)
+
+        self.checkHulls=checkHulls
+        if self.checkHulls:
+            self.hull=Delaunay(self.X_param_grid)
+        else:
+            self.hull=None
         self.emulators=None ## Flag that this is an individual emulator object
 
 
@@ -84,9 +91,13 @@ class GPEmulator:
         ''' Method to get the Y training points in the form of the P1D
         at different k values '''
 
-        P1D_k=np.empty([len(self.arxiv.data),self.k_bin])
+        P1D_k=np.empty([len(self.arxiv.data),self.k_bin-1])
         for aa in range(len(self.arxiv.data)):
-            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin]
+            if self.reduce_var:
+                P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*self.training_k_bins)/((1+self.arxiv.data[aa]["z"])**3.8)
+                #P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*self.training_k_bins)
+            else:
+                P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]
 
         return P1D_k
 
@@ -259,7 +270,7 @@ class GPEmulator:
         return self.hull.find_simplex(np.array(param).reshape(1,-1))<0
         
 
-    def predict(self,model):
+    def predict(self,model,z=None):
         ''' Return P1D or polyfit coeffs for a given parameter set
         For the k bin emulator this will be in the training k bins '''
 
@@ -291,7 +302,16 @@ class GPEmulator:
         else:
             pred,err=self.gp.predict(np.array(param).reshape(1,-1))
 
-        return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+        out_pred=np.ndarray.flatten((pred+1)*self.scalefactors)
+        out_err=np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+
+        if self.reduce_var:
+            out_pred=((1+z)**3.8)*(out_pred/self.training_k_bins)
+            out_err=((1+z)**3.8)*(out_err/self.training_k_bins)
+
+
+
+        return out_pred,out_err
 
 
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False,z=None):
@@ -309,7 +329,7 @@ class GPEmulator:
                 print(max(k_Mpc))
                 print(max(self.training_k_bins))
                 print("Warning! Your requested k bins are higher than the training values.")
-        pred,err=self.predict(model)
+        pred,err=self.predict(model,z)
         ## Use cubic interpolation to return prediction for arbitrary
         ## k bins
         if self.emu_type=="k_bin":
@@ -325,7 +345,6 @@ class GPEmulator:
             if self.emu_type=="k_bin":
                 error_interp=interp1d(self.training_k_bins,err, "cubic")
                 error=error_interp(k_Mpc)
-
                 if self.emu_per_k:
                     covar=np.diag(error**2)
                 else:

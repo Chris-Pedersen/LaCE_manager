@@ -221,7 +221,7 @@ class EmceeSampler(object):
         if self.store_distances:
             self.add_euclidean_distances(values)
 
-        return test_log_prob
+        return test_log_prob        
 
 
     def add_euclidean_distances(self,values):
@@ -304,12 +304,17 @@ class EmceeSampler(object):
                             undersample_cube=config["undersample_cube"])
 
         if self.verbose: print("Setting up emulator")
+        try:
+            reduce_var=config["reduce_var"]
+        except:
+            reduce_var=False
         ## Set up the emulators
         if config["z_emulator"]:
             emulator=z_emulator.ZEmulator(paramList=config["paramList"],
                                 train=False,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
+                                reduce_var=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
             ## Now loop over emulators, passing the saved hyperparameters
             for aa,emu in enumerate(emulator.emulators):
@@ -320,6 +325,7 @@ class EmceeSampler(object):
                                 train=False,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
+                                reduce_var=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
             emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
@@ -433,6 +439,7 @@ class EmceeSampler(object):
         saveDict["z_emulator"]=z_emulator
         saveDict["emu_hyperparameters"]=emu_hyperparams
         saveDict["emu_type"]=self.like.theory.emulator.emu_type
+        saveDict["reduce_var"]=self.like.theory.emulator.reduce_var
 
         ## Likelihood & data settings
         saveDict["prior_Gauss_rms"]=self.like.prior_Gauss_rms

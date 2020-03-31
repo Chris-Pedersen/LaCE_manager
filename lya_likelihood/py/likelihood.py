@@ -110,8 +110,7 @@ class Likelihood(object):
         """Compute chi2 using data and theory, without adding
             emulator covariance"""
 
-        log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    emu_cov_factor=0)
+        log_like=self.get_log_like(values,ignore_log_det_cov=True)
         if log_like is None:
             return None
         else:
@@ -151,8 +150,7 @@ class Likelihood(object):
         return data_covar, emu_covar
 
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True,
-                        emu_=False):
+    def get_log_like(self,values=None,ignore_log_det_cov=True):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True."""
 
@@ -205,8 +203,7 @@ class Likelihood(object):
         log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
-        log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    emu_cov_factor=self.emu_cov_factor)
+        log_like=self.get_log_like(values,ignore_log_det_cov=False)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
@@ -432,8 +429,7 @@ class simpleLikelihood(object):
         log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
-        log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    emu_cov_factor=self.emu_cov_factor)
+        log_like=self.get_log_like(values,ignore_log_det_cov=False)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
@@ -465,8 +461,7 @@ class simpleLikelihood(object):
         """Compute chi2 using data and theory, without adding
             emulator covariance"""
 
-        log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    emu_cov_factor=self.emu_cov_factor)
+        log_like=self.get_log_like(values,ignore_log_det_cov=True)
         if log_like is None:
             return None
         else:

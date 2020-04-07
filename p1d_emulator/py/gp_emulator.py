@@ -94,7 +94,7 @@ class GPEmulator:
         P1D_k=np.empty([len(self.arxiv.data),self.k_bin-1])
         for aa in range(len(self.arxiv.data)):
             if self.reduce_var:
-                P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*self.training_k_bins)/((1+self.arxiv.data[aa]["z"])**3.8)
+                P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*(1+self.training_k_bins)/(1+self.arxiv.data[aa]["z"])**3.8)
                 #P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*self.training_k_bins)
             else:
                 P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]
@@ -306,10 +306,8 @@ class GPEmulator:
         out_err=np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
         if self.reduce_var:
-            out_pred=((1+z)**3.8)*(out_pred/self.training_k_bins)
-            out_err=((1+z)**3.8)*(out_err/self.training_k_bins)
-
-
+            out_pred=(((1+z)**3.8)*out_pred)/(1+self.training_k_bins)
+            out_err=(((1+z)**3.8)*out_err)/(1+self.training_k_bins)
 
         return out_pred,out_err
 

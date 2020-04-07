@@ -369,7 +369,8 @@ class simpleLikelihood(object):
     def __init__(self,data=None,theory=None,emulator=None,
                     free_parameters=None,verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,emu_cov_factor=1):
+                    min_kp_kms=None,emu_cov_factor=1,
+                    store_exploration=True):
         """Setup likelihood from theory and data. Options:
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
@@ -381,6 +382,12 @@ class simpleLikelihood(object):
         self.emu_cov_factor=emu_cov_factor
         self.emulator=emulator
         self.simpleLike=True
+        self.store_exploration=store_exploration
+        if self.store_exploration:
+            ## First list will store the theta values
+            ## second will store the exploration term
+            self.exploration=[[],[]]
+
 
         if data:
             self.data=data
@@ -515,6 +522,7 @@ class simpleLikelihood(object):
 
         # compute log like contribution from each redshift bin
         log_like=0
+        explor=0
 
         for iz in range(Nz):
             # acess data for this redshift
@@ -527,6 +535,12 @@ class simpleLikelihood(object):
             # get data
             p1d=self.data.get_Pk_iz(iz)
             data_cov=self.data.get_cov_iz(iz)
+
+            
+            ## exploration term of acquisition function
+            if self.store_exploration:
+                explor += np.dot(np.dot(np.linalg.inv(data_cov),np.diag(emu_covar[iz])),np.diag(emu_covar[iz]))
+
             # add covariance from emulator
             cov = data_cov + self.emu_cov_factor*emu_covar[iz]
 
@@ -542,6 +556,10 @@ class simpleLikelihood(object):
                 log_like_z = -0.5*(chi2_z + log_det_cov)
             log_like += log_like_z
             if self.verbose: print('added {} to log_like'.format(log_like_z))
+
+        if self.store_exploration:
+            self.exploration[0].append(values)
+            self.exploration[1].append(explor)
 
         return log_like
 

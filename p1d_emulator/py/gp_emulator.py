@@ -26,7 +26,8 @@ class GPEmulator:
                 checkHulls=False,set_hyperparams=None,
                 paramLimits=None,rbf_only=False,
                 emu_per_k=False,
-                reduce_var=False):
+                reduce_var_k=False,
+                reduce_var_z=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -45,8 +46,8 @@ class GPEmulator:
                             ## inside the training set
         self.rbf_only=rbf_only
         self.emu_per_k=emu_per_k
-        self.reduce_var=reduce_var ## emulate k*P1D(k)/(1+z)^3.8
-                                   ## only works with k bin emulator
+        self.reduce_var_k=reduce_var_k ## Emulate (1+k)P1D(k)
+        self.reduce_var_z=reduce_var_z ## Emulate P1D(k)/(1+z)^3.8
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -93,11 +94,11 @@ class GPEmulator:
 
         P1D_k=np.empty([len(self.arxiv.data),self.k_bin-1])
         for aa in range(len(self.arxiv.data)):
-            if self.reduce_var:
-                P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*(1+self.training_k_bins)/(1+self.arxiv.data[aa]["z"])**3.8)
-                #P1D_k[aa]=(self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]*self.training_k_bins)
-            else:
-                P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]
+            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]
+            if self.reduce_var_k:
+                P1D_k[aa]*=(1+self.training_k_bins)
+            if self.reduce_var_z:
+                P1D_k[aa]*=1./((1+self.arxiv.data[aa]["z"])**3.8)
 
         return P1D_k
 
@@ -305,10 +306,14 @@ class GPEmulator:
         out_pred=np.ndarray.flatten((pred+1)*self.scalefactors)
         out_err=np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
 
-        if self.reduce_var:
-            out_pred=(((1+z)**3.8)*out_pred)/(1+self.training_k_bins)
-            out_err=(((1+z)**3.8)*out_err)/(1+self.training_k_bins)
+        if self.reduce_var_k:
+            out_pred*=1./(1+self.training_k_bins)
+            out_err*=1./(1+self.training_k_bins)
+        if self.reduce_var_z:
+            out_pred*=((1+z)**3.8)
+            out_err*=((1+z)**3.8)
 
+       
         return out_pred,out_err
 
 

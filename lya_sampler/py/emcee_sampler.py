@@ -99,7 +99,7 @@ class EmceeSampler(object):
             self.distances.append([])
 
 
-    def run_sampler(self,burn_in,max_steps,log_func,parallel=False):
+    def run_sampler(self,burn_in,max_steps,log_func,parallel=False,force_steps=False):
         """ Set up sampler, run burn in, run chains,
         return chains """
 
@@ -133,7 +133,7 @@ class EmceeSampler(object):
                 # Check convergence
                 converged = np.all(tau * 100 < sampler.iteration)
                 converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                if converged:
+                if force_steps == False and converged:
                     break
                 old_tau = tau
 

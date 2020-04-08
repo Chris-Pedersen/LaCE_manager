@@ -370,7 +370,7 @@ class simpleLikelihood(object):
                     free_parameters=None,verbose=False,
                     prior_Gauss_rms=0.2,
                     min_kp_kms=None,emu_cov_factor=1,
-                    store_exploration=True):
+                    store_exploration=False):
         """Setup likelihood from theory and data. Options:
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
@@ -444,6 +444,37 @@ class simpleLikelihood(object):
 
         return log_like + log_prior
 
+    def exploration(self,values):
+        """ Return exploration term for acquisition function """
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        explor=0
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute exploration term for z={}'.format(z))
+            # get data cov
+            data_cov=self.data.get_cov_iz(iz)
+
+            # compute chi2 for this redshift bin
+            icov = np.linalg.inv(data_cov)
+            explor += np.dot(np.dot(icov,np.diag(emu_covar[iz])),np.diag(emu_covar[iz]))
+
+        return explor
+
     def get_log_prior(self,values):
         """Compute logarithm of prior"""
 
@@ -473,7 +504,6 @@ class simpleLikelihood(object):
             return None
         else:
             return -2.0*log_like
-
 
     def get_covmats(self,values=None):
         """ Return the data and emulator covmats for a given

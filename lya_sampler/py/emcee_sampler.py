@@ -325,7 +325,7 @@ class EmceeSampler(object):
                                 train=False,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
-                                reduce_var=reduce_var_z,
+                                reduce_var_z=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
             emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 

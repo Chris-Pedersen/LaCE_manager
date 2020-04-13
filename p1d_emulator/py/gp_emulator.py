@@ -102,7 +102,7 @@ class GPEmulator:
             if self.reduce_var_z:
                 P1D_k[aa]*=1./((1+self.arxiv.data[aa]["z"])**3.8)
             if self.reduce_var_mf:
-                P1D_k[aa]*=((self.arxiv.data[aa]["mF"])**2.5)
+                P1D_k[aa]*=((self.arxiv.data[aa]["mF"])**2)
 
         return P1D_k
 
@@ -317,8 +317,8 @@ class GPEmulator:
             out_pred*=((1+z)**3.8)
             out_err*=((1+z)**3.8)
         if self.reduce_var_mf:
-            out_pred*=1./(model["mF"]**2.5)
-            out_err*=1./(model["mF"]**2.5)
+            out_pred*=1./(model["mF"]**2)
+            out_err*=1./(model["mF"]**2)
        
         return out_pred,out_err
 

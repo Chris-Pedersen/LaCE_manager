@@ -71,7 +71,7 @@ class GPEmulator:
         self.training_k_bins=self.arxiv.data[0]["k_Mpc"][1:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
+        	self.paramList=["mF","Delta2_p","sigT_Mpc","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 

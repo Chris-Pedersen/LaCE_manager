@@ -1,37 +1,55 @@
 import numpy as np
 import copy
 import likelihood_parameter
+import os
 
 # lambda_F ~ 80 kpc ~ 0.08 Mpc ~ 0.055 Mpc/h ~ 5.5 km/s (Onorbe et al. 2016)
 # k_F = 1 / lambda_F ~ 12.5 1/Mpc ~ 18.2 h/Mpc ~ 0.182 s/km 
 
 class PressureModel(object):
-    """Use a handful of parameters to model the pressure smoothing length,
-        in velocity units (km/s), as a function of redshift. 
-        For now, we use a polynomial to describe log(k_F) around z_F."""
+    """ Model the redshift evolution of the pressure smoothing length.
+        We use a power law rescaling around a fiducial simulation at the centre
+        of the initial Latin hypercube in simulation space."""
 
-    def __init__(self,z_kF=3.5,ln_kF_coeff=None):
+    def __init__(self,z_kF=3.0,ln_kF_coeff=None,
+                    basedir="/p1d_emulator/sim_suites/Australia20/"):
         """Construct model with central redshift and (x2,x1,x0) polynomial."""
+
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+
+        ## Load fiducial model
+        fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
+        self.fid_z=fiducial[0]
+        self.fid_kF=fiducial[4] ## kF_kms(z)
+
+
         self.z_kF=z_kF
         if not ln_kF_coeff:
-            ln_kF_coeff=[0.3,np.log(0.17)]
+            ln_kF_coeff=[0.0,0.0]
         self.ln_kF_coeff=ln_kF_coeff
         # store list of likelihood parameters (might be fixed or free)
         self.set_parameters()
-
-
-    def get_kF_kms(self,z):
-        """Filtering length at the input redshift (in s/km)"""
-        xz=np.log((1+z)/(1+self.z_kF))
-        ln_kF_poly=np.poly1d(self.ln_kF_coeff)
-        ln_kF=ln_kF_poly(xz)
-        return np.exp(ln_kF)
 
 
     def get_Nparam(self):
         """Number of parameters in the model"""
         assert len(self.ln_kF_coeff)==len(self.params),"size mismatch"
         return len(self.ln_kF_coeff)
+
+
+    def power_law_scaling(self,z):
+        """ Power law rescaling around z_tau """
+        xz=np.log((1+z)/(1+self.z_kF))
+        ln_poly=np.poly1d(self.ln_kF_coeff)
+        ln_out=ln_poly(xz)
+        return np.exp(ln_out)
+
+
+    def get_kF_kms(self,z):
+        """kF_kms at the input redshift"""
+        kF_kms=self.power_law_scaling(z)*self.fid_kF[np.argwhere(self.fid_z==z)[0][0]]
+        return kF_kms
 
 
     def set_parameters(self):
@@ -42,14 +60,11 @@ class PressureModel(object):
         for i in range(Npar):
             name='ln_kF_'+str(i)
             if i==0:
-                xmin=np.log(0.05)
-                xmax=np.log(0.5)
-            elif i==1:
-                xmin=1.0
-                xmax=5.0
+                xmin=-0.2
+                xmax=0.2
             else:
-                xmin=-2.0
-                xmax=2.0
+                xmin=-0.2
+                xmax=0.2
             # note non-trivial order in coefficients
             value=self.ln_kF_coeff[Npar-i-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,

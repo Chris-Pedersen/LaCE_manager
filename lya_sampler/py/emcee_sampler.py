@@ -83,7 +83,17 @@ class EmceeSampler(object):
                         "gamma":"$\gamma$",
                         "sigT_Mpc":"$\sigma_T$",
                         "kF_Mpc":"$k_F$",
-                        "n_p":"$n_p$"
+                        "n_p":"$n_p$",
+                        "Delta2_star":"$\Delta^2_\star$",
+                        "n_star":"$n_\star$",
+                        "ln_tau_0":"$ln(\tau_0)$",
+                        "ln_tau_1":"$ln(\tau_1)$",
+                        "ln_sigT_kms_0":"$ln(\sigma^T_0)$",
+                        "ln_sigT_kms_1":"$ln(\sigma^T_1)$",
+                        "ln_gamma_0":"$ln(\gamma_0)$",
+                        "ln_gamma_1":"$ln(\gamma_1)$",
+                        "ln_kF_0":"$ln(kF_0)$",
+                        "ln_kF_1":"$ln(kF_1)$"
                         }
 
         ## Set up list of parameter names in tex format for plotting

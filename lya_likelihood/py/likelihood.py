@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import data_PD2013
 import lya_theory
 import likelihood_parameter
+import camb_cosmo
+import sim_params_cosmo
+import sim_params_space
+import fit_linP
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -12,12 +16,17 @@ class Likelihood(object):
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,emu_cov_factor=1):
+                    min_kp_kms=None,emu_cov_factor=1,
+                    use_sim_cosmo=True):
         """Setup likelihood from theory and data. Options:
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
-            set between 0 and 1. """
+            set between 0 and 1.
+            - use_sim_cosmo will extract the cosmological likelihood
+              parameters from the fiducial simulation, and use these
+              as a fiducial model"""
+
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
@@ -37,12 +46,25 @@ class Likelihood(object):
         else:
             zs=self.data.z
             if self.verbose: print('use default theory')
-            self.theory=lya_theory.LyaTheory(zs,emulator=emulator)
+            if use_sim_cosmo:
+                ## Set fiducial cosmology parameters directly
+                ## from simulation
+                cosmo_fid = camb_cosmo.get_cosmology()
+                linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
+                lhcube=emulator.arxiv.cube_data
+                sim_cosmo=sim_params_cosmo.cosmo_from_sim_params(lhcube["param_space"],
+                        lhcube["samples"]["30"],
+                        linP_model_fid)
+                self.theory=lya_theory.LyaTheory(zs,emulator=emulator,
+                                            cosmo_fid=sim_cosmo)
+            else:
+                self.theory=lya_theory.LyaTheory(zs,emulator=emulator)
 
         # setup parameters
+        self.free_parameters=free_parameters ## Just a list of the names
         if not free_parameters:
             free_parameters=['ln_tau_0']
-        self.set_free_parameters(free_parameters,free_param_limits)
+        self.set_free_parameters(free_parameters)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
@@ -66,7 +88,7 @@ class Likelihood(object):
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)
 
-        assert (Nfree==Nin), 'could not setup free paremeters'
+        assert (Nfree==Nin), 'could not setup free parameters'
 
         if self.verbose:
             print('likelihood setup with {} free parameters'.format(Nfree))
@@ -130,9 +152,6 @@ class Likelihood(object):
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
         if self.verbose: print('got P1D from emulator')
-
-        # compute log like contribution from each redshift bin
-        log_like=0
 
         data_covar=[]
 

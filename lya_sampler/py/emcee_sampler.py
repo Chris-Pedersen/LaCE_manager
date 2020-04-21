@@ -348,6 +348,8 @@ class EmceeSampler(object):
 
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"],
+                                    basedir=config["basedir"],
+                                    skewers_label=config["skewers_label"],
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov)
 

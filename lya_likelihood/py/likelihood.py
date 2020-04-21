@@ -31,6 +31,7 @@ class Likelihood(object):
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
         self.emu_cov_factor=emu_cov_factor
+        self.simpleLike=False
 
         if data:
             self.data=data
@@ -53,7 +54,7 @@ class Likelihood(object):
                 linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
                 lhcube=emulator.arxiv.cube_data
                 sim_cosmo=sim_params_cosmo.cosmo_from_sim_params(lhcube["param_space"],
-                        lhcube["samples"]["30"],
+                        lhcube["samples"][str(emulator.arxiv.drop_sim_number)],
                         linP_model_fid)
                 self.theory=lya_theory.LyaTheory(zs,emulator=emulator,
                                             cosmo_fid=sim_cosmo)
@@ -251,6 +252,38 @@ class Likelihood(object):
             log_prior=-np.sum((np.array(fid_values)-values)**2/(2*rms**2))
             return log_prior
 
+
+    def exploration(self,values):
+        """ Return exploration term for acquisition function """
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        explor=0
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute exploration term for z={}'.format(z))
+            # get data cov
+            data_cov=self.data.get_cov_iz(iz)
+
+            # compute chi2 for this redshift bin
+            icov = np.linalg.inv(data_cov)
+            explor += np.dot(np.dot(icov,np.sqrt(np.diag(emu_covar[iz]))),np.sqrt(np.diag(emu_covar[iz])))
+
+        return explor
+        
 
     def go_silent(self):
         """Turn off verbosity on all objects in likelihood object"""

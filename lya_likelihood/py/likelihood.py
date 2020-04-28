@@ -7,6 +7,7 @@ import camb_cosmo
 import sim_params_cosmo
 import sim_params_space
 import fit_linP
+from scipy.optimize import minimize
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -253,6 +254,39 @@ class Likelihood(object):
             return log_prior
 
 
+    def maximise_acquisition(self,alpha,verbose=False,tolerance=0.1,cube=False):
+        """ Maximise lnprob+alpha*sigma, where sigma is the exploration
+        term as defined in Rogers et al (2019) """
+
+        x0=np.ones(len(self.free_parameters))*0.5
+
+        result = minimize(self.acquisition, x0,args=(alpha,verbose),
+                method='nelder-mead',
+                options={'xatol': tolerance, 'disp': True})
+
+        if cube:
+            return result.x
+        else:
+            ## Map to physical params
+            theta_physical=np.empty(len(result.x))
+            for aa, theta in enumerate(result.x):
+                theta_physical[aa]=self.free_params[aa].value_from_cube(theta)
+            return theta_physical
+
+
+    def acquisition(self,theta,alpha,verbose):
+        """ Acquisition function """
+        logprob=self.log_prob(theta)
+        explo=self.exploration(theta)
+        theta_param=theta
+        if verbose:
+                print("\n theta=", theta_param)
+                print("log prob = ", logprob)
+                print("exploration = ", alpha*explo)
+                print("acquisition function = ", logprob+alpha*explo)
+        return -1.0*(logprob+alpha*explo)
+
+
     def exploration(self,values):
         """ Return exploration term for acquisition function """
         # get measured bins from data
@@ -303,6 +337,32 @@ class Likelihood(object):
         self.theory.cosmo.verbose=True
         self.theory.emulator.verbose=True
         self.theory.emulator.arxiv.verbose=True
+
+
+    def fit_cosmology_params(self):
+        """ Fit Delta2_star and n_star to each simulation
+        in the training set """
+
+        cube=self.theory.emulator.arxiv.cube_data
+        cosmo_fid = camb_cosmo.get_cosmology()
+        linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
+
+        Delta2_stars=[]
+        n_stars=[]
+
+        for aa in range(cube["nsamples"]-1):
+            if aa==self.theory.emulator.arxiv.drop_sim_number:
+                ## Don't include mock sim
+                continue
+            else:
+                cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(cube["param_space"],
+                                cube["samples"][str(aa)],
+                                linP_model_fid,verbose=False)
+                sim_linP_model=fit_linP.LinearPowerModel(cosmo=cosmo_sim)
+                Delta2_stars.append(sim_linP_model.get_Delta2_star())
+                n_stars.append(sim_linP_model.get_n_star())
+        
+        return Delta2_stars, n_stars
 
 
     def plot_p1d(self,values=None,plot_every_iz=1):
@@ -713,6 +773,7 @@ class simpleLikelihood(object):
             emu_calls.append(model)
             
         return emu_calls
+
 
     def plot_p1d(self,values=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,

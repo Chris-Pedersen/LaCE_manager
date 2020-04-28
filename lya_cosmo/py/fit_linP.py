@@ -21,7 +21,7 @@ class LinearPowerModel(object):
             if self.k_units is 'kms':
                 self.kp=0.009
             elif self.k_units is 'Mpc':
-                self.kp=0.7
+                self.kp=0.6900
             else:
                 raise ValueError('k_units not recognized '+self.k_units)
         else:

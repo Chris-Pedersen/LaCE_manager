@@ -524,6 +524,28 @@ class GPEmulator:
         if self.verbose:
             print("Could not find a matching emulator to load")
 
+
+    def load_default(self):
+        """ Load the default set of hyperparams and parameter limits
+        for the given sim suite. This is the set of hyperparams trained
+        on the full suite of sims, and allows us to standardise our emulator
+        when testing on different sims and with different training sets """
+
+        ## Load saved emulator dictionary
+        repo=os.environ['LYA_EMU_REPO']
+        emulator_path=repo+self.arxiv.basedir+"/emulator.json"
+
+        with open(emulator_path,"r") as fp:
+            emu_load=json.load(fp)
+
+        ## Have to use asarray as json won't save numpy arrays
+        ## but gp uses numpy arrays
+        self.load_hyperparams(np.asarray(emu_load["hyperparams"]),
+                        np.asarray(emu_load["paramLimits"]))
+
+        return
+
+
     def load_hyperparams(self,hyperparams,paramLimits=None):
         """ Load a specific set of emulator hyperparameters.
         Also have option to load an associated set of parameter limits.

@@ -50,7 +50,7 @@ class EmceeSampler(object):
                 if self.verbose: print('use input likelihood')
                 self.like=like
                 if free_parameters:
-                    self.like.set_free_parameters(free_parameters)
+                    self.like.set_free_parameters(free_parameters,like.free_param_limits)
             else:
                 if self.verbose: print('use default likelihood')
                 data=data_PD2013.P1D_PD2013(blind_data=True)

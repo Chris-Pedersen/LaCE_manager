@@ -346,6 +346,7 @@ class EmceeSampler(object):
         except:
             data_cov=1.
 
+
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"],
                                     basedir=config["basedir"],
@@ -360,6 +361,13 @@ class EmceeSampler(object):
         for item in config["free_params"]:
             free_param_list.append(item[0])
             limits_list.append([item[1],item[2]])
+
+        ## Not all saved chains will have this flag
+        try:
+            free_param_limits=config["free_param_limits"]
+        except:
+            free_param_limits=None
+    
         if config["simpleLike"]==True:
             self.like=likelihood.simpleLikelihood(data=data,emulator=emulator,
                             free_parameters=free_param_list,
@@ -369,6 +377,7 @@ class EmceeSampler(object):
         else:
             self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_parameters=free_param_list,
+                            free_param_limits=free_param_limits,
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"])
@@ -470,6 +479,7 @@ class EmceeSampler(object):
         for par in self.like.free_params:
             free_params_save.append([par.name,par.min_value,par.max_value])
         saveDict["free_params"]=free_params_save
+        saveDict["free_param_limits"]=self.like.free_param_limits
 
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps

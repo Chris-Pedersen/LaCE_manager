@@ -64,16 +64,17 @@ class Likelihood(object):
 
         # setup parameters
         self.free_parameters=free_parameters ## Just a list of the names
+        self.free_param_limits=free_param_limits
         if not free_parameters:
             free_parameters=['ln_tau_0']
-        self.set_free_parameters(free_parameters)
+        self.set_free_parameters(free_parameters,self.free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
         return
 
 
-    def set_free_parameters(self,free_parameter_names):
+    def set_free_parameters(self,free_parameter_names,free_param_limits):
         """Setup likelihood parameters that we want to vary"""
 
         # setup list of likelihood free parameters
@@ -85,6 +86,11 @@ class Likelihood(object):
         # select parameters using input list of names
         for par in params:
             if par.name in free_parameter_names:
+                if free_param_limits is not None:
+                    ## Set min and max of each parameter if
+                    ## a list is given. otherwise leave as default
+                    par.min_value=free_param_limits[self.free_parameters.index(par.name)][0]
+                    par.max_value=free_param_limits[self.free_parameters.index(par.name)][1]
                 self.free_params.append(par)
 
         Nfree=len(self.free_params)

@@ -57,13 +57,14 @@ The likelihood parameters are:
 `alpha_star`
 `ln_tau_0`
 `ln_tau_1`
-`T0_1`
-`T0_2`
-`T0_3`
+`ln_sigT_kms_0`
+`ln_sigT_kms_1`
 `ln_gamma_0`
 `ln_gamma_1`
 `ln_kF_0`
 `ln_kF_1`
+
+The IGM parameters represent a rescaling of a fiducial simulation run at the centre of the Latin hypercube for that suite. We perform this rescaling using a power law, where the index "0" represents the amplitude, and "1" represents the slope with redshift.
 
 #### Emulator parameters:
 These are the parameters that describe each individual P1D(k) power spectrum. We have detached these from redshift and traditional cosmology parameters.

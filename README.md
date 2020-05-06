@@ -83,7 +83,7 @@ The default operation of the emulator is currently to optimise a new set of hype
 ## Sampler information
 
 ### Saved sampler chains
-Note that I am currently not storing sampler chains in the repo as the file sizes are too large
+Note that I am currently not storing sampler chains in the repo as the file sizes are too large. This means that many of the notebooks in `lya_sampler/notebooks` will not run with a fresh clone of the repo. Will need to figure out a longer term solution to this.
 
 ### Running a sampler
 An example script can be found in `lya_sampler/scripts/multi_sampler.py` with a corresponding config file `example.config`. The syntax to run is the following: `python3 multi_sampler.py -c example.config`. This script will create a new folder in `lya_sampler/chains/`, and store everything related to the sampler run there.

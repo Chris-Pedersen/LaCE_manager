@@ -86,6 +86,8 @@ class EmceeSampler(object):
                         "n_p":"$n_p$",
                         "Delta2_star":"$\Delta^2_\star$",
                         "n_star":"$n_\star$",
+                        "g_star":"g_\star",
+                        "f_star":"f_\star",
                         "ln_tau_0":"$ln(\tau_0)$",
                         "ln_tau_1":"$ln(\tau_1)$",
                         "ln_sigT_kms_0":"$ln(\sigma^T_0)$",

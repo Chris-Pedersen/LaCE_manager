@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 import likelihood_parameter
+import os
 
 
 def mean_flux_Kamble2019(z):
@@ -16,13 +17,21 @@ class MeanFluxModel(object):
          For now, we use a polynomial to describe log(tau_eff) around z_tau.
          """
 
-    def __init__(self,z_tau=3.0,ln_tau_coeff=None):
-        """Construct model with central redshift and (x2,x1,x0) polynomial."""
+    def __init__(self,z_tau=3.0,ln_tau_coeff=None,
+                    basedir="/p1d_emulator/sim_suites/Australia20/"):
+        """Construct model as a rescaling around a fiducial mean flux evolution"""
+
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+
+        ## Load fiducial model
+        fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
+        self.fid_z=fiducial[0]
+        self.fid_tau_eff=fiducial[1] ## tau_eff(z)
+
         self.z_tau=z_tau
         if not ln_tau_coeff:
-            mf_z=0.6365
-            tau_0=-np.log(mf_z)
-            ln_tau_coeff=[3.18,np.log(tau_0)]
+            ln_tau_coeff=[0.0,0.0]
         self.ln_tau_coeff=ln_tau_coeff
         # store list of likelihood parameters (might be fixed or free)
         self.set_parameters()
@@ -34,12 +43,18 @@ class MeanFluxModel(object):
         return len(self.ln_tau_coeff)
 
 
+    def power_law_scaling(self,z):
+        """ Power law rescaling around z_tau """
+        xz=np.log((1+z)/(1+self.z_tau))
+        ln_poly=np.poly1d(self.ln_tau_coeff)
+        ln_out=ln_poly(xz)
+        return np.exp(ln_out)
+
+
     def get_tau_eff(self,z):
         """Effective optical depth at the input redshift"""
-        xz=np.log((1+z)/(1+self.z_tau))
-        ln_tau_poly=np.poly1d(self.ln_tau_coeff)
-        ln_tau=ln_tau_poly(xz)
-        return np.exp(ln_tau)
+        tau_eff=self.power_law_scaling(z)*self.fid_tau_eff[np.argwhere(self.fid_z==z)[0][0]]
+        return tau_eff
 
 
     def get_mean_flux(self,z):
@@ -56,14 +71,11 @@ class MeanFluxModel(object):
         for i in range(Npar):
             name='ln_tau_'+str(i)
             if i==0:
-                xmin=-1.5
-                xmax=-0.5
-            elif i==1:
-                xmin=2.9
-                xmax=4.5
+                xmin=-0.2
+                xmax=0.2
             else:
-                xmin=-2.0
-                xmax=2.0
+                xmin=-0.2
+                xmax=0.2
             # note non-trivial order in coefficients
             value=self.ln_tau_coeff[Npar-i-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,

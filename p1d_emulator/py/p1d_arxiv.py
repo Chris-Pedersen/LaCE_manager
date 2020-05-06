@@ -39,11 +39,12 @@ class ArxivP1D(object):
         self.nearest_tau=nearest_tau
         self.z_max=z_max
         self.undersample_cube=undersample_cube
+        self.drop_sim_number=drop_sim_number
 
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
-                            pick_sim_number,drop_sim_number,
+                            pick_sim_number,self.drop_sim_number,
                             keep_every_other_rescaling,
                             z_max,undersample_cube,nsamples)
         

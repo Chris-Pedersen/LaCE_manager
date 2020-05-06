@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 import data_PD2013
 import lya_theory
 import likelihood_parameter
+import camb_cosmo
+import sim_params_cosmo
+import sim_params_space
+import fit_linP
+from scipy.optimize import minimize
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -12,16 +17,22 @@ class Likelihood(object):
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,emu_cov_factor=1):
+                    min_kp_kms=None,emu_cov_factor=1,
+                    use_sim_cosmo=True):
         """Setup likelihood from theory and data. Options:
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
-            set between 0 and 1. """
+            set between 0 and 1.
+            - use_sim_cosmo will extract the cosmological likelihood
+              parameters from the fiducial simulation, and use these
+              as a fiducial model"""
+
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
         self.emu_cov_factor=emu_cov_factor
+        self.simpleLike=False
 
         if data:
             self.data=data
@@ -37,19 +48,33 @@ class Likelihood(object):
         else:
             zs=self.data.z
             if self.verbose: print('use default theory')
-            self.theory=lya_theory.LyaTheory(zs,emulator=emulator)
+            if use_sim_cosmo:
+                ## Set fiducial cosmology parameters directly
+                ## from simulation
+                cosmo_fid = camb_cosmo.get_cosmology()
+                linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
+                lhcube=emulator.arxiv.cube_data
+                sim_cosmo=sim_params_cosmo.cosmo_from_sim_params(lhcube["param_space"],
+                        lhcube["samples"][str(emulator.arxiv.drop_sim_number)],
+                        linP_model_fid)
+                self.theory=lya_theory.LyaTheory(zs,emulator=emulator,
+                                            cosmo_fid=sim_cosmo)
+            else:
+                self.theory=lya_theory.LyaTheory(zs,emulator=emulator)
 
         # setup parameters
+        self.free_parameters=free_parameters ## Just a list of the names
+        self.free_param_limits=free_param_limits
         if not free_parameters:
             free_parameters=['ln_tau_0']
-        self.set_free_parameters(free_parameters,free_param_limits)
+        self.set_free_parameters(free_parameters,self.free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
         return
 
 
-    def set_free_parameters(self,free_parameter_names):
+    def set_free_parameters(self,free_parameter_names,free_param_limits):
         """Setup likelihood parameters that we want to vary"""
 
         # setup list of likelihood free parameters
@@ -61,12 +86,17 @@ class Likelihood(object):
         # select parameters using input list of names
         for par in params:
             if par.name in free_parameter_names:
+                if free_param_limits is not None:
+                    ## Set min and max of each parameter if
+                    ## a list is given. otherwise leave as default
+                    par.min_value=free_param_limits[self.free_parameters.index(par.name)][0]
+                    par.max_value=free_param_limits[self.free_parameters.index(par.name)][1]
                 self.free_params.append(par)
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)
 
-        assert (Nfree==Nin), 'could not setup free paremeters'
+        assert (Nfree==Nin), 'could not setup free parameters'
 
         if self.verbose:
             print('likelihood setup with {} free parameters'.format(Nfree))
@@ -110,16 +140,44 @@ class Likelihood(object):
         """Compute chi2 using data and theory, without adding
             emulator covariance"""
 
-        log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    emu_cov_factor=0)
+        log_like=self.get_log_like(values,ignore_log_det_cov=True)
         if log_like is None:
             return None
         else:
             return -2.0*log_like
 
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True,
-                        emu_=False):
+    def get_covmats(self,values=None):
+        """ Return the data and emulator covmats for a given
+        set of likelihood parameters. Will return a list of the
+        covmats at each z """
+
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        data_covar=[]
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute chi2 for z={}'.format(z))
+            # get data
+            data_covar.append(self.data.get_cov_iz(iz))
+
+        return data_covar, emu_covar
+
+
+    def get_log_like(self,values=None,ignore_log_det_cov=True):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True."""
 
@@ -172,8 +230,7 @@ class Likelihood(object):
         log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
-        log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    emu_cov_factor=self.emu_cov_factor)
+        log_like=self.get_log_like(values,ignore_log_det_cov=False)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
@@ -203,6 +260,71 @@ class Likelihood(object):
             return log_prior
 
 
+    def maximise_acquisition(self,alpha,verbose=False,tolerance=0.1,cube=False):
+        """ Maximise lnprob+alpha*sigma, where sigma is the exploration
+        term as defined in Rogers et al (2019) """
+
+        x0=np.ones(len(self.free_parameters))*0.5
+
+        result = minimize(self.acquisition, x0,args=(alpha,verbose),
+                method='nelder-mead',
+                options={'xatol': tolerance, 'disp': True})
+
+        if cube:
+            return result.x
+        else:
+            ## Map to physical params
+            theta_physical=np.empty(len(result.x))
+            for aa, theta in enumerate(result.x):
+                theta_physical[aa]=self.free_params[aa].value_from_cube(theta)
+            return theta_physical
+
+
+    def acquisition(self,theta,alpha,verbose):
+        """ Acquisition function """
+        logprob=self.log_prob(theta)
+        explo=self.exploration(theta)
+        theta_param=theta
+        if verbose:
+                print("\n theta=", theta_param)
+                print("log prob = ", logprob)
+                print("exploration = ", alpha*explo)
+                print("acquisition function = ", logprob+alpha*explo)
+        return -1.0*(logprob+alpha*explo)
+
+
+    def exploration(self,values):
+        """ Return exploration term for acquisition function """
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        explor=0
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute exploration term for z={}'.format(z))
+            # get data cov
+            data_cov=self.data.get_cov_iz(iz)
+
+            # compute chi2 for this redshift bin
+            icov = np.linalg.inv(data_cov)
+            explor += np.dot(np.dot(icov,np.sqrt(np.diag(emu_covar[iz]))),np.sqrt(np.diag(emu_covar[iz])))
+
+        return explor
+        
+
     def go_silent(self):
         """Turn off verbosity on all objects in likelihood object"""
 
@@ -221,6 +343,32 @@ class Likelihood(object):
         self.theory.cosmo.verbose=True
         self.theory.emulator.verbose=True
         self.theory.emulator.arxiv.verbose=True
+
+
+    def fit_cosmology_params(self):
+        """ Fit Delta2_star and n_star to each simulation
+        in the training set """
+
+        cube=self.theory.emulator.arxiv.cube_data
+        cosmo_fid = camb_cosmo.get_cosmology()
+        linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
+
+        Delta2_stars=[]
+        n_stars=[]
+
+        for aa in range(cube["nsamples"]-1):
+            if aa==self.theory.emulator.arxiv.drop_sim_number:
+                ## Don't include mock sim
+                continue
+            else:
+                cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(cube["param_space"],
+                                cube["samples"][str(aa)],
+                                linP_model_fid,verbose=False)
+                sim_linP_model=fit_linP.LinearPowerModel(cosmo=cosmo_sim)
+                Delta2_stars.append(sim_linP_model.get_Delta2_star())
+                n_stars.append(sim_linP_model.get_n_star())
+        
+        return Delta2_stars, n_stars
 
 
     def plot_p1d(self,values=None,plot_every_iz=1):
@@ -399,14 +547,44 @@ class simpleLikelihood(object):
         log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
-        log_like=self.get_log_like(values,ignore_log_det_cov=False,
-                                    emu_cov_factor=self.emu_cov_factor)
+        log_like=self.get_log_like(values,ignore_log_det_cov=False)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
             return -np.inf
 
         return log_like + log_prior
+
+    def exploration(self,values):
+        """ Return exploration term for acquisition function """
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        explor=0
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute exploration term for z={}'.format(z))
+            # get data cov
+            data_cov=self.data.get_cov_iz(iz)
+
+            # compute chi2 for this redshift bin
+            icov = np.linalg.inv(data_cov)
+            explor += np.dot(np.dot(icov,np.sqrt(np.diag(emu_covar[iz]))),np.sqrt(np.diag(emu_covar[iz])))
+
+        return explor
 
     def get_log_prior(self,values):
         """Compute logarithm of prior"""
@@ -432,16 +610,45 @@ class simpleLikelihood(object):
         """Compute chi2 using data and theory, without adding
             emulator covariance"""
 
-        log_like=self.get_log_like(values,ignore_log_det_cov=True,
-                                    emu_cov_factor=1)
+        log_like=self.get_log_like(values,ignore_log_det_cov=True)
         if log_like is None:
             return None
         else:
             return -2.0*log_like
 
+    def get_covmats(self,values=None):
+        """ Return the data and emulator covmats for a given
+        set of likelihood parameters. Will return a list of the
+        covmats at each z """
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True,
-                        emu_cov_factor=1):
+        # get measured bins from data
+        k_kms=self.data.k
+        zs=self.data.z
+        Nz=len(zs)
+
+        # ask emulator prediction for P1D in each bin
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        if self.verbose: print('got P1D from emulator')
+
+        # compute log like contribution from each redshift bin
+        log_like=0
+
+        data_covar=[]
+
+        for iz in range(Nz):
+            # acess data for this redshift
+            z=zs[iz]
+            # make sure that theory is valid
+            if emu_p1d[iz] is None:
+                if self.verbose: print(z,'theory did not emulate p1d')
+                return None
+            if self.verbose: print('compute chi2 for z={}'.format(z))
+            # get data
+            data_covar.append(self.data.get_cov_iz(iz))
+
+        return data_covar, emu_covar
+
+    def get_log_like(self,values=None,ignore_log_det_cov=True):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True.."""
 
@@ -468,6 +675,7 @@ class simpleLikelihood(object):
             # get data
             p1d=self.data.get_Pk_iz(iz)
             data_cov=self.data.get_cov_iz(iz)
+
             # add covariance from emulator
             cov = data_cov + self.emu_cov_factor*emu_covar[iz]
 
@@ -571,6 +779,7 @@ class simpleLikelihood(object):
             emu_calls.append(model)
             
         return emu_calls
+
 
     def plot_p1d(self,values=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,

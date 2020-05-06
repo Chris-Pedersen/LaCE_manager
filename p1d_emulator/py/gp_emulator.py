@@ -24,7 +24,11 @@ class GPEmulator:
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
                 passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
                 checkHulls=False,set_hyperparams=None,
-                paramLimits=None):
+                paramLimits=None,rbf_only=False,
+                emu_per_k=False,
+                reduce_var_k=False,
+                reduce_var_z=False,
+                reduce_var_mf=False):
 
         self.kmax_Mpc=kmax_Mpc
         self.basedir=basedir
@@ -41,6 +45,11 @@ class GPEmulator:
         self.paramLimits=paramLimits
         self.crossval=False ## Flag to check whether or not a prediction is
                             ## inside the training set
+        self.rbf_only=rbf_only
+        self.emu_per_k=emu_per_k
+        self.reduce_var_k=reduce_var_k ## Emulate (1+k)P1D(k)
+        self.reduce_var_z=reduce_var_z ## Emulate P1D(k)/(1+z)^3.8
+        self.reduce_var_mf=reduce_var_mf ## Emulate P1D(k)*<F>^2.5
 
         # read all files with P1D measured in simulation suite
         if passArxiv==None:
@@ -59,10 +68,10 @@ class GPEmulator:
 
         ## Find max k bin
         self.k_bin=int(np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc)))
-        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][:self.k_bin]
+        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][1:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","alpha_p","sigT_Mpc","f_p","n_p","gamma","kF_Mpc"]
+        	self.paramList=["mF","Delta2_p","sigT_Mpc","n_p","gamma","kF_Mpc"]
         else:
         	self.paramList=paramList
 
@@ -72,8 +81,12 @@ class GPEmulator:
         if train==True:
             self.train()
 
-        self.checkHulls=checkHulls ## Print all this?
-        self.hull=Delaunay(self.X_param_grid)
+
+        self.checkHulls=checkHulls
+        if self.checkHulls:
+            self.hull=Delaunay(self.X_param_grid)
+        else:
+            self.hull=None
         self.emulators=None ## Flag that this is an individual emulator object
 
 
@@ -81,9 +94,15 @@ class GPEmulator:
         ''' Method to get the Y training points in the form of the P1D
         at different k values '''
 
-        P1D_k=np.empty([len(self.arxiv.data),self.k_bin])
+        P1D_k=np.empty([len(self.arxiv.data),self.k_bin-1])
         for aa in range(len(self.arxiv.data)):
-            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][:self.k_bin]
+            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]
+            if self.reduce_var_k:
+                P1D_k[aa]*=(1+self.training_k_bins)
+            if self.reduce_var_z:
+                P1D_k[aa]*=1./((1+self.arxiv.data[aa]["z"])**3.8)
+            if self.reduce_var_mf:
+                P1D_k[aa]*=((self.arxiv.data[aa]["mF"])**2)
 
         return P1D_k
 
@@ -151,7 +170,7 @@ class GPEmulator:
         of the provided params, not by defining our own prior volume. Need to decide
         whether or not this is what we want. '''
 
-        self.X_param_grid,Ypoints=self._buildTrainingSets(arxiv,paramList)
+        self.X_param_grid,self.Ypoints=self._buildTrainingSets(arxiv,paramList)
 
         ## Get parameter limits for rescaling
         if self.paramLimits is None:
@@ -164,18 +183,34 @@ class GPEmulator:
             print("Rescaled params to unity volume")
 
         ## Factors by which to rescale the flux to set a mean of 0
-        self.scalefactors = np.median(Ypoints, axis=0)
+        self.scalefactors = np.median(self.Ypoints, axis=0)
 
         #Normalise by the median value
-        normspectra = (Ypoints/self.scalefactors) -1.
+        self.normspectra = (self.Ypoints/self.scalefactors) -1.
 
-        #Standard squared-exponential kernel with a different length scale for each parameter, as
-        #they may have very different physical properties.
-        kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
-        kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
-
-        self.gp = GPy.models.GPRegression(self.X_param_grid,normspectra,kernel=kernel,
-                        noise_var=self.emu_noise,initialize=False)
+        if self.rbf_only==False:
+            kernel = GPy.kern.Linear(len(paramList),ARD=self.asymmetric_kernel)
+            kernel += GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
+        else:
+            kernel = GPy.kern.RBF(len(paramList),ARD=self.asymmetric_kernel)
+        
+        if self.emu_per_k:
+            ## Build a GP for each k bin
+            self.gp=[]
+            for aa in range(len(self.training_k_bins)):
+                p1d_k=self.normspectra[:,aa]
+                self.gp.append(GPy.models.GPRegression(self.X_param_grid,
+                        p1d_k[:,None],
+                        kernel=kernel,
+                        noise_var=self.emu_noise,
+                        initialize=False))
+        else:
+            self.gp = GPy.models.GPRegression(self.X_param_grid,self.normspectra,
+                    kernel=kernel,
+                    noise_var=self.emu_noise,
+                    initialize=False)
+        
+        return
 
 
     def _get_param_limits(self,paramGrid):
@@ -192,12 +227,22 @@ class GPEmulator:
     def train(self):
         ''' Train the GP emulator '''
 
-        self.gp.initialize_parameter()
-        print("Training GP on %d points" % len(self.arxiv.data))
-        status = self.gp.optimize(messages=False)
-        print("Optimised")
+
+        if self.emu_per_k:
+            for gp in self.gp:
+                gp.initialize_parameter()
+                print("Training GP on %d points" % len(self.arxiv.data))
+                status = gp.optimize(messages=False)
+                print("Optimised")
+        else:
+            self.gp.initialize_parameter()
+            print("Training GP on %d points" % len(self.arxiv.data))
+            status = self.gp.optimize(messages=False)
+            print("Optimised")
 
         self.trained=True
+
+        return
 
 
     def printPriorVolume(self):
@@ -230,7 +275,7 @@ class GPEmulator:
         return self.hull.find_simplex(np.array(param).reshape(1,-1))<0
         
 
-    def predict(self,model):
+    def predict(self,model,z=None):
         ''' Return P1D or polyfit coeffs for a given parameter set
         For the k bin emulator this will be in the training k bins '''
 
@@ -244,16 +289,38 @@ class GPEmulator:
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
         if self.checkHulls:
             if self.hull.find_simplex(np.array(param).reshape(1,-1))<0:
-                print("Model is outside convex hull:", model)
+                #print("Model is outside convex hull:", model)
+                return
         ## Check if model is inside training set
         if self.crossval==True:
             isin=np.isin(param,self.X_param_grid)
-            if np.sum(isin)==len(param):
+            if np.sum(isin)==len(param): ## Check all parameters
                 print("Emulator call is inside training set!!!")
 
-        pred,err=self.gp.predict(np.array(param).reshape(1,-1))
+        if self.emu_per_k:
+            pred=np.array([])
+            err=np.array([])
+            for gp in self.gp:
+                pred_single,err_single=gp.predict(np.array(param).reshape(1,-1))
+                pred=np.append(pred,pred_single)
+                err=np.append(err,err_single)
+        else:
+            pred,err=self.gp.predict(np.array(param).reshape(1,-1))
 
-        return np.ndarray.flatten((pred+1)*self.scalefactors),np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+        out_pred=np.ndarray.flatten((pred+1)*self.scalefactors)
+        out_err=np.ndarray.flatten(np.sqrt(err)*self.scalefactors)
+
+        if self.reduce_var_k:
+            out_pred*=1./(1+self.training_k_bins)
+            out_err*=1./(1+self.training_k_bins)
+        if self.reduce_var_z:
+            out_pred*=((1+z)**3.8)
+            out_err*=((1+z)**3.8)
+        if self.reduce_var_mf:
+            out_pred*=1./(model["mF"]**2)
+            out_err*=1./(model["mF"]**2)
+       
+        return out_pred,out_err
 
 
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False,z=None):
@@ -271,9 +338,11 @@ class GPEmulator:
                 print(max(k_Mpc))
                 print(max(self.training_k_bins))
                 print("Warning! Your requested k bins are higher than the training values.")
-        pred,err=self.predict(model)
+        pred,err=self.predict(model,z)
+        ## Use cubic interpolation to return prediction for arbitrary
+        ## k bins
         if self.emu_type=="k_bin":
-            interpolator=interp1d(self.training_k_bins,pred, "cubic")
+            interpolator=interp1d(self.training_k_bins,pred,"cubic")
             interpolated_P=interpolator(k_Mpc)
         elif self.emu_type=="polyfit":
             poly=np.poly1d(pred)
@@ -285,9 +354,12 @@ class GPEmulator:
             if self.emu_type=="k_bin":
                 error_interp=interp1d(self.training_k_bins,err, "cubic")
                 error=error_interp(k_Mpc)
-                # for now, assume that we have fully correlated errors
-                covar = np.outer(error, error)
-                #covar = np.diag(error**2)
+                if self.emu_per_k:
+                    covar=np.diag(error**2)
+                else:
+                    ## For now, assume that we have fully correlated errors
+                    ## when using same hyperparams
+                    covar = np.outer(error, error)
                 return interpolated_P, covar
             else:
                 return interpolated_P, covar
@@ -452,11 +524,39 @@ class GPEmulator:
         if self.verbose:
             print("Could not find a matching emulator to load")
 
-    def load_hyperparams(self,hyperparams):
-        """ Just load the emulator hyperparameters. Careful with
-        this to make sure the hyperparameters are optimised
-        in the same unit volume as the training data!
+
+    def load_default(self):
+        """ Load the default set of hyperparams and parameter limits
+        for the given sim suite. This is the set of hyperparams trained
+        on the full suite of sims, and allows us to standardise our emulator
+        when testing on different sims and with different training sets """
+
+        ## Load saved emulator dictionary
+        repo=os.environ['LYA_EMU_REPO']
+        emulator_path=repo+self.arxiv.basedir+"/emulator.json"
+
+        with open(emulator_path,"r") as fp:
+            emu_load=json.load(fp)
+
+        ## Have to use asarray as json won't save numpy arrays
+        ## but gp uses numpy arrays
+        self.load_hyperparams(np.asarray(emu_load["hyperparams"]),
+                        np.asarray(emu_load["paramLimits"]))
+
+        return
+
+
+    def load_hyperparams(self,hyperparams,paramLimits=None):
+        """ Load a specific set of emulator hyperparameters.
+        Also have option to load an associated set of parameter limits.
+        Will rebuilt the X training grid new parameter limits are passed
         """
+
+        ## If we give a new set of paramlimits
+        ## also reconstruct the training data
+        if paramLimits is not None:
+            self.paramLimits=paramLimits
+            self._build_interp(self.arxiv,self.paramList)
         
         self.gp.update_model(False)
         self.gp.initialize_parameter()

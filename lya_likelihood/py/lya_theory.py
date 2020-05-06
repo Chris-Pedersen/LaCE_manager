@@ -65,8 +65,7 @@ class LyaTheory(object):
             # emulator parameters for nuisance models, at this redshift
             model['mF']=mf_model.get_mean_flux(z)
             model['gamma']=T_model.get_gamma(z)
-            T0=T_model.get_T0(z)
-            sigT_kms=thermal_model.thermal_broadening_kms(T0)
+            sigT_kms=T_model.get_sigT_kms(z)
             dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
             model['sigT_Mpc']=sigT_kms/dkms_dMpc
             kF_kms=kF_model.get_kF_kms(z)
@@ -136,7 +135,7 @@ class LyaTheory(object):
         params=self.cosmo.linP_model_fid.get_likelihood_parameters()
         for par in self.mf_model_fid.get_parameters():
             params.append(par)
-        for par in self.T_model_fid.get_T0_parameters():
+        for par in self.T_model_fid.get_sigT_kms_parameters():
             params.append(par)
         for par in self.T_model_fid.get_gamma_parameters():
             params.append(par)

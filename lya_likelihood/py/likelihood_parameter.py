@@ -21,7 +21,7 @@ class LikelihoodParameter(object):
     def value_in_cube(self):
         """Normalize parameter value to [0,1]."""
 
-        assert self.value, 'value not set in parameter '+self.name
+        assert self.value is not None, 'value not set in parameter '+self.name
         return (self.value-self.min_value)/(self.max_value-self.min_value)
 
 

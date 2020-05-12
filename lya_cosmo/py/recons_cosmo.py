@@ -3,6 +3,7 @@ import os
 import camb
 import camb_cosmo
 import fit_linP
+from scipy import interpolate
 
 class ReconstructedCosmology(object):
     """Given fiducial cosmology, and set of linear power parameters, 
@@ -180,6 +181,89 @@ class ReconstructedCosmology(object):
 
         return linP_Mpc
 
+    def reconstruct_linP_Mpc_old(self,z,linP_model,linP_Mpc_fid):
+        """ Use fiducial cosmology and linP_model to reconstruct power (Mpc)"""
+
+        # pivot points
+        z_star=self.z_star
+        kp_kms=self.kp_kms
+
+        # reconstruct starting from the power in the fiducial cosmology
+        linP_Mpc = np.copy(linP_Mpc_fid)
+
+        # get parameters describing linear power for input cosmology
+        f_star=linP_model.get_f_star()
+        linP_kms_params=linP_model.linP_params['linP_kms']
+        # get parameters describing linear power for fiducial cosmology
+        f_star_fid=self.linP_model_fid.get_f_star()
+        linP_kms_params_fid=self.linP_model_fid.linP_params['linP_kms']
+        # get relative parameters
+        df_star=f_star-f_star_fid
+
+        # modify shape based on fits done in velocity units
+        # B(q) = P(z_star,q) / P_fid(z_star,q)
+        # linP_kms_params actually store log(B) vs log(k_kms/kp_kms)
+        lnk_kp = np.log(self.k_Mpc / self.kp_Mpc)
+        lnB = linP_kms_params(lnk_kp)-linP_kms_params_fid(lnk_kp)
+        linP_Mpc *= np.exp(lnB)
+
+        # correct for linear growth with respect to fiducial cosmology
+        # [D(z) / D(z_star)] / [D_fid(z) / D_fid(z_star)]
+        D_correct = 1-df_star*(z-z_star)/(1+z_star)
+        linP_Mpc *= D_correct**2
+
+        return self.k_Mpc, linP_Mpc
+
+
+    def reconstruct_linP_Mpc_new(self,z,linP_model,linP_Mpc_fid,true_H=None):
+        """ New method to reconstruct linP in Mpc """
+
+        # pivot points
+        z_star=self.z_star
+        kp_kms=self.kp_kms
+
+        # reconstruct starting from the power in the fiducial cosmology
+        linP_Mpc = np.copy(linP_Mpc_fid)
+
+        # get parameters describing linear power for input cosmology
+        f_star=linP_model.get_f_star()
+        linP_kms_params=linP_model.linP_params['linP_kms']
+        # get parameters describing linear power for fiducial cosmology
+        f_star_fid=self.linP_model_fid.get_f_star()
+        linP_kms_params_fid=self.linP_model_fid.linP_params['linP_kms']
+        # get relative parameters
+        df_star=f_star-f_star_fid
+
+        ## The previous approach assumed the same h. We need to use the
+        ## fiducial parameters and P_0(k) to reconstruct a new P(k)
+        ## in Mpc
+        ## Use true H(z) to see if inaccuracy is coming from that
+        lnk_kp = np.log(self.k_Mpc / self.kp_Mpc)
+        lnB = linP_kms_params(lnk_kp)-linP_kms_params_fid(lnk_kp)
+        linP_Mpc *= np.exp(lnB)
+
+        ## Correct for difference in H(z)
+        if true_H is not None:
+            H_z=true_H
+            recons_H=self.reconstruct_Hubble(z,linP_model)
+        else:
+            H_z=self.reconstruct_Hubble(z,linP_model)
+
+        H_z_fid=self.results_fid.hubble_parameter(z)
+
+        linP_Mpc *= (H_z_fid/H_z)**3
+
+        ## We have calculatd P(q/a_\nu)
+        k_new=self.k_Mpc*(H_z/H_z_fid)
+
+
+        # correct for linear growth with respect to fiducial cosmology
+        # [D(z) / D(z_star)] / [D_fid(z) / D_fid(z_star)]
+        D_correct = 1-df_star*(z-z_star)/(1+z_star)
+        linP_Mpc *= D_correct**2
+
+        return k_new, linP_Mpc
+
 
     def reconstruct_Hubble_iz(self,iz,linP_model):
         """ Use fiducial cosmology and g_star to reconstruct Hubble parameter"""
@@ -203,6 +287,7 @@ class ReconstructedCosmology(object):
         # compute difference in acceleration
         g_star=linP_model.get_g_star()
         g_star_fid=self.linP_model_fid.get_g_star()
+
         # compute Hubble parameter in input cosmology
         z_star=self.z_star
         Hz = Hz_fid * (1+3/2*(g_star-g_star_fid)*(z-z_star)/(1+z_star))

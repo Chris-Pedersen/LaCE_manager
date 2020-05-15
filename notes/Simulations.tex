@@ -10,7 +10,7 @@ Our baseline plan is to run simulations with $N=1024^3$ particle per especies
 (baryons and CDM) in boxes of roughly $100 \Mpc$.
 This would give us a mean particle separation of roughly $100 \kpc$, or 
 $70 \hkpc$, that should be enough to have a first decent emulator working.
-\AFR{This might not be enough to properly study the higher redhift bins in
+\afr{This might not be enough to properly study the higher redhift bins in
 HIRES/UVES, $z > 5$, where the gas is less smooth and it is harder to resolve
 all the structure.
 But I think it is better to err on this side than to have boxes that are too
@@ -51,7 +51,7 @@ where we know that our simulations are not correct anyway
 \footnote{So if we found that collisional ionizations mattered we would
 have to consider using more realistic (and expensive!) simulations.}.
 
-\afhid{It would be great to repeat this exercise in two simulations that
+\afrhid{It would be great to repeat this exercise in two simulations that
 have very similar thermal history but different mean flux, I will ask
 Jose Onorbe for help (he is visiting UCL soon).
 It is also possible that the test is clearer if we look at the 3D power,
@@ -77,7 +77,7 @@ of course, like you say here, a
 change someone finds when they rerun with different ionizing background is
 from changing temperatures, which you are supposed to be marginalizing over.
 }
-\afhid{Yes, you are right. I had a chat with Jose about this a couple of weeks
+\afrhid{Yes, you are right. I had a chat with Jose about this a couple of weeks
 ago, and he mentioned collisional ionization as a possible reason for the
 breakdown, but as you say we don't trust these high-density regions anyway.
 It is more likely that the reason that \cite{Lukic2015} finds a "bias" is that
@@ -127,7 +127,7 @@ This would capture correctly two different physical effects:
 think there is any physical possibility of them not using the same 
 temperatures... (so I wouldn't mess with it, except maybe in some pedagogical
 example)}
- \afhid{Great, thanks.}
+ \afrhid{Great, thanks.}
 \end{itemize}
 
 It does not matter whether we use different TREECOOL files or different
@@ -158,9 +158,9 @@ different way to say it... if all pressure came from temperature in observable
 range I'd say this is a little bit of a nitpicky distinction, but the
 contribution from pressure at early times sort of fundamentally decouples the
 two uses of temperature...}
-\afhid{Agreed.}
+\afrhid{Agreed.}
 
-\afhid{Unfortunately it is very difficult to add smoothing in post-processing,
+\afrhid{Unfortunately it is very difficult to add smoothing in post-processing,
 effectively lowering the value of $k_F$ in the simulation by hand.
 Of course, it would never be possible to reduce the smoothing, and to do that
 one would need to run a simulation with an earlier redshift of reionization.}
@@ -177,12 +177,12 @@ space distortions.
 An alternative would be to use the information about the temperature in
 previous snapshots to compute $k_F$ using equation $8$ in \cite{Gnedin1998}.
 
-\AFR{I wonder whether this would require storing even more snapshots,
+\afr{I wonder whether this would require storing even more snapshots,
 increasing even further the total amount of disk space required.
 It is possible that we can compute the temperature on the fly, or write
 only a sub-sample of particles for "intermediate" snapshots.}
 
-\afhid{We could also ask Jose Onorbe for help to setup this type of test. 
+\afrhid{We could also ask Jose Onorbe for help to setup this type of test. 
 We would also need to discuss the best way to measure $k_F$ in the snapshots:
 fit a Gaussian kernel in the power spectrum of $F_{\rm real}$, where no 
 redshift-space distortions have been included? I believe that is what is 
@@ -231,7 +231,7 @@ Therefore, we could use the amplitude of the linear power at a given snapshot
 to label it, and we could potentially use different snapshots of the same
 simulation to study models with different amplitudes of the linear power.
 
-\afhid{How do we measure the linear power in the snapshot?
+\afrhid{How do we measure the linear power in the snapshot?
 I could see three options (in order of my preference):
 predict it using the power measured in the initial conditions, and the relative
 growth as computed from CAMB/CLASS;
@@ -243,7 +243,7 @@ from the predicted by CAMB/CLASS because of issues in the linear growht).}
 \ashid{By far preferrable, in fact the only way that wouldn't look dodgy
 would be not to measure it at all \smiley . It is a known quantity give
 linear codes \smiley .}
-\afhid{Pat always claims that measured power is better than predicted power,
+\afrhid{Pat always claims that measured power is better than predicted power,
 given cosmic variance in the box.
 We shouldn't care about the mean power over infinite number of realizations,
 it is more useful to talk about the actual power than went into the simulation,
@@ -260,7 +260,7 @@ snapshot (in velocity units) and its logarithmic growth rate, and will measure
 from the snapshots other IGM properties like the mean flux $\bar F$, the TDR
 parameters ($T_0$ and $\gamma$) and the filtering scale $k_F$.
 \ashid{Perhaps you need $f$ again.}
-\afhid{Yes, good point.}
+\afrhid{Yes, good point.}
 
 The emulator will have a list of all the models for which we have simulated
 power spectra, and it will specify a metric quantifying the separation

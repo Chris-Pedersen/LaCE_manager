@@ -46,9 +46,9 @@ at any redshift.
 This, of course, is for cases where we ignore differences in $f(z)$ or
 $H(z)$, but these could easily be introduced as well.
 
-\AFR{I actually prefer the itemized description, but it is a matter of taste.}
+\afr{I actually prefer the itemized description, but it is a matter of taste.}
 
-\afhid{But I don't think I've got an answer to my question. 
+\afrhid{But I don't think I've got an answer to my question. 
 We define a model, by choosing $\theta$ (linear power at $z_\star=3$, 
 in $\kms$, and may be $f_\star$) and by choosing $\phi$ ($\bar F$, $k_F$...);
 We then ask the emulator to give us the prediction for flux power spectrum
@@ -82,7 +82,7 @@ predict it? I'd say at first approximation it needs to know $P(k,z=4)$, in
 km/s. So the input to the emulator is $P(k,z=4)$ in km/s, period, end of 
 story for emulator -- it has a hard enough job doing this well, it doesn't
 need to worry about where this $P(k in km/s,z=4)$ came from. }
-\afhid{Yes, I agree. I realize now that I was using the word \textit{emulator}
+\afrhid{Yes, I agree. I realize now that I was using the word \textit{emulator}
 in the wrong way, including what you call bellow "code to make a $\chi^2$ 
 table".}
 \pvmhid{If you're asking
@@ -93,7 +93,7 @@ I think you just pick the current best cosmological model as fiducial, and
 define $\Delta^2,\neff(z=3,k=0.009 s/km)$ effectively as variations of 
 $A_s$ and $n_s$ -- this gives you your $P(k in km/s,z=4)$ to feed the 
 emulator, but it is really a completely separate thing from the emulator. }
-\afhid{Just to be sure. $\theta$ parameters describe the different shape of the 
+\afrhid{Just to be sure. $\theta$ parameters describe the different shape of the 
 linear power, in $\kms$, at $z_\star=3$. 
 I can try to use these, and $H^0(z_\star)$ from the fiducial model, to compute 
 the equivalent linear power in comoving coordinates.
@@ -130,7 +130,7 @@ $P(k in km/s,z=4)$ because I carefully wrote 1D power and it is shorter than
 writing ``$P(k in Mpc,z=4)$ and $H(z=4)$", which I think we agree is probably
 how things should really go for pedagogical reasons, and 
 add $D_A(z=4)$ for 3D.) }
-\afhid{Ok, I think we are getting closer. I think part of the confusion was 
+\afrhid{Ok, I think we are getting closer. I think part of the confusion was 
 my poor use of the word \textit{emulator}, and the other part of the confusion
 is that I always wanted to focus on the "look-up table" version, and not on 
 the cosmomc version.}

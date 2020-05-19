@@ -11,14 +11,26 @@
 %comments by co-authors (I like better these than those in mydefinitions)
 %(italics was probably inherited from Jordi from black and white printer 
 %days...)
-\newcommand{\AFR}[1]{{\color{red}AFR: #1}}
-\renewcommand{\as}[1]{{\color{blue}AS: #1}}
+\newcommand{\afr}[1]{{\color{red}AFR: #1}}
+\newcommand{\as}[1]{{\color{blue}AS: #1}}
 %I wonder what I did to deserve ``olive"... I guess it is ok now that I'm 
 %getting used to it... 
 %What do you mean? I love olive! I first tried "green", but it was too bright to read. 
 %They didn't have darkgreen, so I went for olive :-)
-\renewcommand{\pvm}[1]{{\color{olive}PVM: #1}}
+\newcommand{\pvm}[1]{{\color{olive}PVM: #1}}
+
+%Silence comments
+%\def\afrhid#1{}
+\newcommand{\afrhid}[1]{{\color{red}AFR: #1}}
+%\def\ashid#1{}
+\newcommand{\ashid}[1]{{\color{blue}AS: #1}}
+%\def\pvmhid#1{}
+\newcommand{\pvmhid}[1]{{\color{olive}PVM: #1}}
+
+
 \def\todo#1{[TO DO: {\it #1}] }
+
+
 
 \begin{document}
 
@@ -78,5 +90,7 @@ Initiative.
 \input{extra_equations}
 \newpage
 \input{linear_power}
+\newpage
+\input{linP_approx}
 
 \end{document}

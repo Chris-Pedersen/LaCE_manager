@@ -23,7 +23,7 @@ Remember that you can easily compute from CLASS the velocity power spectrum as
 well as density, which gives you your leading order handle on changes in 
 evolution... (arguably if you had to choose you'd probably want this instead
 of density power for LyaF, but you don't have to choose...)}
-\afhid{Yes, we could add linear velocity power instead of $f(z)$, and compute
+\afrhid{Yes, we could add linear velocity power instead of $f(z)$, and compute
 from there any parameter we want to use internally.}
 
 If we had an extremely large number of simulations, we could just setup a
@@ -51,7 +51,7 @@ Even then, we would only match the noise spikes at one redshift, and there
 could be (very minor) differences at other redshifts that could confuse
 the emulator.
 
-\AFR{Actually, we could avoid this nuisance by letting the emulator work
+\afr{Actually, we could avoid this nuisance by letting the emulator work
 in comoving coordinates, in $\Mpc$.
 We could use the expansion history from the fiducial model $H^0(z)$ to
 convert all quantities back and forth when needed.
@@ -76,7 +76,7 @@ Finally, we could decide to fit the simulated flux power with a handful of
 coefficients (polynomials or PCA components), and interpolate these
 instead of the noisy band powers.
 
-\AFR{Written this way, it is clear that we are talking about emulating
+\afr{Written this way, it is clear that we are talking about emulating
 the theory, and not emulating the likelihood.
 This has not been clear to me in the past...
 One of the key features of GP emulators is that they can provide an
@@ -89,7 +89,7 @@ efficiently improve the description of the posterior.
 I wonder how could one implement something similar in the setting described
 here.}
 
-\AFR{I guess there are two things that should be addressed:
+\afr{I guess there are two things that should be addressed:
 How do we propagate the theoretical uncertainty reported by the emulator
 to uncertainties in the likelihood?
 And once we identify the points in parameter space that we would like to

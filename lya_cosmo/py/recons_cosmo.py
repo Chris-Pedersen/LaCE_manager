@@ -283,8 +283,12 @@ class ReconstructedCosmology(object):
 
 
     def reconstruct_linP_kms(self,iz,k_kms,linP_model,true_cosmo=None,
-            verbose=False):
-        """ Use fiducial cosmology and linP_model to reconstruct power (Mpc)"""
+            ignore_g_star=False,ignore_f_star=False,verbose=False):
+        """ Use fiducial cosmology and linP_model to reconstruct power (km/s)
+            - if true_cosmo is passed, use it to compute m(z) and g(z)
+            - if ignore_g_star, use m(z)=1
+            - if ignore_f_star, use g(z)=1
+        """
 
         # evaluate linP at this redshift
         z = self.zs[iz]
@@ -302,11 +306,7 @@ class ReconstructedCosmology(object):
         M_star_fid = self.H_star_fid / (1+z_star)
         Mz_fid = self.results_fid.hubble_parameter(z) / (1+z)
 
-        # at some point we might use g_star to model m(z)
-        mz=1.0
-        # at some point we might use f_star to model d(z)
-        dz=1.0
-        # this is a temporary hack to test the approximations
+        # use the true cosmology to test the approximations
         if true_cosmo is not None:
             # compute true m(z)
             results=camb.get_results(true_cosmo)
@@ -321,6 +321,17 @@ class ReconstructedCosmology(object):
             dz = Dz_Dstar/Dz_Dstar_fid
             if verbose:
                 print(z,Dz_Dstar,Dz_Dstar_fid,'d(z)',dz)
+        else:
+            # use f_star to approximate d(z)
+            if ignore_f_star:
+                dz=1
+            else:
+                dz=self.reconstruct_dz(z,linP_model)
+            # use g_star to approximate m(z)
+            if ignore_g_star:
+                mz=1
+            else:
+                mz=self.reconstruct_mz(z,linP_model)
 
         # B(q) describes the ratio of linear power at z_star
         # we want to evaluate it at q' = m(z) M_0(z) / M^0_star q
@@ -341,6 +352,32 @@ class ReconstructedCosmology(object):
         linP_kms_fid = np.interp(qP,self.k_kms_fid[iz],self.linP_kms_fid[iz])
 
         return linP_kms_fid * mz**3 * dz**2 * np.exp(lnB)
+
+
+    def reconstruct_mz(self,z,linP_model):
+        """ Use g_star differences to reconstruct m(z) function"""
+
+        # compute difference in acceleration
+        g_star=linP_model.get_g_star()
+        g_star_fid=self.linP_model_fid.get_g_star()
+
+        # approximate m(z) function
+        z_star=self.z_star
+        mz = ((1+z)/(1+z_star))**(1.5*(g_star-g_star_fid))
+        return mz
+
+
+    def reconstruct_dz(self,z,linP_model):
+        """ Use f_star differences to reconstruct d(z) function"""
+
+        # compute difference in acceleration
+        f_star=linP_model.get_f_star()
+        f_star_fid=self.linP_model_fid.get_f_star()
+
+        # approximate d(z) function
+        z_star=self.z_star
+        dz = ((1+z)/(1+z_star))**(f_star_fid-f_star)
+        return dz
 
 
     def reconstruct_Hubble_iz(self,iz,linP_model):

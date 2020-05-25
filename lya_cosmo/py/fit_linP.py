@@ -161,7 +161,7 @@ class LinearPowerModel(object):
 
 def compute_g_star(cosmo,z_star):
     """ Compute logarithmic derivative of Hubble expansion, normalized to EdS:
-        g(z) = dln H(z) / dln(1+z)^3/2 = 3/2 (1+z)/H(z) dH/dz """
+        g(z) = dln H(z) / dln(1+z)^3/2 = 2/3 (1+z)/H(z) dH/dz """
 
     results = camb.get_results(cosmo)
     # compute derivative of Hubble
@@ -260,7 +260,9 @@ def parameterize_cosmology_Mpc(cosmo,z_star,kp_Mpc):
 def parameterize_cosmology_kms(cosmo,z_star,kp_kms):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in km/s)."""
+
     # get logarithmic growth rate at z_star, around kp_Mpc
+    # the exact value here should not matter, f(k) is very flat here
     kp_Mpc=kp_kms*camb_cosmo.dkms_dMpc(cosmo,z_star)
     f_star = compute_f_star(cosmo,z_star=z_star,kp_Mpc=kp_Mpc)
     # compute deviation from EdS expansion

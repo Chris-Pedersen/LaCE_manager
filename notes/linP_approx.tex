@@ -135,4 +135,111 @@ the linear power spectrum with:
 \end{equation}
 
 
+\subsection{Defining the parameters in the code}
+
+In the code we have 5 parameters:
+\begin{itemize}
+ \item 3 shape parameters to describe $Q_\ast(q)$, the linear power spectrum
+  at $z_\ast$, in velocity units, around a pivot point $q_p$.
+ \item 1 expansion parameter to describe $M(z)/M_\ast$, related to the
+  logarithmic derivative of the Hubble parameter at $z_\ast$.
+ \item 1 growth parameter to describe $D(z)/D_\ast$, related to the
+  logarithmic growth rate at $z_\ast$.
+\end{itemize}
+
+Let's go into the details now.
+
+
+\subsubsection{Shape parameters} 
+
+We fit a second order polynomial to the logarithm of the linear power
+spectrum at $z_\ast$, in velocity units, around a pivot point $q_p$.
+By default we use $z_\ast=3$ and $q_p=0.009~\ikms$, and we fit the polynomial
+in a range of wavenumbers defined as $q_p / 2 < q < 2 q_p$
+\footnote{We do the fit using numpy.polyfit}.
+
+\begin{equation}
+ Q_\ast(q) \approx A \left( \frac{q}{q_p} \right)^{n_\ast + \alpha_\ast /2 \ln (q/q_p)} ~,
+\end{equation}
+or equivalently
+\begin{equation}
+ \ln Q_\ast(q) \approx \ln A + \left[ n_\ast + \alpha_\ast /2 \ln (q/q_p) \right] \ln (q/q_p)~.
+\end{equation}
+$n_\ast$ is the first log-derivative around $q_p$, and $\alpha_\ast$
+is the second log-derivative around the same point.
+Note that the polynomial fit, however, returns
+($\ln A$, $n_\ast$, $\alpha_\ast /2$).
+Finally, we define a dimensionless parameter describing the amplitude, 
+$\Delta^2_\ast = A ~ q_p^3 / (2\pi^2)$.
+
+When reconstructing the linear power spectrum using a fiducial cosmology,
+we use differences in the shape parameters with respect to the fiducial ones:
+\begin{align}
+ \ln B(q) & = \ln Q_\ast(q) - \ln Q^0_\ast(q)       \nonumber \\
+  & \approx \left( \Delta^2_\ast - \Delta^2_{\ast~0} \right)
+    + \left[ \left( n_\ast - n^0_\ast \right) 
+    + \frac{\alpha_\ast - \alpha^0_\ast}{2} \ln (q/q_p) \right] \ln (q/q_p)~.
+\end{align}
+
+
+\subsubsection{Expansion parameter}
+
+Even though the default setting will probably be to assume $m(z)=1$, we
+also have in the code a parameter $g_\ast$ that can be used to allow for
+linear deviations of $m(z)$ from unity.
+
+We define it as the logarithmic derivative of $H(z)$, normalised to an
+Einstein-de Sitter expansion:
+\begin{equation}
+ g(z) = \frac{\partial \ln H(z)}{\partial \ln (1+z)^{3/2}} 
+  = \frac{2}{3} \frac{\partial \ln H(z)}{\partial \ln(1+z)} 
+  = \frac{2}{3} \frac{1+z}{H(z)} \frac{\partial H(z)}{\partial z} ~,
+\end{equation}
+and 
+\begin{equation}
+ g_\ast = \frac{2}{3} \frac{1+z_\ast}{H_\ast} 
+      \frac{\partial H(z)}{\partial z} \Bigr\rvert_{z_\ast} ~.
+\end{equation}
+By definition, $g_\ast=1$ in an EdS Universe.
+
+We approximate $m(z)$ using the difference of $g_\ast$ between the input
+and the fiducial cosmology as:
+\begin{equation}
+ \ln m(z) \approx \frac{3}{2} \left( g_\ast - g^0_\ast \right) 
+    \ln \left( \frac{1+z}{1+z_\ast} \right) ~,
+\end{equation}
+or equivalently
+\begin{equation}
+ m(z) \approx \left( \frac{1+z}{1+z_\ast} \right)^{3/2 ( g_\ast - g^0_\ast)} ~.
+\end{equation}
+
+
+\subsubsection{Growth parameter}
+
+Similarly, in our default analysis we will assume $d(z)=1$, but we also
+have a parameter $f_\ast$ to describe differences in the growth with respect
+to the fiducial cosmology.
+
+We define it as the logarithmic growth rate at $z_\ast$, i.e.,
+\begin{equation}
+ f(z) = \frac{\partial \ln D(z)}{\partial \ln a(z)}
+  = - \frac{\partial \ln D(z)}{\partial \ln (1+z)}
+  = - \frac{1}{2} \frac{\partial \ln P(z,k)}{\partial \ln (1+z)} ~,
+\end{equation}
+where $P(z,k)$ here has to be in comoving units, not velocities.
+Because $D(z)$ is very flat around the pivot point, the exact scale at which
+we evaluate the linear power derivative is not important, but we use the
+range $ M_\ast^0 q_p /2 < k < 2 M_\ast^0 q_p$.
+By defintion, $f_\ast=1$ in an EdS Universe.
+
+We approximate $m(z)$ using the difference of $g_\ast$ between the input
+and the fiducial cosmology as:
+\begin{equation}
+ \ln d(z) \approx - \left( f_\ast - f^0_\ast \right) 
+    \ln \left( \frac{1+z}{1+z_\ast} \right) ~,
+\end{equation}
+or equivalently
+\begin{equation}
+ d(z) \approx \left( \frac{1+z}{1+z_\ast} \right)^{- ( f_\ast - f^0_\ast)} ~.
+\end{equation}
 

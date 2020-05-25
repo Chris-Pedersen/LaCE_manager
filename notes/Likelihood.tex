@@ -9,7 +9,7 @@ product, the \textit{likelihood code}, to be used in a cosmological analysis.
 
 \ashid{I don't like the expression ``user interface'' here. Wouldn't
   likelihood parameterization be more appropriate?}
-\afhid{\anze, this is an internal document, to make sure we are all (including
+\afrhid{\anze, this is an internal document, to make sure we are all (including
 Chris, Hiranya, Andrew, Tom...) in the same page.
 The second part of this section is about the parameterization, this first
 part is really just about the interface...
@@ -45,7 +45,7 @@ the user to provide for each cosmological model:
   we would need as an input the angular diameter distance $D_A(z)$ (or the
   Alcock-Paczy\'nski coefficient, $\propto D_A(z) H(z)$, \cite{Alcock1979})
   over the full redshift range.
-  \afhid{as well as the sound horizon at the drag epoch describing BAO, $r_d$. 
+  \afrhid{as well as the sound horizon at the drag epoch describing BAO, $r_d$. 
   Although we could also fit $r_d$ from the linear power ourselves, under the
   hood, to prevent having some users using EH98 and others using CAMB.}
   \pvmhid{Yes, I don't understand why you talk about asking for this here,
@@ -55,14 +55,14 @@ the user to provide for each cosmological model:
 In exchange, the user will get a value of the (log-) likelihood for this model,
 that can be then combined with other cosmological probes.
 
-\afhid{For simplicity, we will restrict ourselves to models with a linear power
+\afrhid{For simplicity, we will restrict ourselves to models with a linear power
   spectra that can be factorized in a power spectrum at a central redshift,
   $P(z_\star=3,k)$, and a scale independent growth factor, $D(z)$.}
 \ashid{If you are to compress flux measurement over X redshift bins
   into one linear power constrain, just ask for the linear power
   at that $z_{\rm pivot}$ and $f$ at that redshift. If you are going
   to compress into two $z$s, ask for those two $z$s and two $f$s}.
-\afhid{Yes, this is an option. But as Pat mentions below, this might not
+\afrhid{Yes, this is an option. But as Pat mentions below, this might not
  be the easier option for some users. But when I mentioned above that we
  could have more than one interface, this is what I had in mind.}
 
@@ -84,7 +84,7 @@ this was actually easier than setting up that code...))
 I wouldn't worry
 too much about what you're going to ask for though. Focus on making a good 
 emulator and then ask for what you need for that...}
-\afhid{Great, that's all I wanted to hear. For now, let's assume this is a 
+\afrhid{Great, that's all I wanted to hear. For now, let's assume this is a 
 possible option, and we'll come back to it later on.} 
 \ashid{I like Pat's idea of just asking for a bunch of power spectra,
 including matter, velocity and perhaps baryon as well. For example,
@@ -160,7 +160,7 @@ redshift.
 They will be able to run their own MCMC chain and compute the best fit 
 values for the nuisance parameters, and their confidence intervals.
 
-\afhid{Actually, I don't think at this point you can get any of the above.
+\afrhid{Actually, I don't think at this point you can get any of the above.
 The user of the final likelihood code will only get a total value for the
 likelihood for the total dataset.
 Even though one would compute the un-marginalized likelihood for each redshift
@@ -189,10 +189,10 @@ discussion of final public likelihood code is getting way ahead of yourself...
 I'd focus on ``what do I need to do to get an emulator capable of any kind of
 fit to a LyaF data set?" ...  }
 
-\afhid{Nooooooo! I need to understand how the final package will be used, 
+\afrhid{Nooooooo! I need to understand how the final package will be used, 
 before I can think of emulators and simulations!}
 
-\afhid{Pat, in your 2005 paper, you had $\chi^2$ look-up tables, that were only
+\afrhid{Pat, in your 2005 paper, you had $\chi^2$ look-up tables, that were only
 a function of amplitude and slope (and may be running). 
 I always thougth that this type of look-up table would be the end product of 
 the analysis, with a nice wrapper around it with a public interface to 
@@ -217,7 +217,7 @@ think through how necessary I think the marginalized version really is...).
 I wouldn't call a $\chi^2$ table in $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ 
 cryptic... } 
 
-\afhid{Perfect. Just for the record, in my original text (two days ago) I never
+\afrhid{Perfect. Just for the record, in my original text (two days ago) I never
 meant to talk about the CosmoMC option, I always had in mind to compress it
 all to a look-up table with $\Delta^2_L, \neff(z=3,k=0.009 s/km)$ or 
 equivalent (may be extending to $f_\star$ or running.}
@@ -229,7 +229,7 @@ thing, I think you will always want to control how that is done by asking
 for full P(k), and they should be happy to let you take care of it, so maybe it
 could get a little cryptic, but this is not much related to the more physical
 stuff related to emulator.} 
-\afhid{Agreed.}
+\afrhid{Agreed.}
 \ashid{I agree as well.}
 
 
@@ -335,7 +335,7 @@ in units of $\kms$.
 \ashid{This confused the shit out of me until very
   recently. I vote for having power spectra in Mpc and also require
   $H(z_\star)$ and do this conversion internally -- it is trivial. }
-\afhid{Yes, \anze, that was the entire point of the user interface. 
+\afrhid{Yes, \anze, that was the entire point of the user interface. 
 We ask the users to provide power in $\Mpc$, and we ask for $H(z)$, 
 and we do the convertions under the hood.}
 
@@ -355,7 +355,7 @@ that you should quote results as a linear power measurement in km/s at
 $z\sim 3$, *if you are going to quote results from LyaF $\sim$alone* -- the
 goal there was to produce ``model independent" constraints that could be
 propagated forward.}
-\afhid{My plan was to translate the flux power into linear power, in $\kms$, 
+\afrhid{My plan was to translate the flux power into linear power, in $\kms$, 
 and make that public as a look-up table, with a user interface in $\Mpc$ to 
 make it easier for others to use. 
 This is what I was trying to explain all along, mostly in section
@@ -365,13 +365,13 @@ you're going to be using flux power directly in global chains fitting
 cosmological parameters, which seems to be what you're talking about here, 
 that argument doesn't apply -- you have the only relevant cosmological model 
 on hand point-by-point. }
-\afhid{I never talked about doing this! Only \anze\ talked about it.
+\afrhid{I never talked about doing this! Only \anze\ talked about it.
 I only talked about cosmological models as a wrapper, but the likelihood
 and the emulator would only hear about our compressed parameterization.}
 \pvmhid{In \anze's defense, it was a good point that you want to make sure
 the mode with LyaF nuisance parameters symmetric with cosmological parameters
 in CosmoMC is possible.}
-\afhid{Of course! I learned a lot from this discussion the last week \smiley.}
+\afrhid{Of course! I learned a lot from this discussion the last week \smiley.}
 \pvmhid{This does raise the question though, how much you 
 want to commit to that approach, i.e., to primarily present a likelihood code
 that does direct fits to flux power measurements on the fly, vs. boiling 
@@ -391,7 +391,7 @@ $\Delta^2,\neff(z=3, k=0.009 s/km)$,
 defined as deviations from a central model (i.e.,
 effectively variations of $A_s$ and $n_s$ with other parameters fixed), 
 to compare to past... this is clearly going to be *most of* what matters.} 
-\afhid{Yes, I agree with the above.}
+\afrhid{Yes, I agree with the above.}
 
 Therefore, we will use the expansion rate $H(z_\star)$ provided by the user
 to compute $a_v$ and the linear power in velocity units at $z_\star=3$:
@@ -418,7 +418,7 @@ parameters:
  \item $\Delta f_\star$, the difference of growth rates at $z_\star=3$.
 \end{itemize}
 
-\AFR{As discussed below, we *might* also add a parameter describing 
+\afr{As discussed below, we *might* also add a parameter describing 
 the (des-)acceleration of the Universe at $z_\star$, to describe the 
 differences in expansion history between the cosmologies below and above
 $z_\star$, similarly to what we have done with growth in equation 
@@ -460,7 +460,7 @@ theory predictions at this point include full gory of nuissance
 parameters. If you look at eg \texttt{cosmomc} it internally
 marginalises already over some 15 Planck parameters, it can do 15
 more for us.}
-\afhid{Ok, this is the type of discussion I wanted to have. 
+\afrhid{Ok, this is the type of discussion I wanted to have. 
 Is this really how it was done in SDSS-I? What was the look-up table for, then?
 To make plots?}
 \pvmhid{I guess I should further to un-agree with \anze... 
@@ -472,7 +472,7 @@ of it than of Planck nuisance), but I don't think you want to think this way.
 I don't think one MCMC code will dominate, so you need to assume people are
 going to be grafting your likelihood code into various things themselves, 
 so you want to make sure to have a very easy option. }
-\afhid{Agreed. We should have an easy version for all to use, and a difficult
+\afrhid{Agreed. We should have an easy version for all to use, and a difficult
 one for testing and for the experts to use.}
 
 In order to compute the full likelihood $L(\vd | \theta, \phi)$ we will
@@ -503,7 +503,7 @@ Instead, we will do the following:
   parameters.
 \end{itemize}
 
-\afhid{This is one of the pieces that is still not crystal clear in my head.
+\afrhid{This is one of the pieces that is still not crystal clear in my head.
 Would we just take $\tilde P_L(z_\star,q)$, the linear power in velocity
 units at the central redshift, and rescale it using the discussion around
 equation \ref{eq:growth}?
@@ -524,7 +524,7 @@ E.g., there is a linear power spectrum associated with each redshift
 output, which you can easily compute using CLASS -- you don't really care
 where it came from in terms or evolution from higher z, or, if you do, it is
 only as a very subdominant correction.}
-\afhid{Yes, I got that. That's what I was trying to say here...}
+\afrhid{Yes, I got that. That's what I was trying to say here...}
 \pvmhid{Even if you decided you needed to 
 track differences in evolution for fixed output-time linear power, you would
 probably want to do that by extracting $dP_{lin}/dz(z_{output})$ 
@@ -552,7 +552,7 @@ as much as possible -- and then a simulation mapping of those
 things into non-linear power (in more or less arbitrary units, followed by 
 observation, applying the necessary units -- this part I think is easy for
 everyone to agree on). }
-\afhid{Yes, that was my plan.}
+\afrhid{Yes, that was my plan.}
 \pvmhid{This is an opportunity to say something I've been thinking about all
 this including neutrino, etc., sim testing: by *far* the most efficient way to 
 test whether an idea you have for simplifying the emulator parameterization is
@@ -563,7 +563,7 @@ you should just need to expand parameter space a little and add some sims to
 probe the new effect, still using what you have done (assuming it was sensible
 and the addition is more or less perturbative).  }
 
-\afhid{Pat, that is what I was trying to write... See discussion below, about
+\afrhid{Pat, that is what I was trying to write... See discussion below, about
 computing some quantities at the particular redshift, and then completely 
 dropping the redshift altogether.}
 

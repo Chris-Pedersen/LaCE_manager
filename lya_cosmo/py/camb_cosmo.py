@@ -27,7 +27,7 @@ def get_cosmology(params=None,H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022,
         if 'omk' in params: omk=params['omk']
         else: omk=cosmo_fid.omk
         if 'mnu' in params: mnu=params['mnu']
-        else: mnu=cosmo_fid.mnu
+        else: mnu=0 # cosmo_fid.mnu doesn't exist unfortunately
         if 'TCMB' in params: TCMB=params['TCMB']
         else: TCMB=cosmo_fid.TCMB
         pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2,

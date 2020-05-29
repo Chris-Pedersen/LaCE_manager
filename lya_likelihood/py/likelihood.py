@@ -46,6 +46,7 @@ class Likelihood(object):
         if theory:
             self.theory=theory
         else:
+            ## This will need to be changed!
             zs=self.data.z
             if self.verbose: print('use default theory')
             if use_sim_cosmo:

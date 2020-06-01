@@ -76,7 +76,7 @@ class CAMBModel(object):
         linP_params=[]
         ## Fit the emulator call params
         for pk_z in pk_Mpc:
-            linP_Mpc = P_fit=fit_linP.fit_polynomial(kmin_Mpc/self.kp_Mpc,
+            linP_Mpc = fit_linP.fit_polynomial(kmin_Mpc/self.kp_Mpc,
                         kmax_Mpc/self.kp_Mpc,k_Mpc/self.kp_Mpc,
                         pk_z,deg=2)
             # translate the polynomial to our parameters

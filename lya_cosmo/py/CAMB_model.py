@@ -13,7 +13,7 @@ class CAMBModel(object):
 
         self.zs=zs
         self.kp_Mpc=kp_Mpc
-        self.camb_params=["ombh2","omch2","As","ns"] ## List of parameters we'll use
+        self.camb_param_names=["ombh2","omch2","As","ns"] ## List of parameters we'll use
                                                      ## to define a cosmology
 
         #assert (cosmo is None and like_params is None), "Cannot provide cosmology and like_params"
@@ -32,7 +32,7 @@ class CAMBModel(object):
 
         camb_param_dict={}
         for par in like_params:
-            if par.name in self.camb_params:
+            if par.name in self.camb_param_names:
                 camb_param_dict[par.name]=par.value
 
         self.cosmo=camb_cosmo.get_cosmology(params=camb_param_dict)

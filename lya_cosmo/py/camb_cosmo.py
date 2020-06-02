@@ -5,13 +5,13 @@ import numpy as np
 import camb
 
 def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
-        TCMB=2.7255, As=2.1e-09, ns=0.965, nrun=0.0):
+            As=2.1e-09, ns=0.965, nrun=0.0):
     """Given set of cosmological parameters, return CAMB cosmology object."""
 
     pars = camb.CAMBparams()
     # set background cosmology
     pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk,
-            mnu=mnu,TCMB=TCMB)
+            mnu=mnu)
     # set primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
@@ -39,11 +39,9 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
     if 'mnu' in params: mnu=params['mnu']
     else: mnu=cosmo_fid.omnuh2*93.14
-    if 'TCMB' in params: TCMB=params['TCMB']
-    else: TCMB=cosmo_fid.TCMB
     # update cosmology object
     pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2,
-            omk=omk, mnu=mnu, TCMB=TCMB)
+            omk=omk, mnu=mnu)
 
     # collect primorial power parameters
     if 'As' in params: As=params['As']
@@ -67,7 +65,7 @@ def print_info(pars,simulation=False):
         Om=Omh2/(pars.H0/100.0)**2
         print('H0 = {:.4E}, Omega_bc = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,Om,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
     else:
-        print('H0 = {:.4E}, Omega_b h^2 = {:.4E}, Omega_c h^2 = {:.4E}, Omega_k = {:.4E}, Omega_nu h^2 = {:.4E}, T_CMB = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,pars.ombh2,pars.omch2,pars.omk,pars.omnuh2,pars.TCMB,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
+        print('H0 = {:.4E}, Omega_b h^2 = {:.4E}, Omega_c h^2 = {:.4E}, Omega_k = {:.4E}, Omega_nu h^2 = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,pars.ombh2,pars.omch2,pars.omk,pars.omnuh2,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
     return
 
 

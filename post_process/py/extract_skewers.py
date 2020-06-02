@@ -39,9 +39,9 @@ def dkms_dMpc_z(simdir,num):
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     z=zs[num]
     # read cosmology information from Gadget file
-    cosmo_info=read_gadget.camb_from_gadget(paramfile)
-    # setup CAMB object
-    cosmo=camb_cosmo.get_cosmology(cosmo_info)
+    cosmo_params=read_gadget.camb_from_gadget(paramfile)
+    # setup CAMB object from dictionary with parameters
+    cosmo=camb_cosmo.get_cosmology_from_dictionary(cosmo_params)
     # convert kms to Mpc (should be around 75 km/s/Mpc at z=3)
     dkms_dMpc = camb_cosmo.dkms_dMpc(cosmo,z=z)
     return dkms_dMpc,z

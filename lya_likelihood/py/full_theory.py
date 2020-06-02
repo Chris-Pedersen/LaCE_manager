@@ -60,6 +60,7 @@ class FullTheory(object):
         camb_model=self.camb_model_fid.get_new_model(like_params)
 
         # compute linear power parameters at all redshifts
+        # (ideally, we would specify here the pivot point from the emulator)
         linP_Mpc_params=camb_model.get_linP_Mpc_params()
         M_of_zs=camb_model.get_M_of_zs()
 
@@ -136,7 +137,10 @@ class FullTheory(object):
     def get_parameters(self):
         """Return parameters in models, even if not free parameters"""
 
+        # get parameters from CAMB model
         params=self.camb_model_fid.get_likelihood_parameters()
+
+        # get parameters from nuisance models
         for par in self.mf_model_fid.get_parameters():
             params.append(par)
         for par in self.T_model_fid.get_sigT_kms_parameters():

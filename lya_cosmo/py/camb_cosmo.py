@@ -33,6 +33,7 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
         H0=None
     elif 'H0' in params:
         H0=params['H0']
+        cosmomc_theta=None
     else:
         H0=cosmo_fid.H0
         cosmomc_theta=None
@@ -171,4 +172,3 @@ def dkms_dhMpc(cosmo,z):
     # dv / hdX = 100 E(Z)/(1+z)
     dvdX=100*Ez/(1+z)
     return dvdX
-

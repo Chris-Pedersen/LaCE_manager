@@ -28,8 +28,14 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
         cosmo_fid=get_cosmology()
 
     # collect background parameters
-    if 'H0' in params: H0=params['H0']
-    else: H0=cosmo_fid.H0
+    if 'theta' in params: ## If theta is provided, override H0
+        cosmomc_theta=params['theta']/100
+        H0=None
+    elif 'H0' in params:
+        H0=params['H0']
+    else:
+        H0=cosmo_fid.H0
+        cosmomc_theta=None
     if 'ombh2' in params: ombh2=params['ombh2']
     else: ombh2=cosmo_fid.ombh2
     if 'omch2' in params: omch2=params['omch2']
@@ -39,12 +45,17 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
     if 'mnu' in params: mnu=params['mnu']
     else: mnu=cosmo_fid.omnuh2*93.14
+    if 'tau' in params: tau=params["tau"]
+    else: tau=cosmo_fid.Reion.optical_depth
     # update cosmology object
-    pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2,
-            omk=omk, mnu=mnu)
+    pars.set_cosmology(H0=H0, cosmomc_theta=cosmomc_theta, ombh2=ombh2, omch2=omch2,
+            omk=omk, mnu=mnu, tau=tau)
 
     # collect primorial power parameters
-    if 'As' in params: As=params['As']
+    if 'As' in params:
+        As=params['As']
+    elif "logA" in params:
+        As=np.exp(params["logA"])/(10**10)
     else: As=cosmo_fid.InitPower.As
     if 'ns' in params: ns=params['ns']
     else: ns=cosmo_fid.InitPower.ns

@@ -7,6 +7,10 @@ import camb_cosmo
 import sim_params_cosmo
 import sim_params_space
 import fit_linP
+import full_theory
+import read_genic
+import CAMB_model
+import os
 from scipy.optimize import minimize
 
 class Likelihood(object):
@@ -42,30 +46,48 @@ class Likelihood(object):
 
         # (optionally) get rid of low-k data points
         self.data._cull_data(min_kp_kms)
+        self.free_parameters=free_parameters ## Just a list of the names
+        self.free_param_limits=free_param_limits
 
         if theory:
             self.theory=theory
         else:
-            ## This will need to be changed!
-            zs=self.data.z
-            if self.verbose: print('use default theory')
-            if use_sim_cosmo:
-                ## Set fiducial cosmology parameters directly
-                ## from simulation
-                cosmo_fid = camb_cosmo.get_cosmology()
-                linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
-                lhcube=emulator.arxiv.cube_data
-                sim_cosmo=sim_params_cosmo.cosmo_from_sim_params(lhcube["param_space"],
-                        lhcube["samples"][str(emulator.arxiv.drop_sim_number)],
-                        linP_model_fid)
-                self.theory=lya_theory.LyaTheory(zs,emulator=emulator,
-                                            cosmo_fid=sim_cosmo)
+            ## Use the free_param_names to determine whether to use
+            ## a LyaTheory or FullTheory object
+            compressed=bool(set(self.free_parameters) & set(["Delta2_star",
+                                            "n_star",
+                                            "alpha_star",
+                                            "f_star",
+                                            "g_star"]))
+            full=bool(set(self.free_parameters) & set(["H0",
+                                            "As",
+                                            "ns"]))
+            assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
+
+            if use_sim_cosmo: ## Use the simulation cosmology as fiducial?
+                repo=os.environ['LYA_EMU_REPO']
+                ## Get dictionary from paramfile.genic
+                sim_cosmo_dict=read_genic.camb_from_genic(repo+self.data.basedir+"sim_pair_"+str(self.data.sim_number)+"/sim_plus/paramfile.genic")
+                ## Create CAMB object from dictionary
+                sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
             else:
-                self.theory=lya_theory.LyaTheory(zs,emulator=emulator)
+                sim_cosmo=None
+            
+            if compressed:
+                ## Set up a compressed LyaTheory object
+                self.theory=lya_theory.LyaTheory(self.data.z,emulator=emulator,
+                                            cosmo_fid=sim_cosmo)
+            elif full:
+                ## Set up a full theory object
+                camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,cosmo=sim_cosmo)
+                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
+                                            camb_model_fid=camb_model_sim)
+            else:
+                print("Cannot only vary IGM!")
+                quit()
 
         # setup parameters
-        self.free_parameters=free_parameters ## Just a list of the names
-        self.free_param_limits=free_param_limits
+
         if not free_parameters:
             free_parameters=['ln_tau_0']
         self.set_free_parameters(free_parameters,self.free_param_limits)

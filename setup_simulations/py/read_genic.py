@@ -24,8 +24,7 @@ MNut = float(min=0, default=0)
 MWDM_Therm = float(min=0, default=0)
 PrimordialIndex = float(default=0.971)
 PrimordialAmp = float(default=2.215e-9)
-PrimordialRunning = float(default=0.0)
-CMBTemperature = float(default=2.7255)""".split('\n')
+PrimordialRunning = float(default=0.0)""".split('\n')
 
 
 def L_Mpc_from_paramfile(paramfile, verbose=False):
@@ -83,7 +82,6 @@ def _build_cosmology_params_class(config):
     omegacdm = omega0 - omegab - omeganu
     omegak = 1 - omegaL - omega0
     params = {'h':h0, 'Omega_cdm':omegacdm,'Omega_b':omegab, 'Omega_k':omegak}
-    params['T_cmb'] = config["CMBTemperature"]
     params['A_s'] = config["PrimordialAmp"]
     params['n_s'] = config['PrimordialIndex']
     params['alpha_s'] = config['PrimordialRunning']
@@ -117,7 +115,6 @@ def _build_cosmology_params_camb(config):
     params['ombh2'] = omegab*h0**2
     params['mnu'] = mnu
     params['omk'] = omegak
-    params['TCMB'] = config["CMBTemperature"]
     params['As'] = config["PrimordialAmp"]
     params['ns'] = config['PrimordialIndex']
     params['nrun'] = config['PrimordialRunning']

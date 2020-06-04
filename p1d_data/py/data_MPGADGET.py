@@ -6,8 +6,11 @@ import poly_p1d
 import json
 import matplotlib.pyplot as plt
 import p1d_arxiv
-import recons_cosmo
+import read_genic
+import camb_cosmo
+import camb
 from scipy.interpolate import interp1d
+
 
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,
@@ -18,8 +21,6 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
         # folder storing P1D measurement
         if not basedir:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            repo=os.environ['LYA_EMU_REPO']
             basedir="/p1d_emulator/sim_suites/emulator_256_28082019/"
             skewers_label="Ns256_wM0.05"
 
@@ -58,11 +59,16 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         for aa in range(len(self.mock_data.data)):
             z_sim[aa]=self.mock_data.data[len(self.mock_data.data)-aa-1]["z"]
         
-        ## Import cosmology object to get Mpc -> kms conversion factor
-        cosmo=recons_cosmo.ReconstructedCosmology(z_sim)
+        ## Get a CAMB object to go from comoving to velocity units
+        ## using the simulation cosmology
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+        sim_cosmo_dict=read_genic.camb_from_genic(repo+self.basedir+"sim_pair_"+str(self.sim_number)+"/sim_plus/paramfile.genic")
+        sim_camb_results=camb.get_results(camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict))
+
 
         ## Get k_min for the sim data, & cut k values below that
-        k_min_kms=self.mock_data.data[0]["k_Mpc"][1]/(cosmo.reconstruct_Hubble_iz(0,cosmo.linP_model_fid)/(1+min(z_sim)))
+        k_min_kms=self.mock_data.data[0]["k_Mpc"][1]/((sim_camb_results.hubble_parameter(min(z_sim)))/(1+min(z_sim)))
         Ncull=np.sum(k<k_min_kms)
         k=k[Ncull:]
 
@@ -73,7 +79,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             ## Archive in reverse..
             p1d_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["p1d_Mpc"][1:])
             k_Mpc=np.asarray(self.mock_data.data[len(self.mock_data.data)-aa-1]["k_Mpc"][1:])
-            conversion_factor=cosmo.reconstruct_Hubble_iz(aa,cosmo.linP_model_fid)/(1+z_sim[aa])
+            conversion_factor=sim_camb_results.hubble_parameter(z_sim[aa])/(1+z_sim[aa])
 
             interpolator=interp1d(k_Mpc,p1d_Mpc, "cubic")
             k_interp=k*conversion_factor

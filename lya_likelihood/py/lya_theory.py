@@ -101,8 +101,6 @@ class LyaTheory(object):
             model=emu_calls[iz]
             # emulate p1d
             dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
-            if self.verbose:
-                print('M(z={}) = {}'.format(z,dkms_dMpc))
             k_Mpc = k_kms * dkms_dMpc
             if return_covar:
                 p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,

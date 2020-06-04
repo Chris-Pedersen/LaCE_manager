@@ -107,8 +107,6 @@ class FullTheory(object):
             model=emu_calls[iz]
             # emulate p1d
             k_Mpc = k_kms * M_of_z[iz]
-            if self.verbose:
-                print('M(z={}) = {}'.format(z,M_of_z[iz]))
             if return_covar:
                 p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
                                                         return_covar=True,

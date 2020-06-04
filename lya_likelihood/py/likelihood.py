@@ -24,6 +24,8 @@ class Likelihood(object):
                     min_kp_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=True):
         """Setup likelihood from theory and data. Options:
+            - free_parameters is a list of param names, in any order
+            - free_param_limits list of tuples, same order than free_parameters
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > min_kp_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
@@ -45,7 +47,9 @@ class Likelihood(object):
 
         # (optionally) get rid of low-k data points
         self.data._cull_data(min_kp_kms)
-        self.free_parameters=free_parameters ## Just a list of the names
+        # list of parameter names, order might be different than get_parameters
+        self.free_parameters=free_parameters
+        # list of tuples with limits, same order than above
         self.free_param_limits=free_param_limits
 
         if theory:
@@ -124,6 +128,36 @@ class Likelihood(object):
             print('likelihood setup with {} free parameters'.format(Nfree))
 
         return
+
+
+    def default_sampling_point(self):
+        """Use default likelihood parameters to get array of values (in cube)"""
+
+        return self.sampling_point_from_parameters(self.free_params)
+
+
+    def sampling_point_from_parameters(self,like_params):
+        """Get parameter values in cube for free parameters in input array.
+            Note: input list could be longer than list of free parameters,
+            and in different order."""
+
+        # collect list of values of parameters in cube
+        values=[]
+        # loop over free parameters in likelihood, this sets the order
+        for par in self.free_params:
+            found=False
+            # loop over input likelihood parameters and find match
+            for inpar in like_params:
+                if par.is_same_parameter(inpar):
+                    assert found==False,'parameter found twice'
+                    values.append(inpar.value_in_cube())
+                    found=True
+            if not found:
+                print('free parameter not in input list',par.info_str())
+
+        assert len(self.free_params)==len(values),'size mismatch'
+
+        return values
 
 
     def parameters_from_sampling_point(self,values):

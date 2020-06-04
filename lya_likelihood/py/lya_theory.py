@@ -54,6 +54,7 @@ class LyaTheory(object):
         kF_model=igm_models['kF_model']
 
         # compute linear power parameters at all redshifts
+        # (ideally, we would specify here the pivot point from the emulator)
         linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
 
         # loop over redshifts and store emulator calls
@@ -101,6 +102,7 @@ class LyaTheory(object):
             model=emu_calls[iz]
             # emulate p1d
             dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
+
             k_Mpc = k_kms * dkms_dMpc
             if return_covar:
                 p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,

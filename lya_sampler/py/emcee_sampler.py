@@ -95,7 +95,12 @@ class EmceeSampler(object):
                         "ln_gamma_0":"$ln(\gamma_0)$",
                         "ln_gamma_1":"$ln(\gamma_1)$",
                         "ln_kF_0":"$ln(kF_0)$",
-                        "ln_kF_1":"$ln(kF_1)$"
+                        "ln_kF_1":"$ln(kF_1)$",
+                        "H0":"$H_0$",
+                        "As":"$A_s$",
+                        "ns":"$n_s$",
+                        "ombh2":"$\omega_b$",
+                        "omch2":"$\omega_c$"
                         }
 
         ## Set up list of parameter names in tex format for plotting

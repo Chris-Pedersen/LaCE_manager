@@ -386,7 +386,10 @@ class Likelihood(object):
 
         self.verbose=False
         self.theory.verbose=False
-        self.theory.cosmo.verbose=False
+        try: ## Only lya_theory object has a theory.cosmo object
+            self.theory.cosmo.verbose=False
+        except:
+            pass
         self.theory.emulator.verbose=False
         self.theory.emulator.arxiv.verbose=False
 
@@ -396,7 +399,10 @@ class Likelihood(object):
 
         self.verbose=True
         self.theory.verbose=True
-        self.theory.cosmo.verbose=True
+        try:
+            self.theory.cosmo.verbose=True
+        except:
+            pass
         self.theory.emulator.verbose=True
         self.theory.emulator.arxiv.verbose=True
 

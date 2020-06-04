@@ -93,7 +93,7 @@ def get_linP_hMpc(pars,zs=[3]):
     kmax_hMpc=kmax_Mpc/h
 
     # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
-    pars.set_matter_power(redshifts=zs, kmax=2.0*kmax_Mpc)
+    pars.set_matter_power(redshifts=zs, kmax=2.0*kmax_Mpc,silent=True)
     results = camb.get_results(pars)
     # fluid here specifies species we are interested in (8=CDM+baryons)
     fluid=8

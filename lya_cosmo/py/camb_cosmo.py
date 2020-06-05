@@ -10,8 +10,7 @@ def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
 
     pars = camb.CAMBparams()
     # set background cosmology
-    pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk,
-            mnu=mnu)
+    pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk, mnu=mnu)
     # set primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
@@ -43,14 +42,13 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     else: omch2=cosmo_fid.omch2
     if 'omk' in params: omk=params['omk']
     else: omk=cosmo_fid.omk
-    # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
     if 'mnu' in params: mnu=params['mnu']
-    else: mnu=cosmo_fid.omnuh2*93.14
+    else: mnu=get_mnu(cosmo_fid)
     if 'tau' in params: tau=params["tau"]
     else: tau=cosmo_fid.Reion.optical_depth
     # update cosmology object
-    pars.set_cosmology(H0=H0, cosmomc_theta=cosmomc_theta, ombh2=ombh2, omch2=omch2,
-            omk=omk, mnu=mnu, tau=tau)
+    pars.set_cosmology(H0=H0, cosmomc_theta=cosmomc_theta, ombh2=ombh2,
+            omch2=omch2, omk=omk, mnu=mnu, tau=tau)
 
     # collect primorial power parameters
     if 'As' in params:
@@ -67,6 +65,12 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
 
     return pars
 
+
+def get_mnu(pars):
+    """Extract neutrino masses from CAMB object"""
+
+    # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
+    return pars.omnuh2*93.14
 
 
 def print_info(pars,simulation=False):

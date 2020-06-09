@@ -12,6 +12,16 @@ class ReconstructedCosmology(object):
     def __init__(self,zs,cosmo_fid=None,verbose=False):
         """Setup from linear power model and redshifts to evaluate (zs)."""
 
+#    def __init__(self,emu_zs,emu_kp_Mpc=0.69,cosmo_fid=None,
+#            like_z_star=3.0,like_kp_kms=0.009,verbose=False):
+        """Setup object to reconstruct cosmology from linear power parameters.
+            - emu_zs: redshifts where we want predictions (call emulator)
+            - emu_kp_Mpc: pivot point in Mpc used in the emulator
+            - cosmo_fid: CAMB object describing fiducial cosmology
+            - like_z_star: central redshift in likelihood parameterization
+            - like_kp_kms: pivot point in likelihood parameterization (s/km)
+            - verbose: print information for debugging."""
+
         self.verbose=verbose
         # store redshifts that will be evaluated
         self.zs=zs
@@ -127,11 +137,7 @@ class ReconstructedCosmology(object):
             # reconstruct logarithmic growth rate at the redshift
             f_p=self.reconstruct_f_p_iz(iz,linP_model)
             # reconstruct linear power at the redshift (in Mpc)
-            if True:
-                linP_Mpc=self.reconstruct_linP_Mpc(iz,linP_model=linP_model)
-            else:
-                linP_Mpc=self.reconstruct_linP_Mpc_old(z,linP_model=linP_model,
-                                               linP_Mpc_fid=linP_Mpc_fid)
+            linP_Mpc=self.reconstruct_linP_Mpc(iz,linP_model=linP_model)
             # fit polynomial describing log linear power
             linP_fit=fit_linP.fit_polynomial(xmin,xmax,x,linP_Mpc,deg=2)
             # compute parameters used in emulator
@@ -175,40 +181,6 @@ class ReconstructedCosmology(object):
 
         if self.verbose: print('will compute parameters for input linP_model')
         return self._compute_linP_Mpc_params(linP_model)
-
-
-    def reconstruct_linP_Mpc_old(self,z,linP_model,linP_Mpc_fid):
-        """ Use fiducial cosmology and linP_model to reconstruct power (Mpc)"""
-
-        # pivot points
-        z_star=self.z_star
-        kp_kms=self.kp_kms
-
-        # reconstruct starting from the power in the fiducial cosmology
-        linP_Mpc = np.copy(linP_Mpc_fid)
-
-        # get parameters describing linear power for input cosmology
-        f_star=linP_model.get_f_star()
-        linP_kms_params=linP_model.linP_params['linP_kms']
-        # get parameters describing linear power for fiducial cosmology
-        f_star_fid=self.linP_model_fid.get_f_star()
-        linP_kms_params_fid=self.linP_model_fid.linP_params['linP_kms']
-        # get relative parameters
-        df_star=f_star-f_star_fid
-
-        # modify shape based on fits done in velocity units
-        # B(q) = P(z_star,q) / P_fid(z_star,q)
-        # linP_kms_params actually store log(B) vs log(k_kms/kp_kms)
-        lnk_kp = np.log(self.k_Mpc / self.kp_Mpc)
-        lnB = linP_kms_params(lnk_kp)-linP_kms_params_fid(lnk_kp)
-        linP_Mpc *= np.exp(lnB)
-
-        # correct for linear growth with respect to fiducial cosmology
-        # [D(z) / D(z_star)] / [D_fid(z) / D_fid(z_star)]
-        D_correct = 1-df_star*(z-z_star)/(1+z_star)
-        linP_Mpc *= D_correct**2
-
-        return linP_Mpc
 
 
     def reconstruct_linP_Mpc(self,iz,linP_model):
@@ -348,16 +320,9 @@ class ReconstructedCosmology(object):
         # modifications will be computed around z_star
         z_star=self.z_star
 
-        if True:
-            # m(z) = M(z) / M_fid(z) = H(z) / H_fid(z)
-            mz=self.reconstruct_mz(z,linP_model)
-            Hz = Hz_fid * mz
-        else:
-            # compute difference in acceleration
-            g_star=linP_model.get_g_star()
-            g_star_fid=self.linP_model_fid.get_g_star()
-            # compute Hubble parameter in input cosmology
-            Hz = Hz_fid * (1+3/2*(g_star-g_star_fid)*(z-z_star)/(1+z_star))
+        # m(z) = M(z) / M_fid(z) = H(z) / H_fid(z)
+        mz=self.reconstruct_mz(z,linP_model)
+        Hz = Hz_fid * mz
 
         return Hz
 

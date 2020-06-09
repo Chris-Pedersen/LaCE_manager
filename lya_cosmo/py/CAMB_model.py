@@ -48,7 +48,8 @@ class CAMBModel(object):
 
 
     def get_linP_Mpc_params(self, kp_Mpc=0.69):
-        """ Get linear power parameters to call emulator, at each z"""
+        """ Get linear power parameters to call emulator, at each z.
+            Amplitude, slope and running around pivot point kp_Mpc."""
 
         ## Get the P(k) at each z
         k_Mpc,z,pk_Mpc=camb_cosmo.get_linP_Mpc(self.cosmo,zs=self.zs)

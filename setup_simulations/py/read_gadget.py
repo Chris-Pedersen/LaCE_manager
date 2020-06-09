@@ -62,7 +62,6 @@ def _build_cosmology_params_class(config):
     omegak = 1 - omegaL - omega0
     params = {'h':h0, 'Omega_cdm':omegacdm,'Omega_b':omegab, 'Omega_k':omegak}
     # these are not present in Gadget file
-    #params['T_cmb'] = config["CMBTemperature"]
     #params['A_s'] = config["PrimordialAmp"]
     #params['n_s'] = config['PrimordialIndex']
     #params['alpha_s'] = config['PrimordialRunning']

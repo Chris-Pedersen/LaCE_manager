@@ -232,7 +232,7 @@ we evaluate the linear power derivative is not important, but we use the
 range $ M_\ast^0 q_p /2 < k < 2 M_\ast^0 q_p$.
 By defintion, $f_\ast=1$ in an EdS Universe.
 
-We approximate $m(z)$ using the difference of $g_\ast$ between the input
+We approximate $d(z)$ using the difference of $f_\ast$ between the input
 and the fiducial cosmology as:
 \begin{equation}
  \ln d(z) \approx - \left( f_\ast - f^0_\ast \right) 
@@ -243,3 +243,26 @@ or equivalently
  d(z) \approx \left( \frac{1+z}{1+z_\ast} \right)^{- ( f_\ast - f^0_\ast)} ~.
 \end{equation}
 
+
+\subsection{Test case: different $\Lambda$CDM model}
+
+We test here the reconstruction of a model with $h=0.74$, using a fiducial
+cosmology with $h=0.67$.
+
+\begin{figure}[ht]
+ \begin{center}
+  \includegraphics[scale=0.7]{Figures/recP_h074_0}
+  \includegraphics[scale=0.7]{Figures/recP_h074_1}
+  \includegraphics[scale=0.7]{Figures/recP_h074_2}
+ \end{center}
+ \caption{Reconstructions of the linear power (in velocity units) for a test
+  cosmology with $h=074$, using a fiducial cosmology with $h=0.67$.
+  The different lines show the test cosmology (True); a reconstruction where
+  we use the true redshift evolution $m(z)$ and $d(z)$ (Cheat); a
+  reconstruction using $g_\ast$ and $f_\ast$ to approximate $m(z)$ and $d(z)$
+  (Approx); a reconstruction where we ignore these parameters and use
+  $m(z) = d(z) = 1$ (Ignore).}
+ \label{fig:recP}
+\end{figure}
+
+As can be seen in the plots, the agreement is quite good.

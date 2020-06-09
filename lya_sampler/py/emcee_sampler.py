@@ -95,7 +95,12 @@ class EmceeSampler(object):
                         "ln_gamma_0":"$ln(\gamma_0)$",
                         "ln_gamma_1":"$ln(\gamma_1)$",
                         "ln_kF_0":"$ln(kF_0)$",
-                        "ln_kF_1":"$ln(kF_1)$"
+                        "ln_kF_1":"$ln(kF_1)$",
+                        "H0":"$H_0$",
+                        "As":"$A_s$",
+                        "ns":"$n_s$",
+                        "ombh2":"$\omega_b$",
+                        "omch2":"$\omega_c$"
                         }
 
         ## Set up list of parameter names in tex format for plotting
@@ -370,14 +375,7 @@ class EmceeSampler(object):
         except:
             free_param_limits=None
     
-        if config["simpleLike"]==True:
-            self.like=likelihood.simpleLikelihood(data=data,emulator=emulator,
-                            free_parameters=free_param_list,
-                            verbose=False,
-                            prior_Gauss_rms=config["prior_Gauss_rms"],
-                            emu_cov_factor=config["emu_cov_factor"])
-        else:
-            self.like=likelihood.Likelihood(data=data,emulator=emulator,
+        self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_parameters=free_param_list,
                             free_param_limits=free_param_limits,
                             verbose=False,

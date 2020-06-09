@@ -77,7 +77,7 @@ class LyaTheory(object):
         return emu_calls
 
 
-    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False):
+    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,camb_evaluation=None):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
             It might also return a covariance from the emulator."""

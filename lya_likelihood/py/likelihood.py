@@ -86,13 +86,13 @@ class Likelihood(object):
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
                                             camb_model_fid=camb_model_sim)
             else:
-                print("Cannot only vary IGM!")
-                quit()
+                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator)
+                print("No cosmology parameters are varied, assume you are doing importance sampling")
 
         # setup parameters
 
-        if not free_parameters:
-            free_parameters=['ln_tau_0']
+        #if not free_parameters:
+        #    free_parameters=['ln_tau_0']
         self.set_free_parameters(free_parameters,self.free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
@@ -176,7 +176,7 @@ class Likelihood(object):
         return like_params
 
 
-    def get_p1d_kms(self,k_kms=None,values=None,return_covar=False):
+    def get_p1d_kms(self,k_kms=None,values=None,return_covar=False,camb_evaluation=None):
         """Compute theoretical prediction for 1D P(k)"""
 
         if k_kms is None:
@@ -189,7 +189,8 @@ class Likelihood(object):
             like_params=[]
 
         return self.theory.get_p1d_kms(k_kms,like_params=like_params,
-                                            return_covar=return_covar)
+                                            return_covar=return_covar,
+                                            camb_evaluation=camb_evaluation)
 
 
     def get_chi2(self,values=None):
@@ -233,7 +234,7 @@ class Likelihood(object):
         return data_covar, emu_covar
 
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True):
+    def get_log_like(self,values=None,ignore_log_det_cov=True,camb_evaluation=None):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True."""
 
@@ -243,7 +244,8 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True,
+                            camb_evaluation=camb_evaluation)
         if self.verbose: print('got P1D from emulator')
 
         # compute log like contribution from each redshift bin
@@ -447,9 +449,6 @@ class Likelihood(object):
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
 
         emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
-        distances=[]
-        for aa,call in enumerate(emu_calls):
-            distances.append(self.theory.emulator.get_nearest_distance(call,z=self.data.z[aa]))
 
         if self.verbose: print('got P1D from emulator')
 
@@ -469,9 +468,7 @@ class Likelihood(object):
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
                     yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,
-                    label="z=%.1f, distance = %.3f" % (z,distances[iz]))
-            #plt.plot(k_kms,p1d_theory*k_kms/np.pi,color=col,
-            #        linestyle="--")
+                    label="z=%.1f" % z)
             plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
             plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
 

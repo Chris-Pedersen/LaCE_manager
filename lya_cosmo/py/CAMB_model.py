@@ -105,4 +105,3 @@ class CAMBModel(object):
         new_cosmo = camb_cosmo.get_cosmology_from_dictionary(camb_param_dict,
                 cosmo_fid=self.cosmo)
         return CAMBModel(zs=copy.deepcopy(self.zs),cosmo=new_cosmo)
-

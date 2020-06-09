@@ -48,7 +48,7 @@ class FullTheory(object):
             self.kF_model_fid = pressure_model.PressureModel()
 
 
-    def get_emulator_calls(self,like_params=[],return_M_of_z=True):
+    def get_emulator_calls(self,like_params=[],return_M_of_z=True,camb_evaluation=None):
         """Compute models that will be emulated, one per redshift bin"""
 
         # setup IMG models using list of likelihood parameters
@@ -57,7 +57,10 @@ class FullTheory(object):
         T_model=igm_models['T_model']
         kF_model=igm_models['kF_model']
 
-        camb_model=self.camb_model_fid.get_new_model(like_params)
+        if camb_evaluation:
+            camb_model=CAMB_model.CAMBModel(zs=self.zs,cosmo=camb_evaluation)
+        else:
+            camb_model=self.camb_model_fid.get_new_model(like_params)
 
         # compute linear power parameters at all redshifts
         # (ideally, we would specify here the pivot point from the emulator)
@@ -86,7 +89,7 @@ class FullTheory(object):
             return emu_calls
 
 
-    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False):
+    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,camb_evaluation=None):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
             It might also return a covariance from the emulator."""
@@ -95,7 +98,7 @@ class FullTheory(object):
             raise ValueError('no emulator provided')
 
         # figure out emulator calls, one per redshift
-        emu_calls,M_of_z=self.get_emulator_calls(like_params=like_params)
+        emu_calls,M_of_z=self.get_emulator_calls(like_params=like_params,camb_evaluation=camb_evaluation)
 
         # loop over redshifts and compute P1D
         p1d_kms=[]

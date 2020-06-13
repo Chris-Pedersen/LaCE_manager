@@ -8,19 +8,9 @@ class SimulationParameterSpace(object):
     def __init__(self,filename=None,add_growth=True,add_amplitude=True,
                 add_slope=True,add_running=False,
                 add_heat_amp=True,add_heat_slo=True,add_z_rei=True):
-        """Construct space from file, or using default setting"""
+        """Construct simulation space"""
 
-        if filename is None:
-            self._default_setup(add_growth,add_amplitude,add_slope,add_running,
-                                add_heat_amp,add_heat_slo,add_z_rei)
-        else:
-            self._setup_from_file(filename,add_growth,add_amplitude,
-                            add_slope,add_running,
-                            add_heat_amp,add_heat_slo,add_z_rei)
-
-    def _default_setup(self,add_growth,add_amplitude,add_slope,add_running,
-                                add_heat_amp,add_heat_slo,add_z_rei):
-        """Default setup of parameter space"""
+# THIS SHOULD BE WORKING WITH KM/S , NOT MPC
 
         self.z_star=3.0
         self.kp_Mpc=0.7
@@ -55,12 +45,3 @@ class SimulationParameterSpace(object):
                     'latex':r'$z_r$'}
 
         self.params=params
-
-
-    def _setup_from_file(self,filename,add_growth,add_amplitude,
-                            add_slope,add_running,
-                            add_heat_amp,add_heat_slo,add_z_rei):
-        print('should implement setup from file')
-        self._default_setup(add_growth,add_amplitude,add_slope,add_running,
-                            add_heat_amp,add_heat_slo,add_z_rei)
-        #raise ValueError('implement setup_from_file')

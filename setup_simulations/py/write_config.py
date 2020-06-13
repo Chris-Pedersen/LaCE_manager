@@ -193,6 +193,10 @@ def write_cube_json_file(simdir,param_space,cube):
 def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
     """Write a JSON file with meta data associated to this simulation pair."""
     
+
+# WE COULD PASS HERE COSMO OBJECT
+
+
     filename=simdir+'/parameter.json'
 
     json_info={}

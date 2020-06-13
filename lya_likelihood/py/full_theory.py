@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import camb_cosmo
-import fit_linP
-import recons_cosmo
 import mean_flux_model
 import thermal_model
 import pressure_model

@@ -1,8 +1,4 @@
 import numpy as np
-import camb_cosmo
-import fit_linP
-import recons_cosmo
-import thermal_model
 
 class LikelihoodParameter(object):
     """Base class for likelihood parameter"""

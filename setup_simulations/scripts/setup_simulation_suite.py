@@ -97,9 +97,9 @@ cosmo_fid = camb_cosmo.get_cosmology()
 if verbose:
     camb_cosmo.print_info(cosmo_fid)
 
-# setup fiducial linear power model
-linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,z_star=z_star,
-            k_units='Mpc',kp=kp_Mpc)
+# setup fiducial linear power model (WE SHOULD USE KMS HERE)
+linP_model_fid=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_fid,z_star=z_star,
+            kp_Mpc=kp_Mpc)
 if verbose:
     print('fiducial linear power parameters',linP_model_fid.get_params())
 
@@ -165,8 +165,9 @@ for sample in range(nsamples):
             Ngrid=args.ngrid,zs=zs)
 
     # construct linear power model and store in JSON format
-    linP_model_sim=fit_linP.LinearPowerModel(cosmo=cosmo_sim,z_star=z_star,
-            k_units='Mpc',kp=kp_Mpc)
+    # (WE SHOULD USE KM/S HERE)
+    linP_model_sim=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_sim,
+            z_star=z_star,kp_Mpc=kp_Mpc)
 
     if verbose:
         print('write JSON file for simulation pair')

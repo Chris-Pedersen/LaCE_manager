@@ -14,11 +14,12 @@ def cosmo_from_sim_params(param_space,sim_params,linP_model_fid,
             - linP_model_fid: linear power model in fiducial cosmology. 
         Output:
             - cosmo_sim: CAMB object for the target cosmology."""
+
+    # WE SHOULD USE PIVOT POINT IN KM/S TO DESCRIBE SIMULATIONS
     
     # get pivot points in linear power parameterization
     z_star = linP_model_fid.z_star
-    assert linP_model_fid.k_units is 'Mpc', 'linP_model not in Mpc units'
-    kp_Mpc = linP_model_fid.kp
+    kp_Mpc = linP_model_fid.kp_Mpc
 
     # translate Omega_star to Omega_0 (in target cosmology)
     if 'Om_star' in param_space:
@@ -44,8 +45,8 @@ def cosmo_from_sim_params(param_space,sim_params,linP_model_fid,
     # get temporary cosmology to tune primordial power spectrum
     cosmo_temp=camb_cosmo.get_cosmology(H0=100.0*h)
     # get linear power parameters, in comoving units
-    linP_model_temp=fit_linP.LinearPowerModel(cosmo=cosmo_temp,z_star=z_star,
-                                                    k_units='Mpc',kp=kp_Mpc)
+    linP_model_temp=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_temp,
+            z_star=z_star,kp_Mpc=kp_Mpc)
     Delta2_star_temp=linP_model_temp.get_Delta2_star()
     n_star_temp=linP_model_temp.get_n_star()
     alpha_star_temp=linP_model_temp.get_alpha_star()

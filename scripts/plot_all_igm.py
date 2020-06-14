@@ -5,7 +5,6 @@ import mean_flux_model
 from scipy.optimize import curve_fit
 import os
 import recons_cosmo
-import fit_linP
 
 repo=os.environ['LYA_EMU_REPO']
 skewers_label='Ns256_wM0.05'

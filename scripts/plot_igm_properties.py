@@ -5,7 +5,6 @@ import mean_flux_model
 from scipy.optimize import curve_fit
 import os
 import recons_cosmo
-import fit_linP
 
 repo=os.environ['LYA_EMU_REPO']
 #basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"

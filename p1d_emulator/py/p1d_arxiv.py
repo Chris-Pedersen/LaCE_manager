@@ -51,6 +51,9 @@ class ArxivP1D(object):
         if nearest_tau:
             self._keep_nearest_tau()
 
+        return
+
+
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
                             pick_sim_number,drop_sim_number,
@@ -223,16 +226,17 @@ class ArxivP1D(object):
         self.z=np.array([self.data[i]['z'] for i in range(N)])
 
         # store IGM parameters (if present)
-        if self.data[0]['mF']:
+        if 'mF' in self.data[0]:
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
-        if self.data[0]['sigT_Mpc']:
+        if 'sigT_Mpc' in self.data[0]:
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
-        if self.data[0]['gamma']:
+        if 'gamma' in self.data[0]:
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
-        if self.data[0]['kF_Mpc']:
+        if 'kF_Mpc' in self.data[0]:
             self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
 
         return
+
 
     def _keep_every_other_rescaling(self):
         """Keep only every other rescaled entry"""

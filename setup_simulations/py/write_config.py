@@ -203,8 +203,7 @@ def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
 
     # copy pivot point in parameterization (should be same in all sims)
     json_info['z_star']=linP_model.z_star
-    assert linP_model.k_units == 'Mpc', 'linP_model not in Mpc units'
-    json_info['kp_Mpc'] = linP_model.kp
+    json_info['kp_Mpc'] = linP_model.kp_Mpc
 
     # copy values of parameters for this particular simulation
     for key,param in param_space.items():

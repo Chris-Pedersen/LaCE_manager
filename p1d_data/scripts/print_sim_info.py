@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import os
 import p1d_arxiv
 from scipy.optimize import curve_fit
-import recons_cosmo
 
 '''
 Script to take a chosen simulation in the emulator archive

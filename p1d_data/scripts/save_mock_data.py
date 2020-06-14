@@ -32,6 +32,10 @@ z_sim=np.empty(len(archive.data))
 for aa,item in enumerate(sim_data):
     z_sim[aa]=item["z"]
 
+# WE SHOULD BE ABLE TO READ COSMOLOGY FROM GADGET / GENIC PARAMS
+# (NO NEED TO USE LIN_P PARAMETERS)
+# THIS ASSUMES THAT COSMOLOGY IS FIDUCIAL ONE???
+
 ## Import cosmology object to get Mpc -> kms conversion factor
 cosmo=recons_cosmo.ReconstructedCosmology(np.flip(z_sim))
 

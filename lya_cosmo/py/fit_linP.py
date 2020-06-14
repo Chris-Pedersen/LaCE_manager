@@ -4,126 +4,41 @@ import camb
 import camb_cosmo
 import likelihood_parameter
 
-class LinearPowerModel(object):
-    """Store parameters describing the linear power in a cosmology.
-        It can work in two modes:
-            - given CAMB object, parameterize cosmology and store parameters
-            - construct with set of parameters, and store them
-        It can work in velocity or comoving units."""
+class LinearPowerModel_Mpc(object):
+    """Store parameters describing the linear power in comoving coordinates,
+        for a given CAMB object."""
 
-    def __init__(self,params=None,cosmo=None,z_star=3.0,k_units='kms',kp=None):
-        """Setup model, specifying units (kms or Mpc) and pivot point"""
 
-        # choose suitable pivot point, depending on units
+    def __init__(self,cosmo,z_star=3.0,kp_Mpc=0.69):
+        """Setup model, specifying redshift and pivot point"""
+
         self.z_star=z_star
-        self.k_units=k_units
-        if kp is None:
-            if self.k_units is 'kms':
-                self.kp=0.009
-            elif self.k_units is 'Mpc':
-                self.kp=0.6900
-            else:
-                raise ValueError('k_units not recognized '+self.k_units)
-        else:
-            self.kp=kp
+        self.kp_Mpc=kp_Mpc
 
-        # store (or compute) parameters and / or cosmology
-        if params:
-            assert cosmo is None, 'can not pass both cosmo and params'
-            self.cosmo=None
-            self._setup_from_parameters(params)
-        else:
-            self.cosmo=cosmo
-            # parameterize cosmology and store parameters
-            self._setup_from_cosmology()
+        # parameterize cosmology and store parameters
+        self.cosmo=cosmo
+        self._setup_from_cosmology()
 
-
-    def _setup_from_parameters(self,params):
-        """Setup object from dictionary with parameters."""
-
-        assert self.k_units is 'kms', '_setup_from_parameters works in kms'
-        kp_kms=self.kp
-
-        # copy input dictionary
-        self.linP_params=params.copy()
-        # will add polynomial describing the log power, around kp_kms
-        linP_kms_2=0.5*params['alpha_star']
-        linP_kms_1=params['n_star']
-        A_star=(2*np.pi**2)*params['Delta2_star']/kp_kms**3
-        linP_kms_0=np.log(A_star)
-        linP_kms = np.poly1d([linP_kms_2,linP_kms_1,linP_kms_0])
-        self.linP_params['linP_kms']=linP_kms
+        return
 
 
     def _setup_from_cosmology(self):
         """Compute and store parameters describing the linear power."""
 
-        if not self.cosmo: raise ValueError('no cosmology in LinearPowerModel')
-
-        if self.k_units is 'kms':
-            self.linP_params=parameterize_cosmology_kms(self.cosmo,
-                                                        self.z_star,self.kp)
-        elif self.k_units is 'Mpc':
-            self.linP_params=parameterize_cosmology_Mpc(self.cosmo,
-                                                        self.z_star,self.kp)
-        else:
-            raise ValueError('k_units not recognized '+self.k_units)
+        self.linP_params=parameterize_cosmology_Mpc(self.cosmo,
+                                                    self.z_star,self.kp_Mpc)
+        
+        return
 
 
-    def get_params(self,poly=False):
-        """Return dictionary with parameters. 
-            If False=True, return also polynomial with shape of linear power"""
+    def get_params(self):
+        """Return dictionary with parameters."""
 
         params={'f_star':self.get_f_star(), 'g_star':self.get_g_star(), 
                 'Delta2_star':self.get_Delta2_star(), 
                 'n_star':self.get_n_star(), 'alpha_star':self.get_alpha_star()}
 
-        # check if we want linear power as well, in km/s or Mpc units
-        if poly:
-            if self.k_units is 'kms':
-                params['linP_kms']=self.linP_params['linP_kms']
-            elif self.k_units is 'Mpc':
-                params['linP_kms']=self.linP_params['linP_kms']
-            else:
-                raise ValueError('k_units not recognized '+self.k_units)
         return params
-
-
-    def get_likelihood_parameters(self):
-        """Tell likelihood about the linear power parameters"""
-
-        params=[]
-        params.append(likelihood_parameter.LikelihoodParameter(
-                        name='g_star',min_value=0.95,max_value=0.99,
-                        value=self.linP_params['g_star']))
-        params.append(likelihood_parameter.LikelihoodParameter(
-                        name='f_star',min_value=0.95,max_value=0.99,
-                        value=self.linP_params['f_star']))
-        params.append(likelihood_parameter.LikelihoodParameter(
-                        name='Delta2_star',min_value=0.25,max_value=0.4,
-                        value=self.linP_params['Delta2_star']))
-        params.append(likelihood_parameter.LikelihoodParameter(
-                        name='n_star',min_value=-2.35,max_value=-2.25,
-                        value=self.linP_params['n_star']))
-        params.append(likelihood_parameter.LikelihoodParameter(
-                        name='alpha_star',min_value=-0.27,max_value=-0.16,
-                        value=self.linP_params['alpha_star']))
-
-        return params
-
-
-    def update_parameters(self,like_params):
-        """Update linear power parameters, if present in input list"""
-
-        # get current dictionary with parameters, update and setup again
-        params=self.get_params()
-
-        for par in like_params:
-            if par.name in params:
-                params[par.name]=par.value
-
-        self._setup_from_parameters(params)
-        return
 
 
     def get_f_star(self):
@@ -144,14 +59,9 @@ class LinearPowerModel(object):
     def parameterize_z_Mpc(self,zs):
         """For each redshift, fit linear power parameters (in Mpc)"""
 
-        # check that you actually hold a CAMB cosmology object
-        if not self.cosmo: raise ValueError('no cosmology in LinearPowerModel')
-        # make sure object is setup in Mpc units
-        assert self.k_units is 'Mpc', 'parameterize_z_Mpc can only work in Mpc'
-
         linP_zs=[]
         for z in zs:
-            pars=parameterize_cosmology_Mpc(self.cosmo,z_star=z,kp_Mpc=self.kp)
+            pars=parameterize_cosmology_Mpc(self.cosmo,z,kp_Mpc=self.kp_Mpc)
             # _star is only for parameters at z_star
             linP_z={'f_p':pars['f_star'], 'Delta2_p':pars['Delta2_star'],
                     'n_p':pars['n_star'], 'alpha_p':pars['alpha_star']}

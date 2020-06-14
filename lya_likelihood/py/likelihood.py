@@ -413,9 +413,15 @@ class Likelihood(object):
         """ Fit Delta2_star and n_star to each simulation
         in the training set """
 
+        # HOW DO WE KNOW FIDUCIAL HERE WAS THE ONE IN THE SIMS?
+        # HOW DO WE KNOW PIVOT POINT WAS THE SAME IN SIMS?
+        # SHOULD JUST USE COSMOLOGY FROM GENIC / GADGET FILES
+
+        print('RESULTS FOR FIT_COSMOLOGY_PARAMS MIGHT NOT BE EXACT')
+
         cube=self.theory.emulator.arxiv.cube_data
         cosmo_fid = camb_cosmo.get_cosmology()
-        linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
+        linP_model_fid=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_fid)
 
         Delta2_stars=[]
         n_stars=[]
@@ -425,10 +431,10 @@ class Likelihood(object):
                 ## Don't include mock sim
                 continue
             else:
-                cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(cube["param_space"],
-                                cube["samples"][str(aa)],
-                                linP_model_fid,verbose=False)
-                sim_linP_model=fit_linP.LinearPowerModel(cosmo=cosmo_sim)
+                cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(
+                        cube["param_space"],cube["samples"][str(aa)],
+                        linP_model_fid,verbose=False)
+                sim_linP_model=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_sim)
                 Delta2_stars.append(sim_linP_model.get_Delta2_star())
                 n_stars.append(sim_linP_model.get_n_star())
         

@@ -3,6 +3,7 @@ import os
 import camb
 import camb_cosmo
 import fit_linP
+import linear_power_model
 from scipy import interpolate
 
 class ReconstructedCosmology(object):
@@ -38,11 +39,12 @@ class ReconstructedCosmology(object):
         self.results_fid=camb.get_results(self.cosmo_fid)
 
         # compute linear power model for fiducial cosmology
-        self.linP_model_fid=fit_linP.LinearPowerModel(cosmo=self.cosmo_fid)
+        self.linP_model_fid=linear_power_model.LinearPowerModel_kms(
+                                                        cosmo=self.cosmo_fid)
         self.z_star=self.linP_model_fid.z_star
         # note this is the pivot point for likelihood parameter
         # not necessarily pivot point for emulator (in Mpc)
-        self.kp_kms=self.linP_model_fid.kp
+        self.kp_kms=self.linP_model_fid.kp_kms
 
         # get Hubble at z_star for fiducial cosmology, used to compute kp_Mpc
         self.H_star_fid=self.results_fid.hubble_parameter(self.z_star)
@@ -257,7 +259,7 @@ class ReconstructedCosmology(object):
         if self.verbose:
             print(qB.shape,'qB',qB)
         # linP_kms_params actually store log(B) vs log(k_kms/kp_kms)
-        lnqB_kp = np.log(qB / self.kp_kms)
+        lnqB_kp = np.log(qB / kp_kms)
         if self.verbose:
             print(lnqB_kp.shape,'lnqB_kp',lnqB_kp)
         lnB = linP_kms_params(lnqB_kp)-linP_kms_params_fid(lnqB_kp)
@@ -360,17 +362,16 @@ class ReconstructedCosmology(object):
 
 
     def get_linP_model(self,like_params):
-        """Uset likelihood parameters to construct and return a linP_model"""
+        """Use likelihood parameters to construct and return a linP_model"""
 
         # create dummy linP_model, to be updated next
         fid_params=self.linP_model_fid.get_params()
-        linP_model = fit_linP.LinearPowerModel(params=fid_params,
-                                z_star=self.z_star,k_units='kms',kp=self.kp_kms)
+        linP_model = linear_power_model.LinearPowerModel_kms(params=fid_params,
+                                    z_star=self.z_star,kp_kms=self.kp_kms)
         # update model with likelihood parameters
         linP_model.update_parameters(like_params)
 
         return linP_model
-
 
 
 def compute_D_Dstar(cosmo,z,z_star,k_hMpc=1.0):

@@ -23,7 +23,7 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
         # drop low-z or high-z bins
         if zmin or zmax:
-            z,k,Pk,cov=_drop_zbins(z,k,Pk,cov,zmin,zmax)
+            z,k,Pk,cov=base_p1d_data._drop_zbins(z,k,Pk,cov,zmin,zmax)
 
         # option to use simplied mock data
         if toy_data: 
@@ -91,36 +91,6 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
         p1d_file=basedir+'/table5a.dat'
         raise ValueError('implement _setup_like to read likelihood P1D') 
-
-
-def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
-    """Drop redshift bins below zmin or above zmax"""
-
-    # size of input arrays
-    Nz_in=len(z_in)
-    Nk=len(k_in)
-
-    # figure out how many z to keep
-    keep=np.ones(Nz_in, dtype=bool)
-    if zmin:
-        keep = np.logical_and(keep,z_in>zmin)
-    if zmax:
-        keep = np.logical_and(keep,z_in<zmax)
-    Nz_out=np.sum(keep)
-
-    # setup new arrays
-    z_out=np.empty(Nz_out)
-    Pk_out=np.empty((Nz_out,Nk))
-    cov_out=[]
-    i=0
-    for j in range(Nz_in):
-        if keep[j]:
-            z_out[i]=z_in[j]
-            Pk_out[i]=Pk_in[j]
-            Pk_out[i]=Pk_in[j]
-            cov_out.append(cov_in[j])
-            i+=1
-    return z_out,k_in,Pk_out,cov_out
 
 
 def analytic_p1d_PD2013_z_kms(z,k_kms):

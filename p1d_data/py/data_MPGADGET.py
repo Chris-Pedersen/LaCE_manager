@@ -2,6 +2,7 @@ import os
 import numpy as np
 import base_p1d_data
 import data_PD2013
+import data_Chabanier2019
 import poly_p1d
 import json
 import matplotlib.pyplot as plt
@@ -11,13 +12,16 @@ import camb_cosmo
 import camb
 from scipy.interpolate import interp1d
 
-
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
+    """ Class to load an MP-Gadget simulation as a mock
+    data object. Can use PD2013 or Chabanier2019 covmats """
+
     def __init__(self,basedir=None,zmin=None,zmax=None,blind_data=False,
                         sim_number=0,skewers_label=None,
+                        covmat="Chabanier2019",
                         z_list=None,data_cov_factor=1.):
         """ Read mock P1D from MP-Gadget sims, and return
-        using the k bins and covariance from PD2013 """
+        using the k bins and covariance from chosen dataset """
 
         # folder storing P1D measurement
         if not basedir:
@@ -29,22 +33,30 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.data_cov_factor=data_cov_factor
 
         z,k,Pk,cov=self._load_p1d(basedir,sim_number,skewers_label,
-                    data_cov_factor=self.data_cov_factor)
+                    data_cov_factor=self.data_cov_factor,covmat=covmat)
 
         # drop low-z or high-z bins
         if zmin or zmax:
-            z,k,Pk,cov=_drop_zbins(z,k,Pk,cov,zmin,zmax)
+            z,k,Pk,cov=base_p1d_data._drop_zbins(z,k,Pk,cov,zmin,zmax)
         if z_list is not None:
             z,k,Pk,cov=_select_zs(z,k,Pk,cov,z_list)
 
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
         self._set_true_values()
 
-    def _load_p1d(self,basedir,sim_number,skewers_label,data_cov_factor):
-        ## Load PD2013 data to get covmats
-        PD2013=data_PD2013.P1D_PD2013(blind_data=False)
-        k=PD2013.k
-        z_PD=PD2013.z
+    def _load_p1d(self,basedir,sim_number,skewers_label,data_cov_factor,
+                                covmat):
+        if covmat=="Chabanier2019":
+            data_file=data_Chabanier2019.P1D_Chabanier2019()
+        elif covmat=="PD2013":
+            ## Load PD2013 data to get covmats
+            data_file=data_PD2013.P1D_PD2013(blind_data=False)
+        else:
+            print("Unknown covmat model")
+            quit()
+
+        k=data_file.k
+        z_data=data_file.z
 
         ## Load mock data as arxiv object
         self.mock_data=p1d_arxiv.ArxivP1D(basedir=basedir,
@@ -88,8 +100,8 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
             Pk.append(p1d_sim)
             ## Now get covariance from the nearest
-            ## z bin in PD2013
-            cov_mat=PD2013.get_cov_iz(np.argmin(abs(z_PD-z_sim[aa])))
+            ## z bin in data
+            cov_mat=data_file.get_cov_iz(np.argmin(abs(z_data-z_sim[aa])))
             ## Cull low k cov data
             cov_mat=data_cov_factor*cov_mat[Ncull:,Ncull:]
             cov.append(cov_mat)
@@ -111,34 +123,6 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
         return
 
-def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
-    """Drop redshift bins below zmin or above zmax"""
-
-    # size of input arrays
-    Nz_in=len(z_in)
-    Nk=len(k_in)
-
-    # figure out how many z to keep
-    keep=np.ones(Nz_in, dtype=bool)
-    if zmin:
-        keep = np.logical_and(keep,z_in>zmin)
-    if zmax:
-        keep = np.logical_and(keep,z_in<zmax)
-    Nz_out=np.sum(keep)
-
-    # setup new arrays
-    z_out=np.empty(Nz_out)
-    Pk_out=np.empty((Nz_out,Nk))
-    cov_out=[]
-    i=0
-    for j in range(Nz_in):
-        if keep[j]:
-            z_out[i]=z_in[j]
-            Pk_out[i]=Pk_in[j]
-            Pk_out[i]=Pk_in[j]
-            cov_out.append(cov_in[j])
-            i+=1
-    return z_out,k_in,Pk_out,cov_out
 
 def _select_zs(z_in,k_in,Pk_in,cov_in,zs):
     args=np.array([],dtype=int)

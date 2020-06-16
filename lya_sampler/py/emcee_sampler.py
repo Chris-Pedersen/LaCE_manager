@@ -36,6 +36,10 @@ class EmceeSampler(object):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
 
+        # WE SHOULD DOCUMENT BETTER THE OPTIONAL INPUTS
+        # WHEN WOULD SOMEONE PASS A LIKELIHOOD AND A LIST OF FREE PARAMETERS?
+        # WOULDN'T like.free_params ALREADY CONTAIN THAT?
+
         self.verbose=verbose
         self.store_distances=False
         self.progress=progress

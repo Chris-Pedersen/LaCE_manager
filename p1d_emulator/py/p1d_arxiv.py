@@ -4,6 +4,9 @@ import sys
 import os
 import json
 import matplotlib.pyplot as plt
+import read_genic
+import camb_cosmo
+import fit_linP
 
 class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
@@ -13,12 +16,15 @@ class ArxivP1D(object):
                 keep_every_other_rescaling=False,nearest_tau=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
-                z_max=5.,nsamples=None,undersample_cube=1):
+                z_max=5.,nsamples=None,undersample_cube=1,
+                kp_Mpc=None,z_star=None):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)
 
             reduce_arxiv = None will take the full arxiv, 1 will take every other sim
             in the Latin hypercube, 2 will take every 4th """
+
+        # SHOULD UPDATE DOCSTRING WITH ALL THESE ARGUMENTS
 
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
@@ -40,7 +46,9 @@ class ArxivP1D(object):
         self.z_max=z_max
         self.undersample_cube=undersample_cube
         self.drop_sim_number=drop_sim_number
-
+        # pivot point used in linP parameters
+        self.z_star=z_star
+        self.kp_Mpc=kp_Mpc
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
@@ -77,6 +85,19 @@ class ArxivP1D(object):
         if self.verbose:
             print('simulation suite has %d samples'%self.nsamples)
 
+        # read pivot point from simulation suite if not specified
+        own_pivot_point=False
+        if self.z_star is None:
+            n_star = self.cube_data['param_space']['n_star']
+            self.z_star = n_star['z_star']
+        else:
+            own_pivot_point=True
+        if self.kp_Mpc is None:
+            n_star = self.cube_data['param_space']['n_star']
+            self.kp_Mpc = n_star['kp_Mpc']
+        else:
+            own_pivot_point=True
+
         if pick_sim_number is not None:
             start=pick_sim_number
             self.nsamples=pick_sim_number+1
@@ -103,6 +124,24 @@ class ArxivP1D(object):
             if self.verbose:
                 print('simulation has %d redshifts'%Nz)
                 print('undersample_z =',undersample_z)
+
+            # overwrite linP parameters stored in parameter.json
+            if own_pivot_point:
+                print('overwritting linP_zs in parameter.json')
+                # setup cosmology from GenIC file
+                genic_fname=pair_dir+"/sim_plus/paramfile.genic"
+                print('read cosmology from GenIC',genic_fname)
+                sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
+                # setup CAMB object
+                sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+                # setup linear power object, to get linP parameters
+                linP_model = fit_linP.LinearPowerModel_Mpc(cosmo=sim_cosmo,
+                        z_star=self.z_star,kp_Mpc=self.kp_Mpc)
+                linP_zs=linP_model.parameterize_z_Mpc(zs)
+                print('update linP_zs',linP_zs)
+                pair_data['linP_zs']=list(linP_zs)
+            else:
+                if self.verbose: print('Use linP_zs from parameter.json')
 
             # to make lighter emulators, we might undersample redshifts
             for snap in range(0,Nz,undersample_z):       

@@ -21,13 +21,13 @@ class Likelihood(object):
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,emu_cov_factor=1,
+                    kmin_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=True):
         """Setup likelihood from theory and data. Options:
             - free_parameters is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_parameters
             - if prior_Gauss_rms is None it will use uniform priors
-            - ignore k-bins with k > min_kp_kms
+            - ignore k-bins with k > kmin_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
             set between 0 and 1.
             - use_sim_cosmo will extract the cosmological likelihood
@@ -46,7 +46,7 @@ class Likelihood(object):
             self.data=data_PD2013.P1D_PD2013(blind_data=True)
 
         # (optionally) get rid of low-k data points
-        self.data._cull_data(min_kp_kms)
+        self.data._cull_data(kmin_kms)
         # list of parameter names, order might be different than get_parameters
         self.free_parameters=free_parameters
         # list of tuples with limits, same order than above
@@ -58,13 +58,18 @@ class Likelihood(object):
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object
             compressed=bool(set(self.free_parameters) & set(["Delta2_star",
-                                            "n_star",
-                                            "alpha_star",
-                                            "f_star",
-                                            "g_star"]))
-            full=bool(set(self.free_parameters) & set(["H0",
-                                            "As",
-                                            "ns"]))
+                                "n_star","alpha_star","f_star","g_star"]))
+
+            full=bool(set(self.free_parameters) & set(["H0","mnu","As","ns"]))
+
+            if self.verbose:
+                if compressed:
+                    print('using compressed theory')
+                elif full:
+                    print('using full theory')
+                else:
+                    print('not using any theory?',self.free_parameters)
+
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
             if use_sim_cosmo: ## Use the simulation cosmology as fiducial?

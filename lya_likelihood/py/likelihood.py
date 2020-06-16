@@ -72,7 +72,8 @@ class Likelihood(object):
 
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
-            if use_sim_cosmo: ## Use the simulation cosmology as fiducial?
+            if use_sim_cosmo:
+                # Use the simulation cosmology as fiducial, for mock data
                 repo=os.environ['LYA_EMU_REPO']
                 ## Get dictionary with cosmo params from paramfile.genic
                 sim_num=self.data.sim_number
@@ -426,34 +427,44 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def fit_cosmology_params(self):
-        """ Fit Delta2_star and n_star to each simulation
-        in the training set """
+    def get_simulation_suite_linP_params(self):
+        """ Compute Delta2_star and n_star for each simulation
+        in the training set of the emulator"""
 
-        # HOW DO WE KNOW FIDUCIAL HERE WAS THE ONE IN THE SIMS?
-        # HOW DO WE KNOW PIVOT POINT WAS THE SAME IN SIMS?
-        # SHOULD JUST USE COSMOLOGY FROM GENIC / GADGET FILES
+        # this function should only be called when using compressed parameters
+        z_star = self.theory.cosmo.z_star
+        kp_kms = self.theory.cosmo.kp_kms
 
-        print('RESULTS FOR FIT_COSMOLOGY_PARAMS MIGHT NOT BE EXACT')
+        # use environmental variable to point to repo
+        repo=os.environ['LYA_EMU_REPO']
+        # directory with simulations used in emulator
+        basedir=repo+'/'+self.theory.emulator.basedir
+        print('basedir',basedir)
 
-        cube=self.theory.emulator.arxiv.cube_data
-        cosmo_fid = camb_cosmo.get_cosmology()
-        linP_model_fid=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_fid)
+        # simulation cube used in emulator
+        cube_data=self.theory.emulator.arxiv.cube_data
 
+        # collect linP params for each simulation
         Delta2_stars=[]
         n_stars=[]
-
-        for aa in range(cube["nsamples"]-1):
-            if aa==self.theory.emulator.arxiv.drop_sim_number:
-                ## Don't include mock sim
+        ### WHY DO WE EXCLUDE THE LAST SIMULATION IF IT IS USED?
+        for sim_num in range(cube_data["nsamples"]-1):
+            if sim_num==self.theory.emulator.arxiv.drop_sim_number:
+                print('skip simulation',sim_num)
+                ## Don't include simulation used to generate mock data
                 continue
             else:
-                cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(
-                        cube["param_space"],cube["samples"][str(aa)],
-                        linP_model_fid,verbose=False)
-                sim_linP_model=fit_linP.LinearPowerModel_Mpc(cosmo=cosmo_sim)
-                Delta2_stars.append(sim_linP_model.get_Delta2_star())
-                n_stars.append(sim_linP_model.get_n_star())
+                # setup cosmology from GenIC file
+                dir_name=basedir+"/sim_pair_"+str(sim_num)
+                file_name=dir_name+"/sim_plus/paramfile.genic"
+                sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+                sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+                # setup linear power object, to get linP parameters
+                sim_linP_params=fit_linP.parameterize_cosmology_kms(
+                        cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+                print(sim_num,'got params',sim_linP_params)
+                Delta2_stars.append(sim_linP_params['Delta2_star'])
+                n_stars.append(sim_linP_params['n_star'])
         
         return Delta2_stars, n_stars
 

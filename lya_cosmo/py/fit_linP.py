@@ -59,14 +59,21 @@ class LinearPowerModel_Mpc(object):
     def parameterize_z_Mpc(self,zs):
         """For each redshift, fit linear power parameters (in Mpc)"""
 
-        linP_zs=[]
-        for z in zs:
-            pars=parameterize_cosmology_Mpc(self.cosmo,z,kp_Mpc=self.kp_Mpc)
-            # _star is only for parameters at z_star
-            linP_z={'f_p':pars['f_star'], 'Delta2_p':pars['Delta2_star'],
+        # we could delete this function, and remove self.cosmo from object
+        return get_linP_zs_Mpc(self.cosmo,zs,self.kp_Mpc)
+
+
+def get_linP_zs_Mpc(cosmo,zs,kp_Mpc):
+    """For each redshift, fit linear power parameters (in Mpc)"""
+
+    linP_zs=[]
+    for z in zs:
+        pars=parameterize_cosmology_Mpc(cosmo,z,kp_Mpc=kp_Mpc)
+        # _star is only for parameters at z_star
+        linP_z={'f_p':pars['f_star'], 'Delta2_p':pars['Delta2_star'],
                     'n_p':pars['n_star'], 'alpha_p':pars['alpha_star']}
-            linP_zs.append(linP_z)
-        return linP_zs
+        linP_zs.append(linP_z)
+    return linP_zs
 
 
 def compute_g_star(cosmo,z_star):
@@ -148,6 +155,11 @@ def fit_linP_kms(cosmo,z_star,kp_kms,deg=2):
 def parameterize_cosmology_Mpc(cosmo,z_star,kp_Mpc):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp (in Mpc)."""
+
+    # WE SHOULD NOT HAVE _star PARAMETERS with kp_Mpc 
+
+    # WE SHOULD JUST DELETE THIS WHOLE OBJECT
+
     # get logarithmic growth rate at z_star, around kp_Mpc
     f_star = compute_f_star(cosmo,z_star=z_star,kp_Mpc=kp_Mpc)
     # compute deviation from EdS expansion

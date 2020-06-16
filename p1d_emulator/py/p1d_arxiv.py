@@ -137,6 +137,7 @@ class ArxivP1D(object):
                 # setup linear power object, to get linP parameters
                 linP_model = fit_linP.LinearPowerModel_Mpc(cosmo=sim_cosmo,
                         z_star=self.z_star,kp_Mpc=self.kp_Mpc)
+                # (this function does not need to be in LPM_Mpc)
                 linP_zs=linP_model.parameterize_z_Mpc(zs)
                 print('update linP_zs',linP_zs)
                 pair_data['linP_zs']=list(linP_zs)

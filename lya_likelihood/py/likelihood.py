@@ -74,8 +74,13 @@ class Likelihood(object):
 
             if use_sim_cosmo: ## Use the simulation cosmology as fiducial?
                 repo=os.environ['LYA_EMU_REPO']
-                ## Get dictionary from paramfile.genic
-                sim_cosmo_dict=read_genic.camb_from_genic(repo+self.data.basedir+"sim_pair_"+str(self.data.sim_number)+"/sim_plus/paramfile.genic")
+                ## Get dictionary with cosmo params from paramfile.genic
+                sim_num=self.data.sim_number
+                dir_name=repo+self.data.basedir+"sim_pair_"+str(sim_num)
+                file_name=dir_name+"/sim_plus/paramfile.genic"
+                sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+                if self.verbose:
+                    print('use_sim_cosmo',sim_cosmo_dict)
                 ## Create CAMB object from dictionary
                 sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
             else:
@@ -84,20 +89,19 @@ class Likelihood(object):
             if compressed:
                 ## Set up a compressed LyaTheory object
                 self.theory=lya_theory.LyaTheory(self.data.z,emulator=emulator,
-                                            cosmo_fid=sim_cosmo)
+                        cosmo_fid=sim_cosmo,verbose=self.verbose)
             elif full:
-                ## Set up a full theory object
-                camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,cosmo=sim_cosmo)
+                ## Set up a FullTheory object
+                camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
+                        cosmo=sim_cosmo)
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                                            camb_model_fid=camb_model_sim)
+                        camb_model_fid=camb_model_sim,verbose=self.verbose)
             else:
-                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator)
+                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
+                        verbose=self.verbose)
                 print("No cosmology parameters are varied, assume you are doing importance sampling")
 
         # setup parameters
-
-        #if not free_parameters:
-        #    free_parameters=['ln_tau_0']
         self.set_free_parameters(free_parameters,self.free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
@@ -107,6 +111,14 @@ class Likelihood(object):
 
     def set_free_parameters(self,free_parameter_names,free_param_limits):
         """Setup likelihood parameters that we want to vary"""
+
+        # WE SHOULD DOCUMENT THIS FUNCTION BETTER. WHEN WOULD WE USE THIS?
+        # ALSO, SHOULD RENAME free_parameters TO free_param_names
+        # AND IT IS NOT CLEAR WHY WE NEED TO STORE EITHER THAT OR EVEN
+        # free_param_limits IN THE LIKELIHOOD OBJECT.
+        # ISN'T IT ENOUGH TO STORE free_params?
+        # ALSO, WHY DO WE NEED TO PASS THE ARGUMENTS ABOVE, IF THEY ARE
+        # ALREADY STORED?
 
         # setup list of likelihood free parameters
         self.free_params=[]

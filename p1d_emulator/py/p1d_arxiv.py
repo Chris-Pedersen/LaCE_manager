@@ -17,7 +17,7 @@ class ArxivP1D(object):
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
                 z_max=5.,nsamples=None,undersample_cube=1,
-                kp_Mpc=None,z_star=None):
+                kp_Mpc=None):
         """Load arxiv from base sim directory and (optional) label
             identifying skewer configuration (number, width)
 
@@ -47,7 +47,6 @@ class ArxivP1D(object):
         self.undersample_cube=undersample_cube
         self.drop_sim_number=drop_sim_number
         # pivot point used in linP parameters
-        self.z_star=z_star
         self.kp_Mpc=kp_Mpc
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
@@ -86,17 +85,12 @@ class ArxivP1D(object):
             print('simulation suite has %d samples'%self.nsamples)
 
         # read pivot point from simulation suite if not specified
-        own_pivot_point=False
-        if self.z_star is None:
-            n_star = self.cube_data['param_space']['n_star']
-            self.z_star = n_star['z_star']
-        else:
-            own_pivot_point=True
         if self.kp_Mpc is None:
             n_star = self.cube_data['param_space']['n_star']
             self.kp_Mpc = n_star['kp_Mpc']
+            update_kp=False
         else:
-            own_pivot_point=True
+            update_kp=True
 
         if pick_sim_number is not None:
             start=pick_sim_number
@@ -126,7 +120,7 @@ class ArxivP1D(object):
                 print('undersample_z =',undersample_z)
 
             # overwrite linP parameters stored in parameter.json
-            if own_pivot_point:
+            if update_kp:
                 print('overwritting linP_zs in parameter.json')
                 # setup cosmology from GenIC file
                 genic_fname=pair_dir+"/sim_plus/paramfile.genic"
@@ -136,7 +130,7 @@ class ArxivP1D(object):
                 sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
                 # setup linear power object, to get linP parameters
                 linP_model = fit_linP.LinearPowerModel_Mpc(cosmo=sim_cosmo,
-                        z_star=self.z_star,kp_Mpc=self.kp_Mpc)
+                        kp_Mpc=self.kp_Mpc)
                 # (this function does not need to be in LPM_Mpc)
                 linP_zs=linP_model.parameterize_z_Mpc(zs)
                 print('update linP_zs',linP_zs)

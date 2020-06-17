@@ -448,7 +448,7 @@ class Likelihood(object):
         Delta2_stars=[]
         n_stars=[]
         ### WHY DO WE EXCLUDE THE LAST SIMULATION IF IT IS USED?
-        for sim_num in range(cube_data["nsamples"]-1):
+        for sim_num in range(cube_data["nsamples"]):
             if sim_num==self.theory.emulator.arxiv.drop_sim_number:
                 print('skip simulation',sim_num)
                 ## Don't include simulation used to generate mock data

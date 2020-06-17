@@ -128,11 +128,8 @@ class ArxivP1D(object):
                 sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
                 # setup CAMB object
                 sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
-                # setup linear power object, to get linP parameters
-                linP_model = fit_linP.LinearPowerModel_Mpc(cosmo=sim_cosmo,
-                        kp_Mpc=self.kp_Mpc)
-                # (this function does not need to be in LPM_Mpc)
-                linP_zs=linP_model.parameterize_z_Mpc(zs)
+                # compute linear power parameters at each z (in Mpc units)
+                linP_zs=fit_linP.get_linP_zs_Mpc(sim_cosmo,zs,self.kp_Mpc)
                 print('update linP_zs',linP_zs)
                 pair_data['linP_zs']=list(linP_zs)
             else:

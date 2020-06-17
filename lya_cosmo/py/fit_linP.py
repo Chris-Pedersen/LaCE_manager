@@ -25,7 +25,7 @@ class LinearPowerModel_Mpc(object):
     def _setup_from_cosmology(self):
         """Compute and store parameters describing the linear power."""
 
-        self.linP_params=parameterize_cosmology_Mpc(self.cosmo,
+        self.linP_params=parameterize_linP_Mpc(self.cosmo,
                                                     self.z_star,self.kp_Mpc)
         
         return
@@ -68,7 +68,7 @@ def get_linP_zs_Mpc(cosmo,zs,kp_Mpc):
 
     linP_zs=[]
     for z in zs:
-        pars=parameterize_cosmology_Mpc(cosmo,z,kp_Mpc=kp_Mpc)
+        pars=parameterize_linP_Mpc(cosmo,z,kp_Mpc=kp_Mpc)
         # _star is only for parameters at z_star
         linP_z={'f_p':pars['f_star'], 'Delta2_p':pars['Delta2_star'],
                     'n_p':pars['n_star'], 'alpha_p':pars['alpha_star']}
@@ -152,21 +152,21 @@ def fit_linP_kms(cosmo,z_star,kp_kms,deg=2):
     return P_fit
 
 
-def parameterize_cosmology_Mpc(cosmo,z_star,kp_Mpc):
+def parameterize_linP_Mpc(cosmo,z,kp_Mpc):
     """Given input cosmology, compute set of parameters that describe 
-        the linear power around z_star and wavenumbers kp (in Mpc)."""
+        the linear power around z and wavenumbers kp (in Mpc)."""
 
     # WE SHOULD NOT HAVE _star PARAMETERS with kp_Mpc 
 
     # WE SHOULD JUST DELETE THIS WHOLE OBJECT
 
-    # get logarithmic growth rate at z_star, around kp_Mpc
-    f_star = compute_f_star(cosmo,z_star=z_star,kp_Mpc=kp_Mpc)
+    # get logarithmic growth rate at z around kp_Mpc
+    f_star = compute_f_star(cosmo,z_star=z,kp_Mpc=kp_Mpc)
     # compute deviation from EdS expansion
-    g_star = compute_g_star(cosmo,z_star=z_star)
-    # compute linear power, in Mpc, at z_star
+    g_star = compute_g_star(cosmo,z_star=z)
+    # compute linear power, in Mpc, at z
     # and fit a second order polynomial to the log power, around kp_Mpc
-    linP_Mpc = fit_linP_Mpc(cosmo,z_star,kp_Mpc,deg=2)
+    linP_Mpc = fit_linP_Mpc(cosmo,z,kp_Mpc,deg=2)
     # translate the polynomial to our parameters
     ln_A_star = linP_Mpc[0]
     Delta2_star = np.exp(ln_A_star)*kp_Mpc**3/(2*np.pi**2)

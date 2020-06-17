@@ -4,6 +4,7 @@ import numpy as np
 import os
 import json
 import gen_UVB as UVB
+import fit_linP
 
 def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):
@@ -192,7 +193,6 @@ def write_cube_json_file(simdir,param_space,cube):
 
 def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
     """Write a JSON file with meta data associated to this simulation pair."""
-    
 
 # WE COULD PASS HERE COSMO OBJECT
 
@@ -220,6 +220,28 @@ def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
     # write linear power in each snapshot
     json_info['zs']=list(zs)
     linP_zs=linP_model.parameterize_z_Mpc(zs)
+    json_info['linP_zs']=list(linP_zs)
+
+    json_file = open(filename,"w")
+    json.dump(json_info,json_file)
+    json_file.close()
+
+    return linP_zs
+
+
+def write_sim_json_file_new(simdir,param_space,cosmo_sim,zs):
+    """Write a JSON file with meta data associated to this simulation pair."""
+
+    filename=simdir+'/parameter.json'
+
+    json_info={}
+
+    # copy pivot point in parameterization (should be same in all sims)
+    json_info['kp_Mpc'] = param_space.kp_Mpc
+
+    # write linear power in each snapshot
+    json_info['zs']=list(zs)
+    linP_zs=fit_linP.get_linP_zs_Mpc(cosmo_sim,zs,param_space.kp_Mpc)
     json_info['linP_zs']=list(linP_zs)
 
     json_file = open(filename,"w")

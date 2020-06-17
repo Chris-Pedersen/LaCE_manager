@@ -352,6 +352,12 @@ class EmceeSampler(object):
             data_cov=config["data_cov_factor"]
         except:
             data_cov=1.
+        try:
+            data_year=config["data_year"]
+        except:
+            ## If the data covmat wasn't recorded,
+            ## it was PD2013
+            data_year="PD2013"
 
 
         ## Set up mock data
@@ -359,7 +365,8 @@ class EmceeSampler(object):
                                     basedir=config["basedir"],
                                     skewers_label=config["skewers_label"],
                                     z_list=np.asarray(config["z_list"]),
-                                    data_cov_factor=data_cov)
+                                    data_cov_factor=data_cov,
+                                    covmat=data_year)
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -471,6 +478,7 @@ class EmceeSampler(object):
         saveDict["data_basedir"]=self.like.data.basedir
         saveDict["data_sim_number"]=self.like.data.sim_number
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
+        saveDict["data_year"]=self.like.data.data_year
         if self.like.simpleLike:
             saveDict["simpleLike"]=True
         else:

@@ -24,7 +24,7 @@ class LyaTheory(object):
         self.zs=zs
         self.emulator=emulator
 
-        # setup object to compute linear power for any cosmology
+        # specify pivot point to be used in emulator calls
         if self.emulator is None:
             print('using default values for emulator pivot point')
             emu_kp_Mpc=0.7
@@ -34,6 +34,8 @@ class LyaTheory(object):
         # for now, used default pivot point for likelihood parameters
         like_z_star=3.0
         like_kp_kms=0.009
+
+        # setup object to compute linear power for any cosmology
         self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=emu_kp_Mpc,
                 like_z_star=like_z_star,like_kp_kms=like_kp_kms,

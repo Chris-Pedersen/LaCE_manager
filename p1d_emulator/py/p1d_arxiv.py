@@ -19,10 +19,8 @@ class ArxivP1D(object):
                 z_max=5.,nsamples=None,undersample_cube=1,
                 kp_Mpc=None):
         """Load arxiv from base sim directory and (optional) label
-            identifying skewer configuration (number, width)
-
-            reduce_arxiv = None will take the full arxiv, 1 will take every other sim
-            in the Latin hypercube, 2 will take every 4th """
+            identifying skewer configuration (number, width).
+            If kp_Mpc is specified, recompute linP params in archive"""
 
         # SHOULD UPDATE DOCSTRING WITH ALL THESE ARGUMENTS
 

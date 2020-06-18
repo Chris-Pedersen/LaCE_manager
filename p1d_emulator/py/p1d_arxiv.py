@@ -88,6 +88,7 @@ class ArxivP1D(object):
             self.kp_Mpc = n_star['kp_Mpc']
             update_kp=False
         else:
+            # will trigger slow code, might be good to check that kp has indeed changed
             update_kp=True
 
         if pick_sim_number is not None:

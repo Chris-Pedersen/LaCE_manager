@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mean_flux_model
 from scipy.optimize import curve_fit
 import os
-import recons_cosmo
+import camb_cosmo
 
 repo=os.environ['LYA_EMU_REPO']
 #basedir=repo+"/p1d_emulator/sim_suites/emulator_512_18062019"
@@ -37,14 +37,15 @@ mF=data[:,1]
 kF_Mpc=data[:,4]
 kF_kms=np.empty(len(kF_Mpc))
 
-## Import cosmology object to get Mpc -> kms conversion factor
-cosmo=recons_cosmo.ReconstructedCosmology(np.flip(zs))
+## Get cosmology object to get Mpc -> kms conversion factor
+cosmo=camb_cosmo.get_cosmology()
 
 ## Convert kF_Mpc into kF_kms
 for aa in range(len(zs)):
-    ## Iterate backwards..
-    conversion_factor=cosmo.reconstruct_Hubble_iz(aa,cosmo.linP_model_fid)/(1+zs[-aa])
-    kF_kms[-aa]=kF_Mpc[-aa]/conversion_factor
+    ## Iterate backwards
+    z=zs[-aa]
+    dkms_dMpc=camb_cosmo.dkms_dMpc(cosmo,z)
+    kF_kms[-aa]=kF_Mpc[-aa]/dkms_dMpc
 
 def get_gamma(z,ln_gamma_0,ln_gamma_1):
     """gamma at the input redshift"""

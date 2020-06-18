@@ -26,6 +26,13 @@ class FullTheory(object):
         self.emulator=emulator
 
         # setup object to compute linear power for any cosmology
+        if self.emulator is None:
+            print('using default values for emulator pivot point')
+            self.emu_kp_Mpc=0.7
+        else:
+            self.emu_kp_Mpc=self.emulator.arxiv.kp_Mpc
+
+        # setup object to compute linear power for any cosmology
         if camb_model_fid:
             self.camb_model_fid=camb_model_fid
         else:
@@ -61,8 +68,7 @@ class FullTheory(object):
             camb_model=self.camb_model_fid.get_new_model(like_params)
 
         # compute linear power parameters at all redshifts
-        # (ideally, we would specify here the pivot point from the emulator)
-        linP_Mpc_params=camb_model.get_linP_Mpc_params()
+        linP_Mpc_params=camb_model.get_linP_Mpc_params(kp_Mpc=self.emu_kp_Mpc)
         M_of_zs=camb_model.get_M_of_zs()
 
         # loop over redshifts and store emulator calls
@@ -96,7 +102,8 @@ class FullTheory(object):
             raise ValueError('no emulator provided')
 
         # figure out emulator calls, one per redshift
-        emu_calls,M_of_z=self.get_emulator_calls(like_params=like_params,camb_evaluation=camb_evaluation)
+        emu_calls,M_of_z=self.get_emulator_calls(like_params=like_params,
+                camb_evaluation=camb_evaluation)
 
         # loop over redshifts and compute P1D
         p1d_kms=[]

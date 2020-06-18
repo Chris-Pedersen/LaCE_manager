@@ -40,6 +40,8 @@ class EmceeSampler(object):
         # WHEN WOULD SOMEONE PASS A LIKELIHOOD AND A LIST OF FREE PARAMETERS?
         # WOULDN'T like.free_params ALREADY CONTAIN THAT?
 
+        # WHEN WOULD YOU LIKE TO HAVE A SAMPLER WITHOUT AN EMULATOR?
+
         self.verbose=verbose
         self.store_distances=False
         self.progress=progress

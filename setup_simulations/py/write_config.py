@@ -191,45 +191,7 @@ def write_cube_json_file(simdir,param_space,cube):
     json_file.close()
 
 
-def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
-    """Write a JSON file with meta data associated to this simulation pair."""
-
-# WE COULD PASS HERE COSMO OBJECT
-
-
-    filename=simdir+'/parameter.json'
-
-    json_info={}
-
-    # copy pivot point in parameterization (should be same in all sims)
-    json_info['z_star']=linP_model.z_star
-    json_info['kp_Mpc'] = linP_model.kp_Mpc
-
-    # copy values of parameters for this particular simulation
-    for key,param in param_space.items():
-        ip=param['ip']
-        json_info['target_'+key]=sim_params[ip]
-
-    # copy also linear power parameters actually fitted 
-    json_info['fit_f_star']=linP_model.get_f_star()
-    json_info['fit_g_star']=linP_model.get_g_star()
-    json_info['fit_Delta2_star']=linP_model.get_Delta2_star()
-    json_info['fit_n_star']=linP_model.get_n_star()
-    json_info['fit_alpha_star']=linP_model.get_alpha_star()
-
-    # write linear power in each snapshot
-    json_info['zs']=list(zs)
-    linP_zs=linP_model.parameterize_z_Mpc(zs)
-    json_info['linP_zs']=list(linP_zs)
-
-    json_file = open(filename,"w")
-    json.dump(json_info,json_file)
-    json_file.close()
-
-    return linP_zs
-
-
-def write_sim_json_file_new(simdir,param_space,cosmo_sim,zs):
+def write_sim_json_file(simdir,param_space,cosmo_sim,zs):
     """Write a JSON file with meta data associated to this simulation pair."""
 
     filename=simdir+'/parameter.json'

@@ -3,7 +3,7 @@ import os
 import likelihood_parameter
 import fit_linP
 
-class LinearPowerModel_kms(object):
+class LinearPowerModel(object):
     """Store parameters describing the linear power in velocity units.
         It can work in two modes:
             - given CAMB object, parameterize cosmology and store parameters
@@ -33,6 +33,7 @@ class LinearPowerModel_kms(object):
 
         # copy input dictionary
         self.linP_params=params.copy()
+
         # will add polynomial describing the log power, around kp_kms
         linP_kms_2=0.5*params['alpha_star']
         linP_kms_1=params['n_star']

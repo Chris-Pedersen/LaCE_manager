@@ -98,13 +98,11 @@ write_config.write_cube_json_file(basedir,param_space.params,cube)
 
 for sample in range(nsamples):
     sim_params=cube[sample]
-    if verbose:
-        print(sample,sim_params)
+    if verbose: print(sample,sim_params)
     # setup cosmology from a given set of simulation parameters
-    cosmo_sim=sim_params_cosmo.cosmo_from_sim_params_new(param_space,
+    cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(param_space,
             sim_params,verbose=verbose)
-    if verbose:
-        camb_cosmo.print_info(cosmo_sim)
+    if verbose: camb_cosmo.print_info(cosmo_sim)
     # figure out (medium) redshift of (hydrogen) reionization
     if 'z_rei' in param_space.params:
         ip=param_space.params['z_rei']['ip']
@@ -138,8 +136,7 @@ for sample in range(nsamples):
     write_config.write_treecool_file(minus_dir,z_mid_HI_reion=z_rei)
 
     # write GenIC and MP-Gadget parameters, for both simulations in pair
-    if verbose:
-        print('write config files for GenIC and Gadget')
+    if verbose: print('write config files for GenIC and Gadget')
     write_config.write_genic_file(plus_dir,cosmo_sim,
             Ngrid=args.ngrid,box_Mpc=args.box_Mpc,paired=False)
     zs=write_config.write_gadget_file(plus_dir,cosmo_sim,
@@ -152,9 +149,7 @@ for sample in range(nsamples):
             Ngrid=args.ngrid,zs=zs)
 
     # compute linear power in each snapshot and store in JSON format
-    if verbose:
-        print('write JSON file for simulation pair')
-    write_config.write_sim_json_file_new(sim_dir,param_space,
-            cosmo_sim,zs=zs)
+    if verbose: print('write JSON file for simulation pair')
+    write_config.write_sim_json_file(sim_dir,param_space,cosmo_sim,zs=zs)
 
 print('finished')

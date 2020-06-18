@@ -39,7 +39,7 @@ class ReconstructedCosmology(object):
         self.results_fid=camb.get_results(self.cosmo_fid)
 
         # compute linear power model for fiducial cosmology
-        self.linP_model_fid=linear_power_model.LinearPowerModel_kms(
+        self.linP_model_fid=linear_power_model.LinearPowerModel(
                                                         cosmo=self.cosmo_fid)
         self.z_star=self.linP_model_fid.z_star
         # note this is the pivot point for likelihood parameter
@@ -87,8 +87,7 @@ class ReconstructedCosmology(object):
 
         self.f_p_fid=[]
         for z in self.zs:
-            f_p = fit_linP.compute_f_star(self.cosmo_fid,z_star=z,
-                                                kp_Mpc=self.kp_Mpc)
+            f_p = fit_linP.compute_fz(self.cosmo_fid,z=z,kp_Mpc=self.kp_Mpc)
             self.f_p_fid.append(f_p)
 
         return
@@ -350,8 +349,7 @@ class ReconstructedCosmology(object):
 
         # compute f in fiducial cosmology
         if not f_p_fid:
-            f_p_fid=fit_linP.compute_f_star(self.cosmo_fid,z_star=z,
-                            kp_Mpc=self.kp_Mpc)
+            f_p_fid=fit_linP.compute_fz(self.cosmo_fid,z=z,kp_Mpc=self.kp_Mpc)
         # correct using difference in f_star
         f_star=linP_model.get_f_star()
         f_star_fid=self.linP_model_fid.get_f_star()
@@ -366,7 +364,7 @@ class ReconstructedCosmology(object):
 
         # create dummy linP_model, to be updated next
         fid_params=self.linP_model_fid.get_params()
-        linP_model = linear_power_model.LinearPowerModel_kms(params=fid_params,
+        linP_model = linear_power_model.LinearPowerModel(params=fid_params,
                                     z_star=self.z_star,kp_kms=self.kp_kms)
         # update model with likelihood parameters
         linP_model.update_parameters(like_params)

@@ -447,7 +447,6 @@ class Likelihood(object):
         # collect linP params for each simulation
         Delta2_stars=[]
         n_stars=[]
-        ### WHY DO WE EXCLUDE THE LAST SIMULATION IF IT IS USED?
         for sim_num in range(cube_data["nsamples"]):
             if sim_num==self.theory.emulator.arxiv.drop_sim_number:
                 print('skip simulation',sim_num)

@@ -34,17 +34,23 @@ emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,z_max=z_max,
 emu.load_default()
 
 # Likelihood parameters
-add_z_evol=False
+add_z_evol=True
 if add_z_evol:
-    like_params=["Delta2_star","n_star","ln_tau_0","ln_tau_1","ln_sigT_kms_0","ln_sigT_kms_1","ln_gamma_0","ln_gamma_1"]
-    like_param_limits=[[0.24, 0.47], [-2.352, -2.25], [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2]]
+    like_params=["Delta2_star","n_star","ln_tau_0","ln_tau_1",
+            "ln_sigT_kms_0","ln_sigT_kms_1","ln_gamma_0","ln_gamma_1",
+            "ln_kF_0","ln_kF_1"]
+    like_param_limits=[[0.24, 0.47], [-2.352, -2.25], [-0.2, 0.2], [-0.2, 0.2],
+            [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2], 
+            [-0.2, 0.2], [-0.2, 0.2]]
 else:
-    like_params=["Delta2_star","n_star","ln_tau_0","ln_sigT_kms_0","ln_gamma_0"]
-    like_param_limits=[[0.24, 0.47], [-2.352, -2.25], [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2]]
+    like_params=["Delta2_star","n_star","ln_tau_0","ln_sigT_kms_0",
+            "ln_gamma_0","ln_kF_0"]
+    like_param_limits=[[0.24, 0.47], [-2.352, -2.25], [-0.2, 0.2],
+            [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2]]
 
 like=likelihood.Likelihood(data=data,emulator=emu,
         free_parameters=like_params,free_param_limits=like_param_limits,
-        verbose=True,prior_Gauss_rms=-1,emu_cov_factor=1,
+        verbose=False,prior_Gauss_rms=-1,emu_cov_factor=1,
         use_sim_cosmo=False)
 like.go_loud()
 
@@ -54,10 +60,12 @@ print('starting point')
 for par in like.parameters_from_sampling_point(theta):
     print(par.info_str())
 tic=time.perf_counter()
-chi2_test=like.get_chi2(theta)
+like_test=like.log_prob(theta)
 toc=time.perf_counter()
-print('chi2 test',chi2_test)
+print('like test',like_test)
 print("Took ", toc-tic, "s to evaluate a likelihood")
+
+exit()
 
 from scipy.optimize import minimize
 print('minimize chi2')

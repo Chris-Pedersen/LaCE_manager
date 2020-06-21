@@ -68,7 +68,7 @@ class Likelihood(object):
                 elif full:
                     print('using full theory')
                 else:
-                    print('not using any theory?',self.free_parameters)
+                    print('not varying cosmo params',self.free_parameters)
 
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
@@ -91,16 +91,14 @@ class Likelihood(object):
                 ## Set up a compressed LyaTheory object
                 self.theory=lya_theory.LyaTheory(self.data.z,emulator=emulator,
                         cosmo_fid=sim_cosmo,verbose=self.verbose)
-            elif full:
+            else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
                         cosmo=sim_cosmo)
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
                         camb_model_fid=camb_model_sim,verbose=self.verbose)
-            else:
-                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                        verbose=self.verbose)
-                print("No cosmology parameters are varied, assume you are doing importance sampling")
+                if not full:
+                    print("No cosmology parameters are varied")
 
         # setup parameters
         self.set_free_parameters(free_parameters,self.free_param_limits)

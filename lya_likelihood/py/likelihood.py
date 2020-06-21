@@ -429,6 +429,27 @@ class Likelihood(object):
         """ Compute Delta2_star and n_star for each simulation
         in the training set of the emulator"""
 
+        # simulation cube used in emulator
+        cube_data=self.theory.emulator.arxiv.cube_data
+
+        # collect linP params for each simulation
+        Delta2_stars=[]
+        n_stars=[]
+        for sim_num in range(cube_data["nsamples"]):
+            # Don't include simulation used to generate mock data
+            if sim_num==self.theory.emulator.arxiv.drop_sim_number:
+                continue
+            else:
+                sim_linP_params=self.get_simulation_linP_params(sim_num)
+                Delta2_stars.append(sim_linP_params['Delta2_star'])
+                n_stars.append(sim_linP_params['n_star'])
+        
+        return Delta2_stars, n_stars
+
+
+    def get_simulation_linP_params(self,sim_num):
+        """ Compute Delta2_star and n_star for a given simulation"""
+
         # this function should only be called when using compressed parameters
         z_star = self.theory.cosmo.z_star
         kp_kms = self.theory.cosmo.kp_kms
@@ -437,33 +458,18 @@ class Likelihood(object):
         repo=os.environ['LYA_EMU_REPO']
         # directory with simulations used in emulator
         basedir=repo+'/'+self.theory.emulator.basedir
-        print('basedir',basedir)
 
-        # simulation cube used in emulator
-        cube_data=self.theory.emulator.arxiv.cube_data
+        # setup cosmology from GenIC file
+        dir_name=basedir+"/sim_pair_"+str(sim_num)
+        file_name=dir_name+"/sim_plus/paramfile.genic"
+        sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
 
-        # collect linP params for each simulation
-        Delta2_stars=[]
-        n_stars=[]
-        for sim_num in range(cube_data["nsamples"]):
-            if sim_num==self.theory.emulator.arxiv.drop_sim_number:
-                print('skip simulation',sim_num)
-                ## Don't include simulation used to generate mock data
-                continue
-            else:
-                # setup cosmology from GenIC file
-                dir_name=basedir+"/sim_pair_"+str(sim_num)
-                file_name=dir_name+"/sim_plus/paramfile.genic"
-                sim_cosmo_dict=read_genic.camb_from_genic(file_name)
-                sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
-                # setup linear power object, to get linP parameters
-                sim_linP_params=fit_linP.parameterize_cosmology_kms(
-                        cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
-                print(sim_num,'got params',sim_linP_params)
-                Delta2_stars.append(sim_linP_params['Delta2_star'])
-                n_stars.append(sim_linP_params['n_star'])
-        
-        return Delta2_stars, n_stars
+        # setup linear power object, to get linP parameters
+        sim_linP_params=fit_linP.parameterize_cosmology_kms(
+                cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+
+        return sim_linP_params
 
 
     def plot_p1d(self,values=None,plot_every_iz=1):

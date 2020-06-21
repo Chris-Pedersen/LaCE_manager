@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+from scipy.optimize import minimize
 import data_PD2013
 import lya_theory
 import likelihood_parameter
@@ -10,8 +12,6 @@ import fit_linP
 import full_theory
 import read_genic
 import CAMB_model
-import os
-from scipy.optimize import minimize
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -332,6 +332,18 @@ class Likelihood(object):
             fid_values=[p.value_in_cube() for p in self.free_params]
             log_prior=-np.sum((np.array(fid_values)-values)**2/(2*rms**2))
             return log_prior
+
+
+    def minus_log_prob(self,values):
+        """Return minus log_prob (needed to maximise posterior)"""
+
+        return -1.0*self.log_prob(values)
+
+
+    def maximise_posterior(self,initial_values=None,method='nelder-mead',tol=1e-4):
+        """Run scipy minimizer to find maximum of posterior"""
+
+        return minimize(self.minus_log_prob, x0=initial_values,method=method,tol=tol)
 
 
     def maximise_acquisition(self,alpha,verbose=False,tolerance=0.1,cube=False):

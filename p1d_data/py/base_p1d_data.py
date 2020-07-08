@@ -33,3 +33,32 @@ class BaseDataP1D(object):
 
         return
 
+
+def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
+    """Drop redshift bins below zmin or above zmax"""
+
+    # size of input arrays
+    Nz_in=len(z_in)
+    Nk=len(k_in)
+
+    # figure out how many z to keep
+    keep=np.ones(Nz_in, dtype=bool)
+    if zmin:
+        keep = np.logical_and(keep,z_in>zmin)
+    if zmax:
+        keep = np.logical_and(keep,z_in<zmax)
+    Nz_out=np.sum(keep)
+
+    # setup new arrays
+    z_out=np.empty(Nz_out)
+    Pk_out=np.empty((Nz_out,Nk))
+    cov_out=[]
+    i=0
+    for j in range(Nz_in):
+        if keep[j]:
+            z_out[i]=z_in[j]
+            Pk_out[i]=Pk_in[j]
+            Pk_out[i]=Pk_in[j]
+            cov_out.append(cov_in[j])
+            i+=1
+    return z_out,k_in,Pk_out,cov_out

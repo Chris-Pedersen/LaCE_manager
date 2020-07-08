@@ -85,9 +85,10 @@ def print_info(pars,simulation=False):
     return
 
 
-def get_linP_hMpc(pars,zs=[3]):
+def get_linP_hMpc(pars,zs,camb_results=None):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
-        power spectrum for CDM+baryons, in units of h/Mpc"""
+        power spectrum for CDM+baryons, in units of h/Mpc.
+        If camb_results is provided, use that to speed things up."""
 
     # make sure that all models are evaluated at the same points in 1/Mpc
     h=pars.H0/100.0
@@ -96,23 +97,27 @@ def get_linP_hMpc(pars,zs=[3]):
     kmin_hMpc=kmin_Mpc/h
     kmax_hMpc=kmax_Mpc/h
 
-    # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
-    pars.set_matter_power(redshifts=zs, kmax=2.0*kmax_Mpc,silent=True)
-    results = camb.get_results(pars)
+    if camb_results is None:
+        # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
+        pars.set_matter_power(redshifts=zs, kmax=2.0*kmax_Mpc,silent=True)
+        camb_results = camb.get_results(pars)
+
     # fluid here specifies species we are interested in (8=CDM+baryons)
     fluid=8
     # maxkh and npoints where we want to compute the power, in h/Mpc
-    kh, zs_out, Ph = results.get_matter_power_spectrum(var1=fluid,var2=fluid,
-            npoints=5000,minkh=kmin_hMpc,maxkh=kmax_hMpc)
+    kh, zs_out, Ph = camb_results.get_matter_power_spectrum(var1=fluid,
+            var2=fluid,npoints=5000,minkh=kmin_hMpc,maxkh=kmax_hMpc)
+
     return kh, zs_out, Ph
 
 
-def get_linP_Mpc(pars,zs=[3]):
+def get_linP_Mpc(pars,zs,camb_results=None):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
-        power spectrum for CDM+baryons, in units of 1/Mpc"""
+        power spectrum for CDM+baryons, in units of 1/Mpc.
+        If camb_results is provided, use that to speed things up."""
 
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results)
     # translate to Mpc
     h = pars.H0 / 100.0
     k_Mpc = k_hMpc * h

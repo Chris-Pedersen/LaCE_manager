@@ -32,9 +32,15 @@ class EmceeSampler(object):
 
     def __init__(self,like=None,emulator=None,free_parameters=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
-                        progress=False):
+                        save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
+
+        # WE SHOULD DOCUMENT BETTER THE OPTIONAL INPUTS
+        # WHEN WOULD SOMEONE PASS A LIKELIHOOD AND A LIST OF FREE PARAMETERS?
+        # WOULDN'T like.free_params ALREADY CONTAIN THAT?
+
+        # WHEN WOULD YOU LIKE TO HAVE A SAMPLER WITHOUT AN EMULATOR?
 
         self.verbose=verbose
         self.store_distances=False
@@ -63,7 +69,8 @@ class EmceeSampler(object):
             self.chain_from_file=None
 
             self.save_directory=None
-            self._setup_chain_folder()
+            if save_chain:
+                self._setup_chain_folder()
 
             # number of walkers
             if nwalkers:
@@ -116,7 +123,7 @@ class EmceeSampler(object):
             self.distances.append([])
 
 
-    def run_sampler(self,burn_in,max_steps,log_func,parallel=False,force_steps=False):
+    def run_sampler(self,burn_in,max_steps,log_func=None,parallel=False,force_steps=False):
         """ Set up sampler, run burn in, run chains,
         return chains """
 
@@ -131,7 +138,7 @@ class EmceeSampler(object):
             ## Get initial walkers
             p0=self.get_initial_walkers()
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    log_func)
+                                                    self.like.log_prob)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                     progress=self.progress):
                 # Only check convergence every 100 steps
@@ -320,7 +327,8 @@ class EmceeSampler(object):
                             drop_sim_number=config["data_sim_number"],
                             p1d_label=config["p1d_label"],                            
                             skewers_label=config["skewers_label"],
-                            undersample_cube=config["undersample_cube"])
+                            undersample_cube=config["undersample_cube"],
+                            kp_Mpc=config["kp_Mpc"])
 
         if self.verbose: print("Setting up emulator")
         try:
@@ -454,6 +462,7 @@ class EmceeSampler(object):
         saveDict["nearest_tau"]=self.like.theory.emulator.arxiv.nearest_tau
         saveDict["z_max"]=self.like.theory.emulator.arxiv.z_max
         saveDict["undersample_cube"]=self.like.theory.emulator.arxiv.undersample_cube
+        saveDict["kp_Mpc"]=self.like.theory.emulator.arxiv.kp_Mpc
 
         ## Emulator settings
         saveDict["paramList"]=self.like.theory.emulator.paramList
@@ -479,10 +488,7 @@ class EmceeSampler(object):
         saveDict["data_sim_number"]=self.like.data.sim_number
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_year
-        if self.like.simpleLike:
-            saveDict["simpleLike"]=True
-        else:
-            saveDict["simpleLike"]=False
+
         free_params_save=[]
         for par in self.like.free_params:
             free_params_save.append([par.name,par.min_value,par.max_value])
@@ -498,6 +504,8 @@ class EmceeSampler(object):
 
         ## Save dictionary to json file in the
         ## appropriate directory
+        if self.save_directory is None:
+            self._setup_chain_folder()
         with open(self.save_directory+"/config.json", "w") as json_file:
             json.dump(saveDict,json_file)
 
@@ -506,7 +514,6 @@ class EmceeSampler(object):
         ## Save plots
         self.plot_best_fit()
         self.plot_prediction()
-        self.plot_corner()
         self.plot_autocorrelation_time()
 
         return
@@ -603,8 +610,9 @@ class EmceeSampler(object):
         for parameter_distribution in np.swapaxes(chain,0,1):
             mean_value.append(np.mean(parameter_distribution))
         print("Mean values:", mean_value)
-        self.like.plot_p1d(values=mean_value)
         plt.title("MCMC best fit")
+        self.like.plot_p1d(values=mean_value)
+
         if self.save_directory is not None:
             plt.savefig(self.save_directory+"/best_fit.pdf")
         else:
@@ -619,8 +627,9 @@ class EmceeSampler(object):
         for the fiducial model """
 
         plt.figure()
-        self.like.plot_p1d(values=None)
         plt.title("Fiducial model")
+        self.like.plot_p1d(values=None)
+        
         if self.save_directory is not None:
             plt.savefig(self.save_directory+"/fiducial.pdf")
         else:

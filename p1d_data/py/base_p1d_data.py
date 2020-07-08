@@ -19,12 +19,12 @@ class BaseDataP1D(object):
         return self.cov[iz]
 
 
-    def _cull_data(self,min_kp_kms):
-        """Remove bins with wavenumber k < min_kp_kms. """
+    def _cull_data(self,kmin_kms):
+        """Remove bins with wavenumber k < kmin_kms. """
 
-        if min_kp_kms is None: return
+        if kmin_kms is None: return
         # figure out number of bins to cull
-        Ncull=np.sum(self.k<min_kp_kms)
+        Ncull=np.sum(self.k<kmin_kms)
         # cull wavenumbers, power spectra, and covariances
         self.k=self.k[Ncull:]
         self.Pk=self.Pk[:,Ncull:]

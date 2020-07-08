@@ -11,7 +11,7 @@ import linear_emulator
 class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
-    def __init__(self,zs,emulator=None,cosmo_fid=None,verbose=False,
+    def __init__(self,zs,emulator,cosmo_fid=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
@@ -24,8 +24,22 @@ class LyaTheory(object):
         self.zs=zs
         self.emulator=emulator
 
+        # specify pivot point to be used in emulator calls
+        if self.emulator is None:
+            print('using default values for emulator pivot point')
+            emu_kp_Mpc=0.7
+        else:
+            emu_kp_Mpc=self.emulator.arxiv.kp_Mpc
+
+        # for now, used default pivot point for likelihood parameters
+        like_z_star=3.0
+        like_kp_kms=0.009
+
         # setup object to compute linear power for any cosmology
-        self.cosmo=recons_cosmo.ReconstructedCosmology(zs,cosmo_fid=cosmo_fid)
+        self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
+                emu_kp_Mpc=emu_kp_Mpc,
+                like_z_star=like_z_star,like_kp_kms=like_kp_kms,
+                cosmo_fid=cosmo_fid,verbose=verbose)
 
         # setup fiducial IGM models
         if mf_model_fid:
@@ -89,7 +103,7 @@ class LyaTheory(object):
         emu_calls=self.get_emulator_calls(like_params=like_params)
 
         # setup linear power using list of likelihood parameters
-        # we will need this to get g_star, and reconstruct H(z)
+        # we will need this to reconstruct H(z)
         linP_model=self.cosmo.get_linP_model(like_params=like_params)
 
         # loop over redshifts and compute P1D

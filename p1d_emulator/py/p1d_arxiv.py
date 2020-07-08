@@ -4,6 +4,9 @@ import sys
 import os
 import json
 import matplotlib.pyplot as plt
+import read_genic
+import camb_cosmo
+import fit_linP
 
 class ArxivP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
@@ -13,12 +16,13 @@ class ArxivP1D(object):
                 keep_every_other_rescaling=False,nearest_tau=False,
                 max_arxiv_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
-                z_max=5.,nsamples=None,undersample_cube=1):
+                z_max=5.,nsamples=None,undersample_cube=1,
+                kp_Mpc=None):
         """Load arxiv from base sim directory and (optional) label
-            identifying skewer configuration (number, width)
+            identifying skewer configuration (number, width).
+            If kp_Mpc is specified, recompute linP params in archive"""
 
-            reduce_arxiv = None will take the full arxiv, 1 will take every other sim
-            in the Latin hypercube, 2 will take every 4th """
+        # SHOULD UPDATE DOCSTRING WITH ALL THESE ARGUMENTS
 
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
@@ -40,7 +44,8 @@ class ArxivP1D(object):
         self.z_max=z_max
         self.undersample_cube=undersample_cube
         self.drop_sim_number=drop_sim_number
-
+        # pivot point used in linP parameters
+        self.kp_Mpc=kp_Mpc
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
@@ -50,6 +55,9 @@ class ArxivP1D(object):
         
         if nearest_tau:
             self._keep_nearest_tau()
+
+        return
+
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
                             max_arxiv_size,undersample_z,no_skewers,
@@ -73,6 +81,18 @@ class ArxivP1D(object):
             self.nsamples=nsamples
         if self.verbose:
             print('simulation suite has %d samples'%self.nsamples)
+
+        # read pivot point from simulation suite if not specified
+        if self.kp_Mpc is None:
+            n_star = self.cube_data['param_space']['n_star']
+            self.kp_Mpc = n_star['kp_Mpc']
+            update_kp=False
+        elif self.kp_Mpc == self.cube_data['param_space']['n_star']['kp_Mpc']:
+            ## If selected k_p is same as in the arxiv, do not recompute
+            update_kp=False
+        else:
+            # will trigger slow code, might be good to check that kp has indeed changed
+            update_kp=True
 
         if pick_sim_number is not None:
             start=pick_sim_number
@@ -100,6 +120,22 @@ class ArxivP1D(object):
             if self.verbose:
                 print('simulation has %d redshifts'%Nz)
                 print('undersample_z =',undersample_z)
+
+            # overwrite linP parameters stored in parameter.json
+            if update_kp:
+                print('overwritting linP_zs in parameter.json')
+                # setup cosmology from GenIC file
+                genic_fname=pair_dir+"/sim_plus/paramfile.genic"
+                print('read cosmology from GenIC',genic_fname)
+                sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
+                # setup CAMB object
+                sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+                # compute linear power parameters at each z (in Mpc units)
+                linP_zs=fit_linP.get_linP_zs_Mpc(sim_cosmo,zs,self.kp_Mpc)
+                print('update linP_zs',linP_zs)
+                pair_data['linP_zs']=list(linP_zs)
+            else:
+                if self.verbose: print('Use linP_zs from parameter.json')
 
             # to make lighter emulators, we might undersample redshifts
             for snap in range(0,Nz,undersample_z):       
@@ -223,16 +259,17 @@ class ArxivP1D(object):
         self.z=np.array([self.data[i]['z'] for i in range(N)])
 
         # store IGM parameters (if present)
-        if self.data[0]['mF']:
+        if 'mF' in self.data[0]:
             self.mF=np.array([self.data[i]['mF'] for i in range(N)])
-        if self.data[0]['sigT_Mpc']:
+        if 'sigT_Mpc' in self.data[0]:
             self.sigT_Mpc=np.array([self.data[i]['sigT_Mpc'] for i in range(N)])
-        if self.data[0]['gamma']:
+        if 'gamma' in self.data[0]:
             self.gamma=np.array([self.data[i]['gamma'] for i in range(N)])
-        if self.data[0]['kF_Mpc']:
+        if 'kF_Mpc' in self.data[0]:
             self.kF_Mpc=np.array([self.data[i]['kF_Mpc'] for i in range(N)])
 
         return
+
 
     def _keep_every_other_rescaling(self):
         """Keep only every other rescaled entry"""

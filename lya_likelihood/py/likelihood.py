@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+from scipy.optimize import minimize
 import data_PD2013
 import lya_theory
 import likelihood_parameter
@@ -10,8 +12,6 @@ import fit_linP
 import full_theory
 import read_genic
 import CAMB_model
-import os
-from scipy.optimize import minimize
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -21,13 +21,13 @@ class Likelihood(object):
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
-                    min_kp_kms=None,emu_cov_factor=1,
+                    kmin_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=True):
         """Setup likelihood from theory and data. Options:
             - free_parameters is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_parameters
             - if prior_Gauss_rms is None it will use uniform priors
-            - ignore k-bins with k > min_kp_kms
+            - ignore k-bins with k > kmin_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
             set between 0 and 1.
             - use_sim_cosmo will extract the cosmological likelihood
@@ -46,7 +46,7 @@ class Likelihood(object):
             self.data=data_PD2013.P1D_PD2013(blind_data=True)
 
         # (optionally) get rid of low-k data points
-        self.data._cull_data(min_kp_kms)
+        self.data._cull_data(kmin_kms)
         # list of parameter names, order might be different than get_parameters
         self.free_parameters=free_parameters
         # list of tuples with limits, same order than above
@@ -58,19 +58,30 @@ class Likelihood(object):
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object
             compressed=bool(set(self.free_parameters) & set(["Delta2_star",
-                                            "n_star",
-                                            "alpha_star",
-                                            "f_star",
-                                            "g_star"]))
-            full=bool(set(self.free_parameters) & set(["H0",
-                                            "As",
-                                            "ns"]))
+                                "n_star","alpha_star","f_star","g_star"]))
+
+            full=bool(set(self.free_parameters) & set(["H0","mnu","As","ns"]))
+
+            if self.verbose:
+                if compressed:
+                    print('using compressed theory')
+                elif full:
+                    print('using full theory')
+                else:
+                    print('not varying cosmo params',self.free_parameters)
+
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
-            if use_sim_cosmo: ## Use the simulation cosmology as fiducial?
+            if use_sim_cosmo:
+                # Use the simulation cosmology as fiducial, for mock data
                 repo=os.environ['LYA_EMU_REPO']
-                ## Get dictionary from paramfile.genic
-                sim_cosmo_dict=read_genic.camb_from_genic(repo+self.data.basedir+"sim_pair_"+str(self.data.sim_number)+"/sim_plus/paramfile.genic")
+                ## Get dictionary with cosmo params from paramfile.genic
+                sim_num=self.data.sim_number
+                dir_name=repo+self.data.basedir+"sim_pair_"+str(sim_num)
+                file_name=dir_name+"/sim_plus/paramfile.genic"
+                sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+                if self.verbose:
+                    print('use_sim_cosmo',sim_cosmo_dict)
                 ## Create CAMB object from dictionary
                 sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
             else:
@@ -79,20 +90,17 @@ class Likelihood(object):
             if compressed:
                 ## Set up a compressed LyaTheory object
                 self.theory=lya_theory.LyaTheory(self.data.z,emulator=emulator,
-                                            cosmo_fid=sim_cosmo)
-            elif full:
-                ## Set up a full theory object
-                camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,cosmo=sim_cosmo)
-                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                                            camb_model_fid=camb_model_sim)
+                        cosmo_fid=sim_cosmo,verbose=self.verbose)
             else:
-                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator)
-                print("No cosmology parameters are varied, assume you are doing importance sampling")
+                ## Set up a FullTheory object
+                camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
+                        cosmo=sim_cosmo)
+                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
+                        camb_model_fid=camb_model_sim,verbose=self.verbose)
+                if not full:
+                    print("No cosmology parameters are varied")
 
         # setup parameters
-
-        #if not free_parameters:
-        #    free_parameters=['ln_tau_0']
         self.set_free_parameters(free_parameters,self.free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
@@ -102,6 +110,14 @@ class Likelihood(object):
 
     def set_free_parameters(self,free_parameter_names,free_param_limits):
         """Setup likelihood parameters that we want to vary"""
+
+        # WE SHOULD DOCUMENT THIS FUNCTION BETTER. WHEN WOULD WE USE THIS?
+        # ALSO, SHOULD RENAME free_parameters TO free_param_names
+        # AND IT IS NOT CLEAR WHY WE NEED TO STORE EITHER THAT OR EVEN
+        # free_param_limits IN THE LIKELIHOOD OBJECT.
+        # ISN'T IT ENOUGH TO STORE free_params?
+        # ALSO, WHY DO WE NEED TO PASS THE ARGUMENTS ABOVE, IF THEY ARE
+        # ALREADY STORED?
 
         # setup list of likelihood free parameters
         self.free_params=[]
@@ -318,6 +334,18 @@ class Likelihood(object):
             return log_prior
 
 
+    def minus_log_prob(self,values):
+        """Return minus log_prob (needed to maximise posterior)"""
+
+        return -1.0*self.log_prob(values)
+
+
+    def maximise_posterior(self,initial_values=None,method='nelder-mead',tol=1e-4):
+        """Run scipy minimizer to find maximum of posterior"""
+
+        return minimize(self.minus_log_prob, x0=initial_values,method=method,tol=tol)
+
+
     def maximise_acquisition(self,alpha,verbose=False,tolerance=0.1,cube=False):
         """ Maximise lnprob+alpha*sigma, where sigma is the exploration
         term as defined in Rogers et al (2019) """
@@ -409,30 +437,51 @@ class Likelihood(object):
         self.theory.emulator.arxiv.verbose=True
 
 
-    def fit_cosmology_params(self):
-        """ Fit Delta2_star and n_star to each simulation
-        in the training set """
+    def get_simulation_suite_linP_params(self):
+        """ Compute Delta2_star and n_star for each simulation
+        in the training set of the emulator"""
 
-        cube=self.theory.emulator.arxiv.cube_data
-        cosmo_fid = camb_cosmo.get_cosmology()
-        linP_model_fid=fit_linP.LinearPowerModel(cosmo=cosmo_fid,k_units='Mpc')
+        # simulation cube used in emulator
+        cube_data=self.theory.emulator.arxiv.cube_data
 
+        # collect linP params for each simulation
         Delta2_stars=[]
         n_stars=[]
-
-        for aa in range(cube["nsamples"]-1):
-            if aa==self.theory.emulator.arxiv.drop_sim_number:
-                ## Don't include mock sim
+        for sim_num in range(cube_data["nsamples"]):
+            # Don't include simulation used to generate mock data
+            if sim_num==self.theory.emulator.arxiv.drop_sim_number:
                 continue
             else:
-                cosmo_sim=sim_params_cosmo.cosmo_from_sim_params(cube["param_space"],
-                                cube["samples"][str(aa)],
-                                linP_model_fid,verbose=False)
-                sim_linP_model=fit_linP.LinearPowerModel(cosmo=cosmo_sim)
-                Delta2_stars.append(sim_linP_model.get_Delta2_star())
-                n_stars.append(sim_linP_model.get_n_star())
+                sim_linP_params=self.get_simulation_linP_params(sim_num)
+                Delta2_stars.append(sim_linP_params['Delta2_star'])
+                n_stars.append(sim_linP_params['n_star'])
         
         return Delta2_stars, n_stars
+
+
+    def get_simulation_linP_params(self,sim_num):
+        """ Compute Delta2_star and n_star for a given simulation"""
+
+        # this function should only be called when using compressed parameters
+        z_star = self.theory.cosmo.z_star
+        kp_kms = self.theory.cosmo.kp_kms
+
+        # use environmental variable to point to repo
+        repo=os.environ['LYA_EMU_REPO']
+        # directory with simulations used in emulator
+        basedir=repo+'/'+self.theory.emulator.basedir
+
+        # setup cosmology from GenIC file
+        dir_name=basedir+"/sim_pair_"+str(sim_num)
+        file_name=dir_name+"/sim_plus/paramfile.genic"
+        sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+
+        # setup linear power object, to get linP parameters
+        sim_linP_params=fit_linP.parameterize_cosmology_kms(
+                cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+
+        return sim_linP_params
 
 
     def plot_p1d(self,values=None,plot_every_iz=1):
@@ -467,7 +516,7 @@ class Likelihood(object):
             # plot everything
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
-                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,
+                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,fmt="o",ms="4",
                     label="z=%.1f" % z)
             plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
             plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,

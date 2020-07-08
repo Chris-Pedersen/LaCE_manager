@@ -4,6 +4,7 @@ import numpy as np
 import os
 import json
 import gen_UVB as UVB
+import fit_linP
 
 def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):
@@ -190,33 +191,19 @@ def write_cube_json_file(simdir,param_space,cube):
     json_file.close()
 
 
-def write_sim_json_file(simdir,param_space,sim_params,linP_model,zs):
+def write_sim_json_file(simdir,param_space,cosmo_sim,zs):
     """Write a JSON file with meta data associated to this simulation pair."""
-    
+
     filename=simdir+'/parameter.json'
 
     json_info={}
 
     # copy pivot point in parameterization (should be same in all sims)
-    json_info['z_star']=linP_model.z_star
-    assert linP_model.k_units == 'Mpc', 'linP_model not in Mpc units'
-    json_info['kp_Mpc'] = linP_model.kp
-
-    # copy values of parameters for this particular simulation
-    for key,param in param_space.items():
-        ip=param['ip']
-        json_info['target_'+key]=sim_params[ip]
-
-    # copy also linear power parameters actually fitted 
-    json_info['fit_f_star']=linP_model.get_f_star()
-    json_info['fit_g_star']=linP_model.get_g_star()
-    json_info['fit_Delta2_star']=linP_model.get_Delta2_star()
-    json_info['fit_n_star']=linP_model.get_n_star()
-    json_info['fit_alpha_star']=linP_model.get_alpha_star()
+    json_info['kp_Mpc'] = param_space.kp_Mpc
 
     # write linear power in each snapshot
     json_info['zs']=list(zs)
-    linP_zs=linP_model.parameterize_z_Mpc(zs)
+    linP_zs=fit_linP.get_linP_zs_Mpc(cosmo_sim,zs,param_space.kp_Mpc)
     json_info['linP_zs']=list(linP_zs)
 
     json_file = open(filename,"w")

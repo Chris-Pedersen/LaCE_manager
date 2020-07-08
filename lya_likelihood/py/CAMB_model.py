@@ -47,8 +47,9 @@ class CAMBModel(object):
         return params
 
 
-    def get_linP_Mpc_params(self, kp_Mpc=0.69):
-        """ Get linear power parameters to call emulator, at each z"""
+    def get_linP_Mpc_params(self,kp_Mpc):
+        """ Get linear power parameters to call emulator, at each z.
+            Amplitude, slope and running around pivot point kp_Mpc."""
 
         ## Get the P(k) at each z
         k_Mpc,z,pk_Mpc=camb_cosmo.get_linP_Mpc(self.cosmo,zs=self.zs)
@@ -104,4 +105,5 @@ class CAMBModel(object):
         # set cosmology object (use fiducial for parameters not provided)
         new_cosmo = camb_cosmo.get_cosmology_from_dictionary(camb_param_dict,
                 cosmo_fid=self.cosmo)
+
         return CAMBModel(zs=copy.deepcopy(self.zs),cosmo=new_cosmo)

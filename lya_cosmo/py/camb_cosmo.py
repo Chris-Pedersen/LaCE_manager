@@ -4,6 +4,13 @@ import os
 import numpy as np
 import camb
 
+# specify global settings to CAMB calls
+camb_kmin_Mpc=1.e-4
+camb_kmax_Mpc=30.0
+camb_npoints=5000
+camb_fluid=8
+
+
 def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
             As=2.1e-09, ns=0.965, nrun=0.0):
     """Given set of cosmological parameters, return CAMB cosmology object."""
@@ -85,39 +92,47 @@ def print_info(pars,simulation=False):
     return
 
 
-def get_linP_hMpc(pars,zs,camb_results=None):
+def get_linP_hMpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
+        kmax_Mpc=camb_kmax_Mpc,npoints=camb_npoints,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
-        power spectrum for CDM+baryons, in units of h/Mpc.
-        If camb_results is provided, use that to speed things up."""
+        power spectrum for CDM+baryons, in units of h/Mpc. Other inputs:
+        - camb_results: if provided, use that to speed things up.
+        - kmin_Mpc: specify minimum wavenumber to compute (in 1/Mpc)
+        - kmax_Mpc: specify maximum wavenumber to compute (in 1/Mpc)
+        - npoints: number of log-spaced wavenumbers to compute
+        - fluid: specify transfer function to use (8=CDM+baryons). """
 
     # make sure that all models are evaluated at the same points in 1/Mpc
     h=pars.H0/100.0
-    kmin_Mpc=1.e-4
-    kmax_Mpc=30.0
     kmin_hMpc=kmin_Mpc/h
     kmax_hMpc=kmax_Mpc/h
 
     if camb_results is None:
         # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
-        pars.set_matter_power(redshifts=zs, kmax=2.0*kmax_Mpc,silent=True)
+        pars.set_matter_power(redshifts=zs,kmax=2.0*kmax_Mpc,
+                nonlinear=False,silent=True)
         camb_results = camb.get_results(pars)
 
-    # fluid here specifies species we are interested in (8=CDM+baryons)
-    fluid=8
     # maxkh and npoints where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = camb_results.get_matter_power_spectrum(var1=fluid,
-            var2=fluid,npoints=5000,minkh=kmin_hMpc,maxkh=kmax_hMpc)
+            var2=fluid,npoints=npoints,minkh=kmin_hMpc,maxkh=kmax_hMpc)
 
     return kh, zs_out, Ph
 
 
-def get_linP_Mpc(pars,zs,camb_results=None):
+def get_linP_Mpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
+        kmax_Mpc=camb_kmax_Mpc,npoints=camb_npoints,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
-        power spectrum for CDM+baryons, in units of 1/Mpc.
-        If camb_results is provided, use that to speed things up."""
+        power spectrum for CDM+baryons, in units of 1/Mpc. Other inputs:
+        - camb_results: if provided, use that to speed things up.
+        - kmin_Mpc: specify minimum wavenumber to compute (in 1/Mpc)
+        - kmax_Mpc: specify maximum wavenumber to compute (in 1/Mpc)
+        - npoints: number of log-spaced wavenumbers to compute
+        - fluid: specify transfer function to use (8=CDM+baryons). """
 
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs=zs,camb_results=camb_results,
+            kmin_Mpc=kmin_Mpc,kmax_Mpc=kmax_Mpc,npoints=npoints,fluid=fluid)
     # translate to Mpc
     h = pars.H0 / 100.0
     k_Mpc = k_hMpc * h

@@ -20,6 +20,10 @@ class CAMBModel(object):
         else:
             self.cosmo=cosmo
 
+        # setup CAMB matter power spectrum calculation
+        self.cosmo.set_matter_power(redshifts=self.zs,nonlinear=False,
+                kmax=2.0*camb_cosmo.camb_kmax_Mpc,silent=True)
+
         # will cache CAMB results when computed
         self.cached_camb_results=None
         # will cache wavenumbers and linear power (at zs) when computed

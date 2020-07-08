@@ -87,6 +87,9 @@ class ArxivP1D(object):
             n_star = self.cube_data['param_space']['n_star']
             self.kp_Mpc = n_star['kp_Mpc']
             update_kp=False
+        elif self.kp_Mpc == self.cube_data['param_space']['n_star']['kp_Mpc']:
+            ## If selected k_p is same as in the arxiv, do not recompute
+            update_kp=False
         else:
             # will trigger slow code, might be good to check that kp has indeed changed
             update_kp=True

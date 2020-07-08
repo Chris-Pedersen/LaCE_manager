@@ -516,7 +516,7 @@ class Likelihood(object):
             # plot everything
             col = plt.cm.jet(iz/(Nz-1))
             plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
-                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,
+                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,fmt="o",ms="4",
                     label="z=%.1f" % z)
             plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
             plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,

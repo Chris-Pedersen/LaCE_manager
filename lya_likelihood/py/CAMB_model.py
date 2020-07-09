@@ -130,9 +130,12 @@ class CAMBModel(object):
         for mypar in self.get_likelihood_parameters():
             # loop over input parameters
             for inpar in like_params:
-                if inpar.is_same_parameter(mypar):
+                if inpar.name==mypar.name:
                     camb_param_dict[inpar.name]=inpar.value
                     continue
+
+        ## Temporary print statement for debugging
+        print("Param dict to get new camb model=",camb_param_dict)
 
         # set cosmology object (use fiducial for parameters not provided)
         new_cosmo = camb_cosmo.get_cosmology_from_dictionary(camb_param_dict,

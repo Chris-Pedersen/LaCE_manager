@@ -1,25 +1,11 @@
-import matplotlib
+import matplotlib ## Suppresses plotting issues on compute nodes
 matplotlib.use("Agg")
-import numpy as np
 import sys
 import os
-import json
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import cProfile
-import emcee
-import corner
 import configargparse
 import shutil
 # our own modules
-import simplest_emulator
-import linear_emulator
 import gp_emulator
-import data_PD2013
-import mean_flux_model
-import thermal_model
-import pressure_model
-import lya_theory
 import likelihood
 import emcee_sampler
 import data_MPGADGET
@@ -28,7 +14,6 @@ import p1d_arxiv
 import time
 
 """ Example script to run an emcee chain """
-
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
@@ -55,6 +40,7 @@ parser.add_argument('--emu_cov_factor', type=float,help='Factor between 0 and 1 
 parser.add_argument('--emu_noise_var', type=float,help='Emulator noise variable')
 parser.add_argument('--parallel',action='store_true',help='Run sampler in parallel?')
 parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the data covariance by')
+parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -67,11 +53,19 @@ print("----------")
 print(parser.format_values()) 
 print("----------")
 
-
-## Load prior volume from file
-with open("no_g_star_or_f_star.json") as json_file:
-    free_param_limits = json.load(json_file)
-print("Free parameter limits=", free_param_limits)
+## configargparse cannot accept nested lists or dictionaries
+## so no elegant solution to passing a prior volume right now
+## these are still saved with the sampler so no book-keeping issues though
+free_param_limits=[[0.24, 0.47],
+                    [-2.352, -2.25],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2],
+                    [-0.2, 0.2]]
 
 skewers_label=args.skewers_label
 p1d_label=None
@@ -88,7 +82,8 @@ if prior==-1:
 data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number,
                                 basedir=args.basedir,
                                 skewers_label=args.skewers_label,
-                                data_cov_factor=args.data_cov_factor)
+                                data_cov_factor=args.data_cov_factor,
+                                covmat=args.data_year)
 zs=data.z
 
 ## Set up emulator training data
@@ -107,7 +102,7 @@ if args.z_emulator==False:
                                     emu_type=args.emu_type, checkHulls=False,kmax_Mpc=kmax_Mpc,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings,
-				    set_noise_var=args.emu_noise_var)
+				                    set_noise_var=args.emu_noise_var)
     emu.load_default()
 else:
     emu=z_emulator.ZEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
@@ -116,13 +111,13 @@ else:
                                     kmax_Mpc=kmax_Mpc,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings,
-				    set_noise_var=args.emu_noise_var)
+				                    set_noise_var=args.emu_noise_var)
 
 ## Create likelihood object from data and emulator
 like=likelihood.Likelihood(data=data,emulator=emu,
                             free_parameters=free_parameters,
-			    free_param_limits=free_param_limits,
-			    verbose=False,
+			                free_param_limits=free_param_limits,
+			                verbose=False,
                             prior_Gauss_rms=prior,
                             emu_cov_factor=args.emu_cov_factor)
 

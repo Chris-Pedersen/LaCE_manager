@@ -122,6 +122,9 @@ class Likelihood(object):
         # setup list of likelihood free parameters
         self.free_params=[]
 
+        if free_param_limits is not None:
+            assert len(free_param_limits)==len(free_parameter_names), "wrong number of parameter limits"
+
         # get all parameters in theory, free or not
         params = self.theory.get_parameters()
 

@@ -99,7 +99,7 @@ class FullTheory(object):
                 ratio_As = par.value / fid_As
             if par.name is 'ns':
                 fid_ns = self.camb_model_fid.cosmo.InitPower.ns
-                delta_As = par.value - fid_ns
+                delta_ns = par.value - fid_ns
 
         # compute ratio of amplitudes at emulator pivot point
         kp_camb = self.camb_model_fid.cosmo.InitPower.pivot_scalar

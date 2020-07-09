@@ -20,6 +20,15 @@ class CAMBModel(object):
         else:
             self.cosmo=cosmo
 
+        # setup CAMB matter power spectrum calculation
+        self.cosmo.set_matter_power(redshifts=self.zs,nonlinear=False,
+                kmax=2.0*camb_cosmo.camb_kmax_Mpc,silent=True)
+
+        # will cache CAMB results when computed
+        self.cached_camb_results=None
+        # will cache wavenumbers and linear power (at zs) when computed
+        self.cached_linP_Mpc=None
+
 
     def get_likelihood_parameters(self):
         """ Return a list of likelihood parameters """
@@ -47,12 +56,34 @@ class CAMBModel(object):
         return params
 
 
+    def get_results(self):
+        """ Check if we have called CAMB get_results yet, to save time.
+            It returns a CAMB.results object."""
+
+        if self.cached_camb_results is None:
+            self.cached_camb_results = camb.get_results(self.cosmo)
+
+        return self.cached_camb_results
+
+
+    def get_linP_Mpc(self):
+        """ Check if we have already computed linP_Mpc, to save time.
+            It returns (k_Mpc, zs, linP_Mpc)."""
+
+        if self.cached_linP_Mpc is None:
+            results = self.get_results()
+            self.cached_linP_Mpc = camb_cosmo.get_linP_Mpc(pars=self.cosmo,
+                    zs=self.zs,camb_results=results)
+
+        return self.cached_linP_Mpc
+
+
     def get_linP_Mpc_params(self,kp_Mpc):
         """ Get linear power parameters to call emulator, at each z.
             Amplitude, slope and running around pivot point kp_Mpc."""
 
         ## Get the P(k) at each z
-        k_Mpc,z,pk_Mpc=camb_cosmo.get_linP_Mpc(self.cosmo,zs=self.zs)
+        k_Mpc,z,pk_Mpc=self.get_linP_Mpc()
 
         # specify wavenumber range to fit
         kmin_Mpc = 0.5*kp_Mpc
@@ -78,7 +109,8 @@ class CAMBModel(object):
     def get_M_of_zs(self):
         """ Return M(z)=H(z)/(1+z) for each z """
 
-        results=camb.get_results(self.cosmo)
+        # get CAMB results objects (might be cached already)
+        results=self.get_results()
         
         M_of_zs=[]
         for z in self.zs:

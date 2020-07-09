@@ -318,6 +318,10 @@ class EmceeSampler(object):
             config = json.load(json_file)
 
         if self.verbose: print("Building arxiv")
+        try:
+            kp=config["kp_Mpc"]
+        except:
+            kp=None
         ## Set up the arxiv
         archive=p1d_arxiv.ArxivP1D(basedir=config["basedir"],
                             drop_tau_rescalings=config["drop_tau_rescalings"],
@@ -328,7 +332,7 @@ class EmceeSampler(object):
                             p1d_label=config["p1d_label"],                            
                             skewers_label=config["skewers_label"],
                             undersample_cube=config["undersample_cube"],
-                            kp_Mpc=config["kp_Mpc"])
+                            kp_Mpc=kp)
 
         if self.verbose: print("Setting up emulator")
         try:

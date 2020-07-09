@@ -102,7 +102,7 @@ if args.z_emulator==False:
                                     emu_type=args.emu_type, checkHulls=False,kmax_Mpc=kmax_Mpc,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings,
-				    set_noise_var=args.emu_noise_var)
+				                    set_noise_var=args.emu_noise_var)
     emu.load_default()
 else:
     emu=z_emulator.ZEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
@@ -111,13 +111,13 @@ else:
                                     kmax_Mpc=kmax_Mpc,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings,
-				    set_noise_var=args.emu_noise_var)
+				                    set_noise_var=args.emu_noise_var)
 
 ## Create likelihood object from data and emulator
 like=likelihood.Likelihood(data=data,emulator=emu,
                             free_parameters=free_parameters,
-			    free_param_limits=free_param_limits,
-			    verbose=False,
+			                free_param_limits=free_param_limits,
+			                verbose=False,
                             prior_Gauss_rms=prior,
                             emu_cov_factor=args.emu_cov_factor)
 

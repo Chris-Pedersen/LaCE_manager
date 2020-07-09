@@ -71,7 +71,7 @@ class GPEmulator:
         self.training_k_bins=self.arxiv.data[0]["k_Mpc"][1:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
-        	self.paramList=["mF","Delta2_p","sigT_Mpc","n_p","gamma","kF_Mpc"]
+        	self.paramList=['mF', 'sigT_Mpc', 'gamma', 'kF_Mpc', 'Delta2_p', 'n_p']
         else:
         	self.paramList=paramList
 
@@ -540,6 +540,9 @@ class GPEmulator:
 
         ## Have to use asarray as json won't save numpy arrays
         ## but gp uses numpy arrays
+        ## Make sure paramList is the same as the one the hyperparameters
+        ## were optimised on
+        assert self.paramList==['mF', 'sigT_Mpc', 'gamma', 'kF_Mpc', 'Delta2_p', 'n_p']
         self.load_hyperparams(np.asarray(emu_load["hyperparams"]),
                         np.asarray(emu_load["paramLimits"]))
 

@@ -87,9 +87,9 @@ The default operation of the emulator is currently to optimise a new set of hype
 Note that I am currently not storing sampler chains in the repo as the file sizes are too large. This means that many of the notebooks in `lya_sampler/notebooks` will not run with a fresh clone of the repo. Will need to figure out a longer term solution to this.
 
 ### Running a sampler
-An example script can be found in `lya_sampler/scripts/multi_sampler.py` with a corresponding config file `example.config`. The syntax to run is the following: `python3 multi_sampler.py -c example.config`. This script will create a new folder in `lya_sampler/chains/`, and store everything related to the sampler run there.
+An example script can be found in `lya_sampler/scripts/multiprocess_sampler.py` with a corresponding config file `example.config`. The syntax to run is the following: `python3 multiprocess_sampler.py -c example.config`. This script will create a new folder in `lya_sampler/chains/`, and store everything related to the sampler run there.
 
-The prior volume is defined in `free_param_limits` in `multi_sampler.py`, where the list of the parameter limits must be the same as passed in `free_params`. If a Gaussian prior is chosen, the code is currently set up to centre the Gaussian prior around the truth in the chosen test simulation for the cosmology parameters, and the truth in the fiducial simulation for the IGM parameters.
+The prior volume is defined in `free_param_limits` in `multiprocess_sampler.py`, where the list of the parameter limits must be the same as passed in `free_params`. If a Gaussian prior is chosen, the code is currently set up to centre the Gaussian prior around the truth in the chosen test simulation for the cosmology parameters, and the truth in the fiducial simulation for the IGM parameters.
 
 The procedure of `multi_sampler.py` is as follows:
 1. Set up a `P1D_MPGADGET` data object. This reads the P1D from a selected test simulation and converts it into velocity units. Currently we are using the BOSS covariance matrices, z and k bins from https://arxiv.org/abs/1306.5896. Here we have the option to rescale the data covariance matrices by a uniform factor.

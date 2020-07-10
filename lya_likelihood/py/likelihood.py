@@ -167,7 +167,7 @@ class Likelihood(object):
             found=False
             # loop over input likelihood parameters and find match
             for inpar in like_params:
-                if par.is_same_parameter(inpar):
+                if par.name == inpar.name:
                     assert found==False,'parameter found twice'
                     values.append(inpar.value_in_cube())
                     found=True

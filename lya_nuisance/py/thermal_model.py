@@ -140,7 +140,7 @@ class ThermalModel(object):
                 found=False
                 # loop over T0 parameters in thermal model
                 for ip in range(len(self.sigT_kms_params)):
-                    if self.sigT_kms_params[ip].is_same_parameter(like_par):
+                    if self.sigT_kms_params[ip].name == like_par.name:
                         assert found==False,'can not update parameter twice'
                         # note different order than with gamma parameters
                         #self.ln_sigT_kms_coeff[Npar_T0-ip-1]=like_par.value
@@ -152,7 +152,7 @@ class ThermalModel(object):
                 found=False
                 # loop over gamma parameters in thermal model
                 for ip in range(len(self.gamma_params)):
-                    if self.gamma_params[ip].is_same_parameter(like_par):
+                    if self.gamma_params[ip].name == like_par.name:
                         assert found==False,'can not update parameter twice'
                         self.ln_gamma_coeff[Npar_gamma-ip-1]=like_par.value
                         found=True

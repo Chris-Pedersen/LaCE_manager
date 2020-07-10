@@ -50,20 +50,6 @@ class LikelihoodParameter(object):
         return self.min_value+x*(self.max_value-self.min_value)
 
 
-    def is_same_parameter(self,param):
-        """Check whether input parameter is the same parameter.
-            It checks name and range, not actual value."""
-
-        if self.name != param.name:
-            return False
-        if not np.isclose(self.min_value,param.min_value,rtol=1e-05):
-            return False
-        if not np.isclose(self.max_value,param.max_value,rtol=1e-05):
-            return False
-
-        return True
-
-
     def get_new_parameter(self,value_in_cube):
         """Return copy of parameter, with updated value from cube"""
 

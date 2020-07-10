@@ -93,7 +93,7 @@ class PressureModel(object):
             found=False
             # loop over parameters in pressure model
             for ip in range(len(self.params)):
-                if self.params[ip].is_same_parameter(like_par):
+                if self.params[ip].name == like_par.name:
                     assert found==False,'can not update parameter twice'
                     self.ln_kF_coeff[Npar-ip-1]=like_par.value
                     found=True

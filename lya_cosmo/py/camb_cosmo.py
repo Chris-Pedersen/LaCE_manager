@@ -92,10 +92,41 @@ def print_info(pars,simulation=False):
     return
 
 
+def get_camb_results(pars,zs=None,kmax_Mpc=camb_kmax_Mpc):
+    """Call camb.get_results, the slowest function in CAMB calls.
+        - pars: CAMBparams object describing the cosmology
+        - zs (optional): redshifts where we want to evaluate the linear power
+        - kmax_Mpc (optional): specify maximum wavenumber to compute """
+
+    if zs is not None:
+        # factor of 2 here for historical reasons, we can probably delete
+        pars.set_matter_power(redshifts=zs,kmax=2.0*kmax_Mpc,nonlinear=False,
+                silent=True)
+
+    return camb.get_results(pars)
+
+
+def get_f_of_z(pars,zs,camb_results=None):
+    """Given a CAMB cosmology, and a set of redshifts, compute the
+        logarithmic growth rate (from f sigma_8 / sigma_8). Other inputs:
+        - camb_results: if provided, use that to speed things up. """
+
+    if camb_results is None:
+        camb_results = get_camb_results(pars,zs=zs)
+
+    # surprisingly, there is no option to specify the fluid (CDM+baryons?)
+    transfer = camb_results.get_matter_transfer_data()
+    s8 = transfer.sigma_8
+    # note there is a bug in the CAMB documentation (sqrt missing)
+    fs8 = np.sqrt(transfer.sigma2_vdelta_8)
+
+    return fs8 / s8
+
+
 def get_linP_hMpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
         kmax_Mpc=camb_kmax_Mpc,npoints=camb_npoints,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
-        power spectrum for CDM+baryons, in units of h/Mpc. Other inputs:
+        power spectrum in units of h/Mpc. Other inputs:
         - camb_results: if provided, use that to speed things up.
         - kmin_Mpc: specify minimum wavenumber to compute (in 1/Mpc)
         - kmax_Mpc: specify maximum wavenumber to compute (in 1/Mpc)
@@ -108,10 +139,7 @@ def get_linP_hMpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
     kmax_hMpc=kmax_Mpc/h
 
     if camb_results is None:
-        # kmax here sets the maximum k computed in transfer function (in 1/Mpc)
-        pars.set_matter_power(redshifts=zs,kmax=2.0*kmax_Mpc,
-                nonlinear=False,silent=True)
-        camb_results = camb.get_results(pars)
+        camb_results = get_camb_results(pars,zs=zs,kmax_Mpc=kmax_Mpc)
 
     # maxkh and npoints where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = camb_results.get_matter_power_spectrum(var1=fluid,
@@ -140,12 +168,17 @@ def get_linP_Mpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
     return k_Mpc, zs_out, P_Mpc
 
 
-def get_linP_kms(pars,zs=[3]):
+def get_linP_kms(pars,zs=[3],camb_results=None):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
-        power spectrum for CDM+baryons, in units of s/km"""
+        power spectrum for CDM+baryons, in units of s/km.
+        - camb_results: if provided, use that to speed things up."""
+
+    # avoid calling twice to get_results
+    if camb_results is None:
+        camb_results = get_camb_results(pars,zs)
 
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results=camb_results)
 
     # each redshift will now have a different set of wavenumbers
     Nz=len(zs)
@@ -154,45 +187,38 @@ def get_linP_kms(pars,zs=[3]):
     P_kms=np.empty([Nz,Nk])
     for iz in range(Nz):
         z = zs[iz]
-        dvdX = dkms_dhMpc(pars,z)
+        dvdX = dkms_dhMpc(pars,z,camb_results)
         k_kms[iz] = k_hMpc/dvdX
         P_kms[iz] = P_hMpc[iz]*dvdX**3
+
     return k_kms, zs_out, P_kms
 
 
-def dkms_dMpc(cosmo,z):
+def dkms_dMpc(cosmo,z,camb_results=None):
     """Compute factor to translate velocity separations (in km/s) to comoving
         separations (in Mpc). At z=3 it should return roughly 70.
     Inputs:
-        - cosmo: CAMB model object.
+        - cosmo: CAMBparams object.
         - z: redshift
+        - camb_results (optional): CAMBdata object, avoid calling get_results
     """
 
     h=cosmo.H0/100.0
-    return h*dkms_dhMpc(cosmo,z)
+    return h*dkms_dhMpc(cosmo,z,camb_results=camb_results)
 
 
-def dkms_dhMpc(cosmo,z):
+def dkms_dhMpc(cosmo,z,camb_results=None):
     """Compute factor to translate velocity separations (in km/s) to comoving
         separations (in Mpc/h). At z=3 it should return roughly 100.
     Inputs:
-        - cosmo: CAMB model object.
+        - cosmo: CAMBparams object.
         - z: redshift
+        - camb_results (optional): CAMBdata object, avoid calling get_results
     """
 
-    # Check if cosmology is non-flat
-    if abs(cosmo.omk) > 1.e-10:
-        results = camb.get_results(cosmo)
-        H_z=results.hubble_parameter(z)
-        dvdX=H_z/(1+z)/(cosmo.H0/100.0)  
-        return dvdX
+    if camb_results is None:
+        camb_results = camb.get_results(cosmo)
 
-    # use flat cosmology
-    h=cosmo.H0/100.0
-    Om_m=(cosmo.omch2+cosmo.ombh2+cosmo.omnuh2)/h**2
-    Om_L=1.0-Om_m
-    # H(z) = H0 * E(z)
-    Ez = np.sqrt(Om_m*(1+z)**3+Om_L)
-    # dv / hdX = 100 E(Z)/(1+z)
-    dvdX=100*Ez/(1+z)
+    H_z=camb_results.hubble_parameter(z)
+    dvdX=H_z/(1+z)/(cosmo.H0/100.0)
     return dvdX

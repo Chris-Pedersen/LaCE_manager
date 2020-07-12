@@ -3,15 +3,58 @@ import os
 import camb
 import camb_cosmo
 
-def get_linP_zs_Mpc(cosmo,zs,kp_Mpc):
-    """For each redshift, fit linear power parameters (in Mpc)"""
 
+def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
+    """For each redshift, fit linear power parameters around kp_Mpc.
+        - include_f_p to compute logarithmic groth rate at each z (slow)
+        - use_camb_fz will use faster code, but not at kp_Mpc """
+
+    # run slowest part of CAMB computation, to avoid repetition
+    camb_results=camb_cosmo.get_camb_results(cosmo,zs)
+
+    # compute linear power at all zs
+    k_Mpc, zs_out, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,zs,camb_results)
+
+    # if asked for, compute also logarithmic growth rate
+    use_camb_fz=False
+    if use_camb_fz and include_f_p:
+        # fast function (already has results in hand)
+        fz=camb_cosmo.get_f_of_z(cosmo,zs,camb_results)
+
+    # specify wavenumber range to fit
+    kmin_Mpc = 0.5*kp_Mpc
+    kmax_Mpc = 2.0*kp_Mpc
+
+    # loop over all redshifts, and collect linP parameters
     linP_zs=[]
-    for z in zs:
-        pars=parameterize_linP_Mpc(cosmo,z,kp_Mpc=kp_Mpc,include_f_p=True)
-        linP_z={'f_p':pars['f_p'], 'Delta2_p':pars['Delta2_p'],
-                    'n_p':pars['n_p'], 'alpha_p':pars['alpha_p']}
+    for iz in range(len(zs)):
+        # check that redshifts are properly sorted
+        z=zs[iz]
+        assert z==zs_out[iz],'redshifts not sorted out correctly'
+        # fit polynomial of log power over wavenumber range
+        linP_Mpc=fit_polynomial(kmin_Mpc/kp_Mpc,kmax_Mpc/kp_Mpc,k_Mpc/kp_Mpc,
+                P_Mpc[iz])
+        # translate the polynomial to our parameters
+        ln_A_p = linP_Mpc[0]
+        Delta2_p = np.exp(ln_A_p)*kp_Mpc**3/(2*np.pi**2)
+        n_p = linP_Mpc[1]
+        # note that the curvature is alpha/2
+        alpha_p = 2.0*linP_Mpc[2]
+
+        linP_z={'Delta2_p':Delta2_p,'n_p':n_p,'alpha_p':alpha_p}
+
+        if include_f_p:
+            # compute logarithmic growth rate at each z
+            if use_camb_fz:
+                # new version, faster but uses f = f sigma_8 / sigma_8
+                f_p = fz[iz]
+            else:
+                # older version, slower but can ask for particular kp_Mpc
+                f_p = compute_fz(cosmo,z=z,kp_Mpc=kp_Mpc)
+            linP_z['f_p']=f_p
+
         linP_zs.append(linP_z)
+
     return linP_zs
 
 
@@ -65,10 +108,12 @@ def fit_polynomial(xmin,xmax,x,y,deg=2):
     return np.poly1d(poly)
 
 
-def fit_linP_Mpc(cosmo,z,kp_Mpc,deg=2):
+def fit_linP_Mpc(cosmo,z,kp_Mpc,deg=2,camb_results=None):
     """Given input cosmology, compute linear power at z (in Mpc)
-        and fit polynomial around kp_Mpc"""
-    k_Mpc, _, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,[z])
+        and fit polynomial around kp_Mpc.
+        - camb_results optional to avoid calling get_results."""
+
+    k_Mpc, _, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,[z],camb_results)
     # specify wavenumber range to fit
     kmin_Mpc = 0.5*kp_Mpc
     kmax_Mpc = 2.0*kp_Mpc
@@ -78,10 +123,12 @@ def fit_linP_Mpc(cosmo,z,kp_Mpc,deg=2):
     return P_fit
 
 
-def fit_linP_kms(cosmo,z,kp_kms,deg=2):
-    """Given input cosmology, compute linear power at (in km/s)
-        and fit polynomial around kp_kms"""
-    k_kms, _, P_kms = camb_cosmo.get_linP_kms(cosmo,[z])
+def fit_linP_kms(cosmo,z,kp_kms,deg=2,camb_results=None):
+    """Given input cosmology, compute linear power at z
+        (in km/s) and fit polynomial around kp_kms.
+        - camb_results optional to avoid calling get_results. """
+
+    k_kms, _, P_kms = camb_cosmo.get_linP_kms(cosmo,[z],camb_results)
     # specify wavenumber range to fit
     kmin_kms = 0.5*kp_kms
     kmax_kms = 2.0*kp_kms
@@ -91,37 +138,19 @@ def fit_linP_kms(cosmo,z,kp_kms,deg=2):
     return P_fit
 
 
-def parameterize_linP_Mpc(cosmo,z,kp_Mpc,include_f_p=False):
+def parameterize_cosmology_kms(cosmo,z_star,kp_kms,use_camb_fz=False):
     """Given input cosmology, compute set of parameters that describe 
-        the linear power around z and wavenumbers kp (in Mpc)."""
+        the linear power around z_star and wavenumbers kp_kms.
+        If use_camb_fz will get f from f sigma_8 / sigma_8."""
 
-    # compute linear power, in Mpc, at z
-    # and fit a second order polynomial to the log power, around kp_Mpc
-    linP_Mpc = fit_linP_Mpc(cosmo,z,kp_Mpc,deg=2)
-    # translate the polynomial to our parameters
-    ln_A_p = linP_Mpc[0]
-    Delta2_p = np.exp(ln_A_p)*kp_Mpc**3/(2*np.pi**2)
-    n_p = linP_Mpc[1]
-    # note that the curvature is alpha/2
-    alpha_p = 2.0*linP_Mpc[2]
-
-    results={'Delta2_p':Delta2_p,'n_p':n_p,'alpha_p':alpha_p}
-
-    if include_f_p:
-        # get logarithmic growth rate at z around kp_Mpc
-        f_p = compute_fz(cosmo,z=z,kp_Mpc=kp_Mpc)
-        results['f_p']=f_p
-
-    return results
-
-
-def parameterize_cosmology_kms(cosmo,z_star,kp_kms):
-    """Given input cosmology, compute set of parameters that describe 
-        the linear power around z_star and wavenumbers kp_kms."""
+    # call get_results first, to avoid calling it twice
+    zs=[z_star]
+    camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs)
 
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
-    linP_kms = fit_linP_kms(cosmo,z_star,kp_kms,deg=2)
+    linP_kms = fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=camb_results)
+
     # translate the polynomial to our parameters
     ln_A_star = linP_kms[0]
     Delta2_star = np.exp(ln_A_star)*kp_kms**3/(2*np.pi**2)
@@ -130,9 +159,14 @@ def parameterize_cosmology_kms(cosmo,z_star,kp_kms):
     alpha_star = 2.0*linP_kms[2]
 
     # get logarithmic growth rate at z_star, around kp_Mpc
-    # the exact value here should not matter, f(k) is very flat here
-    kp_Mpc=kp_kms*camb_cosmo.dkms_dMpc(cosmo,z_star)
-    f_star = compute_fz(cosmo,z=z_star,kp_Mpc=kp_Mpc)
+    if use_camb_fz:
+        # new code, compute from f sigma_8 / sigma_8 at z
+        f_of_z=camb_cosmo.get_f_of_z(cosmo,zs,camb_results)
+        f_star=f_of_z[0]
+    else:
+        # old code, compute derivative of power at kp_Mpc
+        kp_Mpc=kp_kms*camb_cosmo.dkms_dMpc(cosmo,z_star,camb_results)
+        f_star = compute_fz(cosmo,z=z_star,kp_Mpc=kp_Mpc)
 
     # compute deviation from EdS expansion
     g_star = compute_gz(cosmo,z=z_star)

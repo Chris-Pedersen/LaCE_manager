@@ -154,10 +154,10 @@ class ReconstructedCosmology(object):
 
         # check if we are asking for the fiducial model
         if not linP_model:
-            if self.verbose: print('use fiducial linP_model')
+            if self.verbose: print('no input linP_model, use fiducial')
             return self.linP_Mpc_params_fid
         if self.linP_model_is_fiducial(linP_model):
-            if self.verbose: print('use fiducial linP_model')
+            if self.verbose: print('input linP_model is fiducial')
             return self.linP_Mpc_params_fid
 
         if self.verbose: print('will compute parameters for input linP_model')

@@ -68,7 +68,7 @@ class LyaTheory(object):
         kF_model=igm_models['kF_model']
 
         # compute linear power parameters at all redshifts
-        # (ideally, we would specify here the pivot point from the emulator)
+        # (recons_cosmo already knows the pivot point emu_kp_Mpc)
         linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
 
         # loop over redshifts and store emulator calls

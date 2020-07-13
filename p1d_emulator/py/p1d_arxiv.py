@@ -452,3 +452,15 @@ class ArxivP1D(object):
                                                 mask_tau[i] & mask_temp[i])])
 
         return values
+
+
+    def get_simulation_cosmology(self,sim_num):
+        """ Get cosmology used in a given simulation in suite"""
+
+        # setup cosmology from GenIC file
+        dir_name=self.fulldir+"/sim_pair_"+str(sim_num)
+        file_name=dir_name+"/sim_plus/paramfile.genic"
+        sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+
+        return sim_cosmo

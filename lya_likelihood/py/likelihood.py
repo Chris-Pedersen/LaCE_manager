@@ -470,7 +470,7 @@ class Likelihood(object):
         kp_kms = self.theory.cosmo.kp_kms
 
         # setup cosmology from GenIC file
-        sim_cosmo=self.get_simulation_cosmology(sim_num)
+        sim_cosmo=self.theory.emulator.arxiv.get_simulation_cosmology(sim_num)
 
         # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
@@ -480,7 +480,7 @@ class Likelihood(object):
 
 
     def get_simulation_cosmology(self,sim_num):
-        """ Compute Delta2_star and n_star for a given simulation in suite"""
+        """ Get cosmology used in a given simulation in suite"""
 
         # use environmental variable to point to repo
         repo=os.environ['LYA_EMU_REPO']

@@ -156,7 +156,7 @@ class Likelihood(object):
         for par in self.free_params:
             param_list.append(par.name)
 
-        return
+        return param_list
 
 
     def default_sampling_point(self):

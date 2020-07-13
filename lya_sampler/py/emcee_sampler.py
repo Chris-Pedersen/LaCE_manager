@@ -113,8 +113,8 @@ class EmceeSampler(object):
         ## Set up list of parameter names in tex format for plotting
         self.paramstrings=[]
         self.truth=[] ## Truth value for chainconsumer plots
-        for param in self.like.free_parameters:
-            self.paramstrings.append(self.param_dict[param])
+        for param in self.like.free_params:
+            self.paramstrings.append(self.param_dict[param.name])
         for param in self.like.free_params:
             self.truth.append(param.value)
 
@@ -383,10 +383,8 @@ class EmceeSampler(object):
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
         free_param_list=[]
-        limits_list=[]
         for item in config["free_params"]:
             free_param_list.append(item[0])
-            limits_list.append([item[1],item[2]])
 
         ## Not all saved chains will have this flag
         try:

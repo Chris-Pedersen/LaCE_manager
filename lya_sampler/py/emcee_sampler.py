@@ -55,8 +55,6 @@ class EmceeSampler(object):
             if like:
                 if self.verbose: print('use input likelihood')
                 self.like=like
-                if free_parameters:
-                    self.like.set_free_parameters(free_parameters,like.free_param_limits)
             else:
                 if self.verbose: print('use default likelihood')
                 data=data_PD2013.P1D_PD2013(blind_data=True)
@@ -492,10 +490,14 @@ class EmceeSampler(object):
         saveDict["data_year"]=self.like.data.data_year
 
         free_params_save=[]
+        free_param_limits=[]
         for par in self.like.free_params:
+            ## This parameter limits are saved twice but for the sake
+            ## of backwards compatibility I'm going to leave this
             free_params_save.append([par.name,par.min_value,par.max_value])
+            free_param_limits.append([par.min_value,par.max_value])
         saveDict["free_params"]=free_params_save
-        saveDict["free_param_limits"]=self.like.free_param_limits
+        saveDict["free_param_limits"]=free_param_limits
 
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps

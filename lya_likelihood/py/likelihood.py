@@ -479,23 +479,6 @@ class Likelihood(object):
         return sim_linP_params
 
 
-    def get_simulation_cosmology(self,sim_num):
-        """ Get cosmology used in a given simulation in suite"""
-
-        # use environmental variable to point to repo
-        repo=os.environ['LYA_EMU_REPO']
-        # directory with simulations used in emulator
-        basedir=repo+'/'+self.theory.emulator.basedir
-
-        # setup cosmology from GenIC file
-        dir_name=basedir+"/sim_pair_"+str(sim_num)
-        file_name=dir_name+"/sim_plus/paramfile.genic"
-        sim_cosmo_dict=read_genic.camb_from_genic(file_name)
-        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
-
-        return sim_cosmo
-
-
     def plot_p1d(self,values=None,plot_every_iz=1):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""

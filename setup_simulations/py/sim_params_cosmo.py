@@ -44,7 +44,8 @@ def cosmo_from_sim_params(param_space,sim_params,verbose=False):
             camb_cosmo.print_info(temp_cosmo)
 
     # get linear power parameters in temporary cosmology (comoving units)
-    temp_linP=fit_linP.parameterize_linP_Mpc(temp_cosmo,z_star,kp_Mpc)
+    temp_linP=fit_linP.get_linP_Mpc_zs(cosmo,zs=[z_star],kp_Mpc=kp_Mpc,
+            include_f_p=False)[0]
     Delta2_star_temp=temp_linP['Delta2_p']
     n_star_temp=temp_linP['n_p']
     alpha_star_temp=temp_linP['alpha_p']

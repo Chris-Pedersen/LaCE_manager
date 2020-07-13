@@ -101,20 +101,24 @@ class ReconstructedCosmology(object):
         """Reconstruct linear power (in Mpc) for input linP_model and fit
             linear power parameters at each redshift."""
 
+        # to better compare with CAMB_model, compute power in same k-range
+        kmin_Mpc=camb_cosmo.camb_kmin_Mpc
+        kmax_Mpc=camb_cosmo.camb_kmax_Mpc
+        npoints=camb_cosmo.camb_npoints
+        k_Mpc=np.logspace(np.log10(kmin_Mpc),np.log10(kmax_Mpc),num=npoints)
+
         # we are interested in the linear power around kp_Mpc
         kp_Mpc=self.emu_kp_Mpc
-        kmin_Mpc=0.5*kp_Mpc
-        kmax_Mpc=2.0*kp_Mpc
-        k_Mpc=np.logspace(np.log10(kmin_Mpc),np.log10(kmax_Mpc),num=20)
-
+        fit_kmin_Mpc=0.5*kp_Mpc
+        fit_kmax_Mpc=2.0*kp_Mpc
         linP_Mpc_params=[]
         for iz,z in enumerate(self.zs):
             # reconstruct linear power at the redshift (in Mpc)
             linP_Mpc=self.reconstruct_linP_Mpc(iz,k_Mpc=k_Mpc,
                     linP_model=linP_model)
             # fit polynomial describing log linear power
-            linP_fit=fit_linP.fit_polynomial(kmin_Mpc/kp_Mpc,
-                    kmax_Mpc/kp_Mpc,k_Mpc/kp_Mpc,linP_Mpc,deg=2)
+            linP_fit=fit_linP.fit_polynomial(fit_kmin_Mpc/kp_Mpc,
+                    fit_kmax_Mpc/kp_Mpc,k_Mpc/kp_Mpc,linP_Mpc,deg=2)
             # compute parameters used in emulator
             lnA_p=linP_fit[0]
             Delta2_p=np.exp(lnA_p)*kp_Mpc**3/(2*np.pi**2)
@@ -154,10 +158,10 @@ class ReconstructedCosmology(object):
 
         # check if we are asking for the fiducial model
         if not linP_model:
-            if self.verbose: print('use fiducial linP_model')
+            if self.verbose: print('no input linP_model, use fiducial')
             return self.linP_Mpc_params_fid
         if self.linP_model_is_fiducial(linP_model):
-            if self.verbose: print('use fiducial linP_model')
+            if self.verbose: print('input linP_model is fiducial')
             return self.linP_Mpc_params_fid
 
         if self.verbose: print('will compute parameters for input linP_model')

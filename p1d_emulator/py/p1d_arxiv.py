@@ -131,7 +131,8 @@ class ArxivP1D(object):
                 # setup CAMB object
                 sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
                 # compute linear power parameters at each z (in Mpc units)
-                linP_zs=fit_linP.get_linP_zs_Mpc(sim_cosmo,zs,self.kp_Mpc)
+                linP_zs=fit_linP.get_linP_Mpc_zs(sim_cosmo,zs,self.kp_Mpc,
+                        include_f_p=True)
                 print('update linP_zs',linP_zs)
                 pair_data['linP_zs']=list(linP_zs)
             else:
@@ -451,3 +452,15 @@ class ArxivP1D(object):
                                                 mask_tau[i] & mask_temp[i])])
 
         return values
+
+
+    def get_simulation_cosmology(self,sim_num):
+        """ Get cosmology used in a given simulation in suite"""
+
+        # setup cosmology from GenIC file
+        dir_name=self.fulldir+"/sim_pair_"+str(sim_num)
+        file_name=dir_name+"/sim_plus/paramfile.genic"
+        sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+
+        return sim_cosmo

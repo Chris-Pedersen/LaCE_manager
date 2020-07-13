@@ -463,24 +463,16 @@ class Likelihood(object):
 
 
     def get_simulation_linP_params(self,sim_num):
-        """ Compute Delta2_star and n_star for a given simulation"""
+        """ Compute Delta2_star and n_star for a given simulation in suite"""
 
         # this function should only be called when using compressed parameters
         z_star = self.theory.cosmo.z_star
         kp_kms = self.theory.cosmo.kp_kms
 
-        # use environmental variable to point to repo
-        repo=os.environ['LYA_EMU_REPO']
-        # directory with simulations used in emulator
-        basedir=repo+'/'+self.theory.emulator.basedir
-
         # setup cosmology from GenIC file
-        dir_name=basedir+"/sim_pair_"+str(sim_num)
-        file_name=dir_name+"/sim_plus/paramfile.genic"
-        sim_cosmo_dict=read_genic.camb_from_genic(file_name)
-        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+        sim_cosmo=self.theory.emulator.arxiv.get_simulation_cosmology(sim_num)
 
-        # setup linear power object, to get linP parameters
+        # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
                 cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
 

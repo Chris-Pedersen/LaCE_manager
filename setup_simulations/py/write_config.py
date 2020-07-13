@@ -203,7 +203,8 @@ def write_sim_json_file(simdir,param_space,cosmo_sim,zs):
 
     # write linear power in each snapshot
     json_info['zs']=list(zs)
-    linP_zs=fit_linP.get_linP_zs_Mpc(cosmo_sim,zs,param_space.kp_Mpc)
+    linP_zs=fit_linP.get_linP_Mpc_zs(cosmo_sim,zs,param_space.kp_Mpc,
+            include_f_p=True)
     json_info['linP_zs']=list(linP_zs)
 
     json_file = open(filename,"w")

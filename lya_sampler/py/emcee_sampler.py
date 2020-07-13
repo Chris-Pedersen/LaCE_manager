@@ -492,7 +492,7 @@ class EmceeSampler(object):
         free_params_save=[]
         free_param_limits=[]
         for par in self.like.free_params:
-            ## This parameter limits are saved twice but for the sake
+            ## The parameter limits are saved twice but for the sake
             ## of backwards compatibility I'm going to leave this
             free_params_save.append([par.name,par.min_value,par.max_value])
             free_param_limits.append([par.min_value,par.max_value])

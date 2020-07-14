@@ -115,7 +115,7 @@ else:
 
 ## Create likelihood object from data and emulator
 like=likelihood.Likelihood(data=data,emulator=emu,
-                            free_parameters=free_parameters,
+                            free_param_names=free_parameters,
 			                free_param_limits=free_param_limits,
 			                verbose=False,
                             prior_Gauss_rms=prior,
@@ -123,7 +123,7 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 
 ## Pass likelihood to sampler
 sampler = emcee_sampler.EmceeSampler(like=like,
-                        free_parameters=free_parameters,verbose=False,
+                        free_param_names=free_parameters,verbose=False,
                         nwalkers=args.nwalkers)
 
 ## Copy the config file to the save folder

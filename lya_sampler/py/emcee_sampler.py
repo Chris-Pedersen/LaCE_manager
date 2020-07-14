@@ -30,7 +30,7 @@ from multiprocessing import Process
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
-    def __init__(self,like=None,emulator=None,free_parameters=None,
+    def __init__(self,like=None,emulator=None,free_param_names=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
                         save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
@@ -61,7 +61,7 @@ class EmceeSampler(object):
                 zs=data.z
                 theory=lya_theory.LyaTheory(zs,emulator=emulator)
                 self.like=likelihood.Likelihood(data=data,theory=theory,
-                                free_parameters=free_parameters,verbose=False)
+                                free_param_names=free_param_names,verbose=False)
             # number of free parameters to sample
             self.ndim=len(self.like.free_params)
             self.chain_from_file=None
@@ -380,9 +380,9 @@ class EmceeSampler(object):
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
-        free_param_list=[]
+        free_param_names=[]
         for item in config["free_params"]:
-            free_param_list.append(item[0])
+            free_param_names.append(item[0])
 
         ## Not all saved chains will have this flag
         try:
@@ -391,7 +391,7 @@ class EmceeSampler(object):
             free_param_limits=None
     
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
-                            free_parameters=free_param_list,
+                            free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],

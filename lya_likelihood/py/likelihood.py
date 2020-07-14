@@ -17,15 +17,15 @@ class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
     def __init__(self,data=None,theory=None,emulator=None,
-                    free_parameters=None,
+                    free_param_names=None,
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=True):
         """Setup likelihood from theory and data. Options:
-            - free_parameters is a list of param names, in any order
-            - free_param_limits list of tuples, same order than free_parameters
+            - free_param_names is a list of param names, in any order
+            - free_param_limits list of tuples, same order than free_param_names
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > kmin_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
@@ -53,10 +53,10 @@ class Likelihood(object):
         else:
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object
-            compressed=bool(set(free_parameters) & set(["Delta2_star",
+            compressed=bool(set(free_param_names) & set(["Delta2_star",
                                 "n_star","alpha_star","f_star","g_star"]))
 
-            full=bool(set(free_parameters) & set(["H0","mnu","As","ns"]))
+            full=bool(set(free_param_names) & set(["H0","mnu","As","ns"]))
 
             if self.verbose:
                 if compressed:
@@ -64,7 +64,7 @@ class Likelihood(object):
                 elif full:
                     print('using full theory')
                 else:
-                    print('not varying cosmo params',free_parameters)
+                    print('not varying cosmo params',free_param_names)
 
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
@@ -97,29 +97,21 @@ class Likelihood(object):
                     print("No cosmology parameters are varied")
 
         # setup parameters
-        self.set_free_parameters(free_parameters,free_param_limits)
+        self.set_free_parameters(free_param_names,free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
         return
 
 
-    def set_free_parameters(self,free_parameter_names,free_param_limits):
+    def set_free_parameters(self,free_param_names,free_param_limits):
         """Setup likelihood parameters that we want to vary"""
-
-        # WE SHOULD DOCUMENT THIS FUNCTION BETTER. WHEN WOULD WE USE THIS?
-        # ALSO, SHOULD RENAME free_parameters TO free_param_names
-        # AND IT IS NOT CLEAR WHY WE NEED TO STORE EITHER THAT OR EVEN
-        # free_param_limits IN THE LIKELIHOOD OBJECT.
-        # ISN'T IT ENOUGH TO STORE free_params?
-        # ALSO, WHY DO WE NEED TO PASS THE ARGUMENTS ABOVE, IF THEY ARE
-        # ALREADY STORED?
 
         # setup list of likelihood free parameters
         self.free_params=[]
 
         if free_param_limits is not None:
-            assert len(free_param_limits)==len(free_parameter_names), "wrong number of parameter limits"
+            assert len(free_param_limits)==len(free_param_names), "wrong number of parameter limits"
 
         # get all parameters in theory, free or not
         params = self.theory.get_parameters()
@@ -127,18 +119,18 @@ class Likelihood(object):
         ## select free parameters, make sure ordering
         ## in self.free_params is same as
         ## in self.free_parameters
-        for par_name in free_parameter_names:
+        for par_name in free_param_names:
             for par in params:
                 if par.name == par_name:
                     if free_param_limits is not None:
                         ## Set min and max of each parameter if
                         ## a list is given. otherwise leave as default
-                        par.min_value=free_param_limits[free_parameter_names.index(par.name)][0]
-                        par.max_value=free_param_limits[free_parameter_names.index(par.name)][1]
+                        par.min_value=free_param_limits[free_param_names.index(par.name)][0]
+                        par.max_value=free_param_limits[free_param_names.index(par.name)][1]
                     self.free_params.append(par)
 
         Nfree=len(self.free_params)
-        Nin=len(free_parameter_names)
+        Nin=len(free_param_names)
 
         assert (Nfree==Nin), 'could not setup free parameters'
 
@@ -363,7 +355,7 @@ class Likelihood(object):
         """ Maximise lnprob+alpha*sigma, where sigma is the exploration
         term as defined in Rogers et al (2019) """
 
-        x0=np.ones(len(self.free_parameters))*0.5
+        x0=np.ones(len(self.free_params))*0.5
 
         result = minimize(self.acquisition, x0,args=(alpha,verbose),
                 method='nelder-mead',

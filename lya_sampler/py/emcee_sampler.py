@@ -55,8 +55,6 @@ class EmceeSampler(object):
             if like:
                 if self.verbose: print('use input likelihood')
                 self.like=like
-                if free_parameters:
-                    self.like.set_free_parameters(free_parameters,like.free_param_limits)
             else:
                 if self.verbose: print('use default likelihood')
                 data=data_PD2013.P1D_PD2013(blind_data=True)
@@ -113,8 +111,8 @@ class EmceeSampler(object):
         ## Set up list of parameter names in tex format for plotting
         self.paramstrings=[]
         self.truth=[] ## Truth value for chainconsumer plots
-        for param in self.like.free_parameters:
-            self.paramstrings.append(self.param_dict[param])
+        for param in self.like.free_params:
+            self.paramstrings.append(self.param_dict[param.name])
         for param in self.like.free_params:
             self.truth.append(param.value)
 
@@ -292,7 +290,7 @@ class EmceeSampler(object):
         
         plt.figure()
 
-        n = 100 * np.arange(self.burnin_nsteps, len(self.autocorr)+1)
+        n = 100 * np.arange(1, len(self.autocorr)+1)
         plt.plot(n, n / 100.0, "--k")
         plt.plot(n, self.autocorr)
         plt.xlim(0, n.max())
@@ -383,10 +381,8 @@ class EmceeSampler(object):
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
         free_param_list=[]
-        limits_list=[]
         for item in config["free_params"]:
             free_param_list.append(item[0])
-            limits_list.append([item[1],item[2]])
 
         ## Not all saved chains will have this flag
         try:
@@ -494,10 +490,14 @@ class EmceeSampler(object):
         saveDict["data_year"]=self.like.data.data_year
 
         free_params_save=[]
+        free_param_limits=[]
         for par in self.like.free_params:
+            ## The parameter limits are saved twice but for the sake
+            ## of backwards compatibility I'm going to leave this
             free_params_save.append([par.name,par.min_value,par.max_value])
+            free_param_limits.append([par.min_value,par.max_value])
         saveDict["free_params"]=free_params_save
-        saveDict["free_param_limits"]=self.like.free_param_limits
+        saveDict["free_param_limits"]=free_param_limits
 
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps

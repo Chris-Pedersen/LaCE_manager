@@ -47,20 +47,16 @@ class Likelihood(object):
 
         # (optionally) get rid of low-k data points
         self.data._cull_data(kmin_kms)
-        # list of parameter names, order might be different than get_parameters
-        self.free_parameters=free_parameters
-        # list of tuples with limits, same order than above
-        self.free_param_limits=free_param_limits
 
         if theory:
             self.theory=theory
         else:
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object
-            compressed=bool(set(self.free_parameters) & set(["Delta2_star",
+            compressed=bool(set(free_parameters) & set(["Delta2_star",
                                 "n_star","alpha_star","f_star","g_star"]))
 
-            full=bool(set(self.free_parameters) & set(["H0","mnu","As","ns"]))
+            full=bool(set(free_parameters) & set(["H0","mnu","As","ns"]))
 
             if self.verbose:
                 if compressed:
@@ -68,7 +64,7 @@ class Likelihood(object):
                 elif full:
                     print('using full theory')
                 else:
-                    print('not varying cosmo params',self.free_parameters)
+                    print('not varying cosmo params',free_parameters)
 
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
@@ -101,7 +97,7 @@ class Likelihood(object):
                     print("No cosmology parameters are varied")
 
         # setup parameters
-        self.set_free_parameters(free_parameters,self.free_param_limits)
+        self.set_free_parameters(free_parameters,free_param_limits)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
@@ -128,15 +124,18 @@ class Likelihood(object):
         # get all parameters in theory, free or not
         params = self.theory.get_parameters()
 
-        # select parameters using input list of names
-        for par in params:
-            if par.name in free_parameter_names:
-                if free_param_limits is not None:
-                    ## Set min and max of each parameter if
-                    ## a list is given. otherwise leave as default
-                    par.min_value=free_param_limits[self.free_parameters.index(par.name)][0]
-                    par.max_value=free_param_limits[self.free_parameters.index(par.name)][1]
-                self.free_params.append(par)
+        ## select free parameters, make sure ordering
+        ## in self.free_params is same as
+        ## in self.free_parameters
+        for par_name in free_parameter_names:
+            for par in params:
+                if par.name == par_name:
+                    if free_param_limits is not None:
+                        ## Set min and max of each parameter if
+                        ## a list is given. otherwise leave as default
+                        par.min_value=free_param_limits[free_parameter_names.index(par.name)][0]
+                        par.max_value=free_param_limits[free_parameter_names.index(par.name)][1]
+                    self.free_params.append(par)
 
         Nfree=len(self.free_params)
         Nin=len(free_parameter_names)
@@ -147,6 +146,17 @@ class Likelihood(object):
             print('likelihood setup with {} free parameters'.format(Nfree))
 
         return
+
+
+    def get_free_parameter_list(self):
+        """ Return a list of the names of all free parameters
+        for this object """
+
+        param_list=[]
+        for par in self.free_params:
+            param_list.append(par.name)
+
+        return param_list
 
 
     def default_sampling_point(self):

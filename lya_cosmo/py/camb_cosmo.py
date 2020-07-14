@@ -99,9 +99,9 @@ def get_camb_results(pars,zs=None,kmax_Mpc=camb_kmax_Mpc):
         - kmax_Mpc (optional): specify maximum wavenumber to compute """
 
     if zs is not None:
-        # ask for slightly larger values than kmax_Mpc, just in case
-        pars.set_matter_power(redshifts=zs,kmax=1.001*kmax_Mpc,
-                nonlinear=False,silent=True)
+        # factor of 2 here for historical reasons, we can probably delete
+        pars.set_matter_power(redshifts=zs,kmax=2.0*kmax_Mpc,nonlinear=False,
+                silent=True)
 
     return camb.get_results(pars)
 

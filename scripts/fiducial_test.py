@@ -77,14 +77,14 @@ theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
                                             mf_model_fid=mf_model)
 
 
-free_parameters=['ln_tau_0','ln_tau_1']#,'ln_gamma_0','T0_1','T0_2','T0_3']
+free_param_names=['ln_tau_0','ln_tau_1']#,'ln_gamma_0','T0_1','T0_2','T0_3']
 
 like=likelihood.Likelihood(data=data,theory=theory,
-                            free_parameters=free_parameters,verbose=False,
+                            free_param_names=free_param_names,verbose=False,
                             prior_Gauss_rms=0.15,min_kp_kms=0.0041)
 
 sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,
-                        free_parameters=free_parameters,verbose=True,
+                        free_param_names=free_param_names,verbose=True,
                         nwalkers=100)
 
 like.plot_p1d()

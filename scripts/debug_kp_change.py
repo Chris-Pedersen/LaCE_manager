@@ -49,7 +49,7 @@ else:
             [-0.2, 0.2], [-0.2, 0.2], [-0.2, 0.2]]
 
 like=likelihood.Likelihood(data=data,emulator=emu,
-        free_parameters=like_params,free_param_limits=like_param_limits,
+        free_param_names=like_params,free_param_limits=like_param_limits,
         verbose=False,prior_Gauss_rms=-1,emu_cov_factor=1,
         use_sim_cosmo=False)
 like.go_loud()

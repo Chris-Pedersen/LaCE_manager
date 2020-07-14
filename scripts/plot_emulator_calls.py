@@ -63,14 +63,14 @@ theory=lya_theory.LyaTheory(zs,emulator=emu,T_model_fid=thermal_model,
                                             kF_model_fid=kF_model,
                                             mf_model_fid=mf_model)
 
-free_parameters=['ln_tau_0','ln_tau_1','ln_gamma_0','T0_1','T0_2','T0_3']
+free_param_names=['ln_tau_0','ln_tau_1','ln_gamma_0','T0_1','T0_2','T0_3']
 
 like=likelihood.Likelihood(data=data,theory=theory,
-                            free_parameters=free_parameters,verbose=False,
+                            free_param_names=free_param_names,verbose=False,
                             prior_Gauss_rms=0.15)
 
 sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,
-                        free_parameters=free_parameters,verbose=True,
+                        free_param_names=free_param_names,verbose=True,
                         nwalkers=100)
 
 
@@ -185,9 +185,9 @@ emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,kmax_Mpc=kmax_Mpc,
                                undersample_z=undersample_z,max_arxiv_size=max_arxiv_size,
                                verbose=False,paramList=paramList,train=True)
 
-free_parameters=['ln_tau_0','ln_tau_1','ln_gamma_0','ln_kF_0','T0_1','T0_2','T0_3']
+free_param_names=['ln_tau_0','ln_tau_1','ln_gamma_0','ln_kF_0','T0_1','T0_2','T0_3']
 
-sampler = emcee_sampler.EmceeSampler(emulator=emu,free_parameters=free_parameters,verbose=True,
+sampler = emcee_sampler.EmceeSampler(emulator=emu,free_param_names=free_param_names,verbose=True,
                                 priors="Gaussian")
 
 

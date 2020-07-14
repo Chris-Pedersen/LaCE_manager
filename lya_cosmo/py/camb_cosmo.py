@@ -99,9 +99,9 @@ def get_camb_results(pars,zs=None,kmax_Mpc=camb_kmax_Mpc):
         - kmax_Mpc (optional): specify maximum wavenumber to compute """
 
     if zs is not None:
-        # factor of 2 here for historical reasons, we can probably delete
-        pars.set_matter_power(redshifts=zs,kmax=2.0*kmax_Mpc,nonlinear=False,
-                silent=True)
+        # compute power slightly beyond kmax_Mpc, just in case
+        pars.set_matter_power(redshifts=zs,kmax=1.001*kmax_Mpc,
+                nonlinear=False,silent=True)
 
     return camb.get_results(pars)
 
@@ -189,17 +189,19 @@ def get_linP_Mpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
     return k_Mpc, zs_out, P_Mpc
 
 
-def get_linP_kms(pars,zs=[3],camb_results=None):
+def get_linP_kms(pars,zs=[3],camb_results=None,kmax_Mpc=camb_kmax_Mpc):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of s/km.
-        - camb_results: if provided, use that to speed things up."""
+        - camb_results: if provided, use that to speed things up.
+        - kmax_Mpc: specify maximum k to use (in Mpc), for code speed up."""
 
     # avoid calling twice to get_results
     if camb_results is None:
         camb_results = get_camb_results(pars,zs)
 
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results=camb_results)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results=camb_results,
+            kmax_Mpc=kmax_Mpc)
 
     # each redshift will now have a different set of wavenumbers
     Nz=len(zs)

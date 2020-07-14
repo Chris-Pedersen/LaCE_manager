@@ -3,6 +3,9 @@ import os
 import camb
 import camb_cosmo
 
+# specify global settings to CAMB calls when fitting parameters
+camb_fit_kmax_Mpc=1.0
+
 
 def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
     """For each redshift, fit linear power parameters around kp_Mpc.

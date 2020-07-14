@@ -7,7 +7,7 @@ import camb
 # specify global settings to CAMB calls
 camb_kmin_Mpc=1.e-4
 camb_kmax_Mpc=30.0
-camb_npoints=5000
+camb_npoints=1000
 camb_fluid=8
 
 

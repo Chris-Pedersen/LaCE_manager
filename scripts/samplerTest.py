@@ -59,14 +59,14 @@ emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
 
 theory=lya_theory.LyaTheory(zs,emulator=emu)
 
-free_parameters=['ln_tau_0','ln_tau_1','ln_gamma_0','T0_1','T0_2','T0_3']
+free_param_names=['ln_tau_0','ln_tau_1','ln_gamma_0','T0_1','T0_2','T0_3']
 
 like=likelihood.Likelihood(data=data,theory=theory,
-                            free_parameters=free_parameters,verbose=False,
+                            free_param_names=free_param_names,verbose=False,
                             prior_Gauss_rms=0.15)
 
 sampler = emcee_sampler.EmceeSampler(like=like,emulator=emu,
-                        free_parameters=free_parameters,verbose=True,
+                        free_param_names=free_param_names,verbose=True,
                         nwalkers=100)
 
 

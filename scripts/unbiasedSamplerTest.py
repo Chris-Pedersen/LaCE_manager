@@ -60,16 +60,16 @@ emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,
                                 drop_tau_rescalings=True,
                                 drop_temp_rescalings=True)
 '''
-free_parameters=['mF',"Delta2_p","sigT_Mpc","gamma","kF_Mpc","n_p"]
+free_param_names=['mF',"Delta2_p","sigT_Mpc","gamma","kF_Mpc","n_p"]
 
 like=likelihood.simpleLikelihood(data=data,emulator=emu,
-                            free_parameters=free_parameters,verbose=False,
+                            free_param_names=free_param_names,verbose=False,
                             prior_Gauss_rms=0.15)
 
 like.plot_p1d()
 
 sampler = emcee_sampler.EmceeSampler(like=like,
-                        free_parameters=free_parameters,verbose=True,
+                        free_param_names=free_param_names,verbose=True,
                         nwalkers=20)
 
 

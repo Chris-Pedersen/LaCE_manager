@@ -9,12 +9,13 @@ camb_kmin_Mpc=1.e-4
 camb_kmax_Mpc=30.0
 camb_npoints=1000
 camb_fluid=8
+# no need to go beyond this k_Mpc when fitting linear power only
+camb_fit_kmax_Mpc=1.5
 
 
 def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
-            As=2.1e-09, ns=0.965, nrun=0.0, fast_camb=True):
-    """Given set of cosmological parameters, return CAMB cosmology object.
-        fast_camb would use special settings to speed-up get_results. """
+            As=2.1e-09, ns=0.965, nrun=0.0):
+    """Given set of cosmological parameters, return CAMB cosmology object."""
 
     pars = camb.CAMBparams()
     # set background cosmology
@@ -22,16 +23,12 @@ def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
     # set primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
-    # if asked to, setup CAMB to run faster
-    if fast_camb: set_fast_CAMB_options(pars)
-
     return pars
 
 
-def get_cosmology_from_dictionary(params,cosmo_fid=None,fast_camb=True):
+def get_cosmology_from_dictionary(params,cosmo_fid=None):
     """Given a dictionary with parameters, return CAMB cosmology object.
-        - cosmo_fid will be used for parameters not provided
-        - fast_camb will use special settings to speed-up get_results. """
+        - cosmo_fid will be used for parameters not provided."""
 
     pars = camb.CAMBparams()
     # use default values for those not provided
@@ -75,10 +72,26 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None,fast_camb=True):
     # update primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
-    # if asked to, setup CAMB to run faster
-    if fast_camb: set_fast_CAMB_options(pars)
-
     return pars
+
+
+def get_mnu(pars):
+    """Extract neutrino masses from CAMB object"""
+
+    # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
+    return pars.omnuh2*93.14
+
+
+def print_info(pars,simulation=False):
+    """Given CAMB cosmology object, print relevant parameters"""
+
+    if simulation:
+        Omh2=(pars.omch2+pars.ombh2)
+        Om=Omh2/(pars.H0/100.0)**2
+        print('H0 = {:.4E}, Omega_bc = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,Om,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
+    else:
+        print('H0 = {:.4E}, Omega_b h^2 = {:.4E}, Omega_c h^2 = {:.4E}, Omega_k = {:.4E}, Omega_nu h^2 = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,pars.ombh2,pars.omch2,pars.omk,pars.omnuh2,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
+    return
 
 
 def set_fast_CAMB_options(pars):
@@ -108,32 +121,20 @@ def set_fast_CAMB_options(pars):
     pars.SourceTerms.use_21cm_mK = False
 
 
-def get_mnu(pars):
-    """Extract neutrino masses from CAMB object"""
-
-    # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
-    return pars.omnuh2*93.14
-
-
-def print_info(pars,simulation=False):
-    """Given CAMB cosmology object, print relevant parameters"""
-
-    if simulation:
-        Omh2=(pars.omch2+pars.ombh2)
-        Om=Omh2/(pars.H0/100.0)**2
-        print('H0 = {:.4E}, Omega_bc = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,Om,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
-    else:
-        print('H0 = {:.4E}, Omega_b h^2 = {:.4E}, Omega_c h^2 = {:.4E}, Omega_k = {:.4E}, Omega_nu h^2 = {:.4E}, A_s = {:.4E}, n_s = {:.4E}, alpha_s = {:.4E}'.format(pars.H0,pars.ombh2,pars.omch2,pars.omk,pars.omnuh2,pars.InitPower.As,pars.InitPower.ns,pars.InitPower.nrun))
-    return
-
-
-def get_camb_results(pars,zs=None,kmax_Mpc=camb_kmax_Mpc):
+def get_camb_results(pars,zs=None,fast_camb=False):
     """Call camb.get_results, the slowest function in CAMB calls.
         - pars: CAMBparams object describing the cosmology
         - zs (optional): redshifts where we want to evaluate the linear power
-        - kmax_Mpc (optional): specify maximum wavenumber to compute """
+        - fast_camb (optional): tune settings for fast computations"""
 
     if zs is not None:
+        # check if we want to use fast version
+        if fast_camb:
+            set_fast_CAMB_options(pars)
+            kmax_Mpc=camb_fit_kmax_Mpc
+        else:
+            kmax_Mpc=camb_kmax_Mpc
+
         # compute power slightly beyond kmax_Mpc, just in case
         pars.set_matter_power(redshifts=zs,kmax=1.001*kmax_Mpc,
                 nonlinear=False,silent=True)
@@ -148,7 +149,7 @@ def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
         - use_approx: use Om(z)**0.55 instead. """
 
     if camb_results is None:
-        camb_results = get_camb_results(pars,zs=zs)
+        camb_results = get_camb_results(pars,zs=zs,fast_camb=True)
 
     if use_approx:
         # use f(z) = Om(z)**0.55
@@ -195,7 +196,7 @@ def get_linP_hMpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
     kmax_hMpc=kmax_Mpc/h
 
     if camb_results is None:
-        camb_results = get_camb_results(pars,zs=zs,kmax_Mpc=kmax_Mpc)
+        camb_results = get_camb_results(pars,zs=zs,fast_camb=True)
 
     # maxkh and npoints where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = camb_results.get_matter_power_spectrum(var1=fluid,
@@ -232,7 +233,7 @@ def get_linP_kms(pars,zs=[3],camb_results=None,kmax_Mpc=camb_kmax_Mpc):
 
     # avoid calling twice to get_results
     if camb_results is None:
-        camb_results = get_camb_results(pars,zs)
+        camb_results = get_camb_results(pars,zs,fast_camb=True)
 
     # get linear power in units of Mpc/h
     k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results=camb_results,

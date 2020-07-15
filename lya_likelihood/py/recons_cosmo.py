@@ -35,7 +35,8 @@ class ReconstructedCosmology(object):
             self.cosmo_fid=camb_cosmo.get_cosmology()
 
         # compute CAMB results for fiducial cosmology
-        self.results_fid=camb.get_results(self.cosmo_fid)
+        self.results_fid=camb_cosmo.get_camb_results(self.cosmo_fid,
+                zs=self.zs,fast_camb=True)
 
         # compute linear power model for fiducial cosmology
         self.linP_model_fid=linear_power_model.LinearPowerModel(

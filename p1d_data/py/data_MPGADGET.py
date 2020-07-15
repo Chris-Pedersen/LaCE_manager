@@ -77,11 +77,12 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
         sim_cosmo_dict=read_genic.camb_from_genic(repo+self.basedir+"sim_pair_"+str(self.sim_number)+"/sim_plus/paramfile.genic")
-        sim_camb_results=camb.get_results(camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict))
-
+        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+        sim_camb_results=camb.get_results(sim_cosmo)
 
         ## Get k_min for the sim data, & cut k values below that
-        k_min_kms=self.mock_data.data[0]["k_Mpc"][1]/((sim_camb_results.hubble_parameter(min(z_sim)))/(1+min(z_sim)))
+        k_min_Mpc=self.mock_data.data[0]["k_Mpc"][1]
+        k_min_kms=k_min_Mpc/((sim_camb_results.hubble_parameter(min(z_sim)))/(1+min(z_sim)))
         Ncull=np.sum(k<k_min_kms)
         k=k[Ncull:]
 

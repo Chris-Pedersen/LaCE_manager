@@ -70,6 +70,29 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # update primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
+    pars.Want_CMB = False
+    pars.WantDerivedParameters = False
+    pars.WantCls = False
+    pars.Want_CMB_lensing = False
+    pars.DoLensing = False
+    pars.Want_cl_2D_array = False
+    pars.max_l_tensor = 0
+    pars.max_l = 2
+    pars.max_eta_k_tensor = 0
+    pars.Reion.Reionization = False
+    pars.Reion.ReionizationModel = False
+    pars.Reion.include_helium_fullreion = False
+    pars.Accuracy.AccuratePolarization = False
+    pars.Accuracy.AccurateReionization = False
+    pars.SourceTerms.counts_density = False
+    pars.SourceTerms.limber_windows = False
+    pars.SourceTerms.counts_timedelay = False
+    pars.SourceTerms.counts_potential = False
+    pars.SourceTerms.counts_ISW = False
+    pars.SourceTerms.line_basic = False
+    pars.SourceTerms.line_distortions = False
+    pars.SourceTerms.use_21cm_mK = False
+
     return pars
 
 

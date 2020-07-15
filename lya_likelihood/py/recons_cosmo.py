@@ -37,10 +37,13 @@ class ReconstructedCosmology(object):
         # compute CAMB results for fiducial cosmology
         self.results_fid=camb_cosmo.get_camb_results(self.cosmo_fid,
                 zs=self.zs,fast_camb=True)
+        if self.verbose: print('got camb_results for fiducial cosmology')
 
         # compute linear power model for fiducial cosmology
         self.linP_model_fid=linear_power_model.LinearPowerModel(
                 cosmo=self.cosmo_fid,z_star=like_z_star,kp_kms=like_kp_kms)
+        if self.verbose: print('setup linP model for fiducial cosmology')
+
         # store pivot point for convenience
         self.z_star=self.linP_model_fid.z_star
         self.kp_kms=self.linP_model_fid.kp_kms
@@ -60,6 +63,7 @@ class ReconstructedCosmology(object):
         # when running with fixed cosmology it is useful to keep this
         self.linP_Mpc_params_fid=self._compute_linP_Mpc_params(
                                             linP_model=self.linP_model_fid)
+        if self.verbose: print('got linP_Mpc_params for fiducial cosmology')
 
         return
 
@@ -103,8 +107,8 @@ class ReconstructedCosmology(object):
             linear power parameters at each redshift."""
 
         # to better compare with CAMB_model, compute power in same k-range
-        kmin_Mpc=camb_cosmo.camb_kmin_Mpc
-        kmax_Mpc=camb_cosmo.camb_kmax_Mpc
+        kmin_Mpc=camb_cosmo.camb_fit_kmin_Mpc
+        kmax_Mpc=camb_cosmo.camb_fit_kmax_Mpc
         npoints=camb_cosmo.camb_npoints
         k_Mpc=np.logspace(np.log10(kmin_Mpc),np.log10(kmax_Mpc),num=npoints)
 

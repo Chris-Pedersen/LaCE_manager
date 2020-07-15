@@ -3,21 +3,17 @@ import os
 import camb
 import camb_cosmo
 
-# no need to go beyond this k_Mpc when fitting linear power only
-camb_fit_kmax_Mpc=1.5
-
 def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
     """For each redshift, fit linear power parameters around kp_Mpc.
         - include_f_p to compute logarithmic groth rate at each z (slow)
-        - use_camb_fz will use faster code, but not at kp_Mpc """
+        - use_camb_fz will use faster code to compute fz, but not at kp_Mpc """
 
     # run slowest part of CAMB computation, to avoid repetition
-    camb_results=camb_cosmo.get_camb_results(cosmo,zs,
-            kmax_Mpc=camb_fit_kmax_Mpc)
+    camb_results=camb_cosmo.get_camb_results(cosmo,zs,fast_camb=True)
 
     # compute linear power at all zs
     k_Mpc, zs_out, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,zs,
-            camb_results=camb_results,kmax_Mpc=camb_fit_kmax_Mpc)
+            camb_results=camb_results,kmax_Mpc=camb_cosmo.camb_fit_kmax_Mpc)
 
     # if asked for, compute also logarithmic growth rate
     use_camb_fz=False
@@ -62,20 +58,21 @@ def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
     return linP_zs
 
 
-def compute_gz(cosmo,z):
+def compute_gz(cosmo,z,camb_results=None):
     """ Compute logarithmic derivative of Hubble expansion, normalized to EdS:
         g(z) = dln H(z) / dln(1+z)^3/2 = 2/3 (1+z)/H(z) dH/dz """
 
-    results = camb.get_results(cosmo)
+    if camb_results is None:
+        camb_results = camb.get_results(cosmo)
     # compute derivative of Hubble
     dz=z/100.0
     z_minus=z-dz
     z_plus=z+dz
-    H_minus=results.hubble_parameter(z=z_minus)
-    H_plus=results.hubble_parameter(z=z_plus)
+    H_minus=camb_results.hubble_parameter(z=z_minus)
+    H_plus=camb_results.hubble_parameter(z=z_plus)
     dHdz=(H_plus-H_minus)/(z_plus-z_minus)
     # compute hubble at z, and return g(z)
-    Hz=results.hubble_parameter(z=z)
+    Hz=camb_results.hubble_parameter(z=z)
     gz=dHdz/Hz*(1+z)*2/3
     return gz
 
@@ -89,7 +86,7 @@ def compute_fz(cosmo,z,kp_Mpc):
     dz=z/100.0
     zs=[z+dz,z,z-dz]
     k_Mpc, zs_out, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,zs,
-            kmax_Mpc=camb_fit_kmax_Mpc)
+            kmax_Mpc=camb_cosmo.camb_fit_kmax_Mpc)
     z_minus=zs_out[0]
     z=zs_out[1]
     z_plus=zs_out[2]
@@ -119,7 +116,7 @@ def fit_linP_Mpc(cosmo,z,kp_Mpc,deg=2,camb_results=None):
         - camb_results optional to avoid calling get_results."""
 
     k_Mpc, _, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,[z],
-            camb_results=camb_results,kmax_Mpc=camb_fit_kmax_Mpc)
+            camb_results=camb_results,kmax_Mpc=camb_cosmo.camb_fit_kmax_Mpc)
     # specify wavenumber range to fit
     kmin_Mpc = 0.5*kp_Mpc
     kmax_Mpc = 2.0*kp_Mpc
@@ -135,7 +132,7 @@ def fit_linP_kms(cosmo,z,kp_kms,deg=2,camb_results=None):
         - camb_results optional to avoid calling get_results. """
 
     k_kms, _, P_kms = camb_cosmo.get_linP_kms(cosmo,[z],
-            camb_results=camb_results,kmax_Mpc=camb_fit_kmax_Mpc)
+            camb_results=camb_results,kmax_Mpc=camb_cosmo.camb_fit_kmax_Mpc)
     # specify wavenumber range to fit
     kmin_kms = 0.5*kp_kms
     kmax_kms = 2.0*kp_kms
@@ -152,8 +149,7 @@ def parameterize_cosmology_kms(cosmo,z_star,kp_kms,use_camb_fz=False):
 
     # call get_results first, to avoid calling it twice
     zs=[z_star]
-    camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,
-            kmax_Mpc=camb_fit_kmax_Mpc)
+    camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,fast_camb=True)
 
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
@@ -177,7 +173,7 @@ def parameterize_cosmology_kms(cosmo,z_star,kp_kms,use_camb_fz=False):
         f_star = compute_fz(cosmo,z=z_star,kp_Mpc=kp_Mpc)
 
     # compute deviation from EdS expansion
-    g_star = compute_gz(cosmo,z=z_star)
+    g_star = compute_gz(cosmo,z=z_star,camb_results=camb_results)
 
     results={'f_star':f_star,'g_star':g_star,'linP_kms':linP_kms,
             'Delta2_star':Delta2_star,'n_star':n_star,'alpha_star':alpha_star}

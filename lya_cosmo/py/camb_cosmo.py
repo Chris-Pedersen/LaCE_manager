@@ -12,8 +12,9 @@ camb_fluid=8
 
 
 def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
-            As=2.1e-09, ns=0.965, nrun=0.0):
-    """Given set of cosmological parameters, return CAMB cosmology object."""
+            As=2.1e-09, ns=0.965, nrun=0.0, fast_camb=True):
+    """Given set of cosmological parameters, return CAMB cosmology object.
+        fast_camb would use special settings to speed-up get_results. """
 
     pars = camb.CAMBparams()
     # set background cosmology
@@ -21,12 +22,16 @@ def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
     # set primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
+    # if asked to, setup CAMB to run faster
+    if fast_camb: set_fast_CAMB_options(pars)
+
     return pars
 
 
-def get_cosmology_from_dictionary(params,cosmo_fid=None):
+def get_cosmology_from_dictionary(params,cosmo_fid=None,fast_camb=True):
     """Given a dictionary with parameters, return CAMB cosmology object.
-        cosmo_fid will be used for parameters not provided."""
+        - cosmo_fid will be used for parameters not provided
+        - fast_camb will use special settings to speed-up get_results. """
 
     pars = camb.CAMBparams()
     # use default values for those not provided
@@ -70,6 +75,15 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # update primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun)
 
+    # if asked to, setup CAMB to run faster
+    if fast_camb: set_fast_CAMB_options(pars)
+
+    return pars
+
+
+def set_fast_CAMB_options(pars):
+    """Tune options in CAMB to speed-up evaluations"""
+
     pars.Want_CMB = False
     pars.WantDerivedParameters = False
     pars.WantCls = False
@@ -92,8 +106,6 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     pars.SourceTerms.line_basic = False
     pars.SourceTerms.line_distortions = False
     pars.SourceTerms.use_21cm_mK = False
-
-    return pars
 
 
 def get_mnu(pars):

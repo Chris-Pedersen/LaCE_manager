@@ -11,7 +11,8 @@ camb_npoints=1000
 camb_fluid=8
 # no need to go beyond this k_Mpc when fitting linear power only
 camb_fit_kmax_Mpc=1.5
-
+# set kmax in transfer function beyond what you need (avoid warnings)
+camb_extra_kmax=1.001
 
 def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
             As=2.1e-09, ns=0.965, nrun=0.0):
@@ -94,7 +95,7 @@ def print_info(pars,simulation=False):
     return
 
 
-def set_fast_CAMB_options(pars):
+def set_fast_camb_options(pars):
     """Tune options in CAMB to speed-up evaluations"""
 
     pars.Want_CMB = False
@@ -130,13 +131,13 @@ def get_camb_results(pars,zs=None,fast_camb=False):
     if zs is not None:
         # check if we want to use fast version
         if fast_camb:
-            set_fast_CAMB_options(pars)
+            set_fast_camb_options(pars)
             kmax_Mpc=camb_fit_kmax_Mpc
         else:
             kmax_Mpc=camb_kmax_Mpc
 
-        # compute power slightly beyond kmax_Mpc, just in case
-        pars.set_matter_power(redshifts=zs,kmax=1.001*kmax_Mpc,
+        # camb_extra_kmax will allow to evaluate the power later on at kmax
+        pars.set_matter_power(redshifts=zs,kmax=camb_extra_kmax*kmax_Mpc,
                 nonlinear=False,silent=True)
 
     return camb.get_results(pars)
@@ -149,7 +150,8 @@ def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
         - use_approx: use Om(z)**0.55 instead. """
 
     if camb_results is None:
-        camb_results = get_camb_results(pars,zs=zs,fast_camb=True)
+        # if you want to use fast_camb, you should pass camb_results
+        camb_results = get_camb_results(pars,zs=zs,fast_camb=False)
 
     if use_approx:
         # use f(z) = Om(z)**0.55
@@ -180,44 +182,40 @@ def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
     return fz
 
 
-def get_linP_hMpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
-        kmax_Mpc=camb_kmax_Mpc,npoints=camb_npoints,fluid=camb_fluid):
+def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum in units of h/Mpc. Other inputs:
         - camb_results: if provided, use that to speed things up.
-        - kmin_Mpc: specify minimum wavenumber to compute (in 1/Mpc)
-        - kmax_Mpc: specify maximum wavenumber to compute (in 1/Mpc)
-        - npoints: number of log-spaced wavenumbers to compute
         - fluid: specify transfer function to use (8=CDM+baryons). """
+
+    if camb_results is None:
+        # if you want to use fast_camb, you should pass camb_results
+        camb_results = get_camb_results(pars,zs=zs,fast_camb=False)
 
     # make sure that all models are evaluated at the same points in 1/Mpc
     h=pars.H0/100.0
-    kmin_hMpc=kmin_Mpc/h
-    kmax_hMpc=kmax_Mpc/h
-
-    if camb_results is None:
-        camb_results = get_camb_results(pars,zs=zs,fast_camb=True)
+    kmin_hMpc=camb_kmin_Mpc/h
+    # set_matter_power chose already kmax
+    # (we use camb_extra_kmax=1.001 here to avoid warnings)
+    kmax_hMpc=pars.Transfer.kmax/h/camb_extra_kmax
 
     # maxkh and npoints where we want to compute the power, in h/Mpc
     kh, zs_out, Ph = camb_results.get_matter_power_spectrum(var1=fluid,
-            var2=fluid,npoints=npoints,minkh=kmin_hMpc,maxkh=kmax_hMpc)
+            var2=fluid,npoints=camb_npoints,
+            minkh=kmin_hMpc,maxkh=kmax_hMpc)
 
     return kh, zs_out, Ph
 
 
-def get_linP_Mpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
-        kmax_Mpc=camb_kmax_Mpc,npoints=camb_npoints,fluid=camb_fluid):
+def get_linP_Mpc(pars,zs,camb_results=None,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of 1/Mpc. Other inputs:
         - camb_results: if provided, use that to speed things up.
-        - kmin_Mpc: specify minimum wavenumber to compute (in 1/Mpc)
-        - kmax_Mpc: specify maximum wavenumber to compute (in 1/Mpc)
-        - npoints: number of log-spaced wavenumbers to compute
         - fluid: specify transfer function to use (8=CDM+baryons). """
 
     # get linear power in units of Mpc/h
-    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs=zs,camb_results=camb_results,
-            kmin_Mpc=kmin_Mpc,kmax_Mpc=kmax_Mpc,npoints=npoints,fluid=fluid)
+    k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs=zs,
+            camb_results=camb_results,fluid=fluid)
     # translate to Mpc
     h = pars.H0 / 100.0
     k_Mpc = k_hMpc * h
@@ -225,19 +223,20 @@ def get_linP_Mpc(pars,zs,camb_results=None,kmin_Mpc=camb_kmin_Mpc,
     return k_Mpc, zs_out, P_Mpc
 
 
-def get_linP_kms(pars,zs=[3],camb_results=None,kmax_Mpc=camb_kmax_Mpc):
+def get_linP_kms(pars,zs=[3],camb_results=None,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum for CDM+baryons, in units of s/km.
         - camb_results: if provided, use that to speed things up.
-        - kmax_Mpc: specify maximum k to use (in Mpc), for code speed up."""
+        - fluid: specify transfer function to use (8=CDM+baryons). """
 
     # avoid calling twice to get_results
     if camb_results is None:
-        camb_results = get_camb_results(pars,zs,fast_camb=True)
+        # if you want to use fast_camb, you should pass camb_results
+        camb_results = get_camb_results(pars,zs,fast_camb=False)
 
     # get linear power in units of Mpc/h
     k_hMpc, zs_out, P_hMpc = get_linP_hMpc(pars,zs,camb_results=camb_results,
-            kmax_Mpc=kmax_Mpc)
+            fluid=fluid)
 
     # each redshift will now have a different set of wavenumbers
     Nz=len(zs)

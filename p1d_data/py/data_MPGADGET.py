@@ -78,7 +78,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         repo=os.environ['LYA_EMU_REPO']
         sim_cosmo_dict=read_genic.camb_from_genic(repo+self.basedir+"sim_pair_"+str(self.sim_number)+"/sim_plus/paramfile.genic")
         sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
-        sim_camb_results=camb.get_results(sim_cosmo)
+        sim_camb_results=camb_cosmo.get_camb_results(sim_cosmo)
 
         ## Get k_min for the sim data, & cut k values below that
         k_min_Mpc=self.mock_data.data[0]["k_Mpc"][1]

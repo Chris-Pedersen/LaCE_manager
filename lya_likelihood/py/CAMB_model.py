@@ -52,8 +52,8 @@ class CAMBModel(object):
         return params
 
 
-    def get_results(self):
-        """ Check if we have called CAMB get_results yet, to save time.
+    def get_camb_results(self):
+        """ Check if we have called CAMB.get_results yet, to save time.
             It returns a CAMB.results object."""
 
         if self.cached_camb_results is None:
@@ -68,9 +68,9 @@ class CAMBModel(object):
             It returns (k_Mpc, zs, linP_Mpc)."""
 
         if self.cached_linP_Mpc is None:
-            results = self.get_results()
+            camb_results = self.get_camb_results()
             self.cached_linP_Mpc = camb_cosmo.get_linP_Mpc(pars=self.cosmo,
-                    zs=self.zs,camb_results=results)
+                    zs=self.zs,camb_results=camb_results)
 
         return self.cached_linP_Mpc
 
@@ -107,11 +107,11 @@ class CAMBModel(object):
         """ Return M(z)=H(z)/(1+z) for each z """
 
         # get CAMB results objects (might be cached already)
-        results=self.get_results()
+        camb_results=self.get_camb_results()
         
         M_of_zs=[]
         for z in self.zs:
-            H_z=results.hubble_parameter(z)
+            H_z=camb_results.hubble_parameter(z)
             M_of_zs.append(H_z/(1+z))
     
         return M_of_zs

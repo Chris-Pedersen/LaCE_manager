@@ -89,6 +89,7 @@ class FullTheory(object):
         # get linP_Mpc_params from fiducial model (should be very fast)
         linP_Mpc_params=self.camb_model_fid.get_linP_Mpc_params(
                 kp_Mpc=self.emu_kp_Mpc)
+        if self.verbose: print('got linP_Mpc_params for fiducial model')
 
         # compute ratio of amplitudes and difference in slope (at CMB pivot)
         ratio_As=1.0

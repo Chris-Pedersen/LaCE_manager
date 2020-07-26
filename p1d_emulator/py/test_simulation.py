@@ -42,7 +42,6 @@ class TestSimulation(object):
 
         return
 
-
     def _read_json_files(self,z_max,kmax_Mpc):
         """ Read the json files for the given sim suite. Store the P1D
         and emulator parameters for the non-rescaled entries
@@ -74,7 +73,7 @@ class TestSimulation(object):
         # compute linear power parameters at each z (in Mpc units)
         linP_zs=fit_linP.get_linP_Mpc_zs(sim_cosmo,self.zs,self.kp_Mpc,
                 include_f_p=True)
-        print('linP_zs',linP_zs)
+        #print('linP_zs',linP_zs)
         linP_values=list(linP_zs)
 
         ## Now loop over each p1d.json file
@@ -93,7 +92,7 @@ class TestSimulation(object):
 
             ## Add p1d to list
             ## Find index of non-rescaled entry
-            for bb in range(len(plus_file)):
+            for bb in range(len(plus_file["p1d_data"])):
                 if plus_file["p1d_data"][bb]["scale_tau"]==1.0:
                     original=bb ## Index of intrinsic non-rescaled P_1D and parameters
                     plus_data=plus_file["p1d_data"][bb]
@@ -164,3 +163,4 @@ class TestSimulation(object):
         assert z in self.zs, "Do not have data for that redshift"
         
         return self.k_Mpc, self.p1d_Mpc[(self.zs==z)[0]]
+    

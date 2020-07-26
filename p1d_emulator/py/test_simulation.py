@@ -3,6 +3,8 @@ import read_gadget
 import read_genic
 import camb_cosmo
 import fit_linP
+import numpy as np
+import os
 
 class TestSimulation(object):
     """ Object to store parameters and data for one
@@ -50,7 +52,8 @@ class TestSimulation(object):
         
         
         ## First get zs from paramfile
-        sim_config=read_gadget.read_gadget_paramfile(sim_path+"paramfile.gadget")
+        sim_config=read_gadget.read_gadget_paramfile(self.fulldir+
+                            "/sim_plus/paramfile.gadget")
         zs=read_gadget.snapshot_redshifts(sim_config)
 
         ## Cut over z_max

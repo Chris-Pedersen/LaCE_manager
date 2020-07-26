@@ -97,7 +97,6 @@ class TestSimulation(object):
             ## Find index of non-rescaled entry
             for bb in range(len(plus_file["p1d_data"])):
                 if plus_file["p1d_data"][bb]["scale_tau"]==1.0:
-                    original=bb ## Index of intrinsic non-rescaled P_1D and parameters
                     plus_data=plus_file["p1d_data"][bb]
                     minus_data=minus_file["p1d_data"][bb]
                     
@@ -157,7 +156,7 @@ class TestSimulation(object):
         
         assert z in self.zs, "Do not have data for that redshift"
         
-        return self.emu_calls[(self.zs==z)[0]]
+        return self.emu_calls[np.argwhere(self.zs==z)[0][0]]
     
     
     def get_p1d_Mpc(self,z):
@@ -165,5 +164,5 @@ class TestSimulation(object):
         
         assert z in self.zs, "Do not have data for that redshift"
         
-        return self.k_Mpc, self.p1d_Mpc[(self.zs==z)[0]]
+        return self.k_Mpc, self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]]
     

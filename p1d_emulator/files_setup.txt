@@ -1,0 +1,17 @@
+/Library/Python/3.7/site-packages/p1d_arxiv.py
+/Library/Python/3.7/site-packages/poly_p1d.py
+/Library/Python/3.7/site-packages/simplest_emulator.py
+/Library/Python/3.7/site-packages/linear_emulator.py
+/Library/Python/3.7/site-packages/gp_emulator.py
+/Library/Python/3.7/site-packages/mf_emulator.py
+/Library/Python/3.7/site-packages/z_emulator.py
+/Library/Python/3.7/site-packages/test_simulation.py
+/Library/Python/3.7/site-packages/__pycache__/p1d_arxiv.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/poly_p1d.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/simplest_emulator.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/linear_emulator.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/gp_emulator.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/mf_emulator.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/z_emulator.cpython-37.pyc
+/Library/Python/3.7/site-packages/__pycache__/test_simulation.cpython-37.pyc
+/Library/Python/3.7/site-packages/p1d_emulator-0.1.0-py3.7.egg-info

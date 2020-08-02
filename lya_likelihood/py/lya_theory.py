@@ -203,10 +203,13 @@ class LyaTheory(object):
 
         return
 
+
 def get_mock_theory(zs,emulator=None,cosmo_fid=None,verbose=False,
                 alternative_pressure=False):
     """Setup LyaTheory with nuisance models close to that from a mock
         dataset from a MP-Gadget simulation."""
+
+    raise ValueError('update function if ever needed')
 
     # setup mean flux matching simulation outputs
     ln_tau_0 = -1.03436530241446

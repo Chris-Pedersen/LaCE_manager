@@ -141,7 +141,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         for z in self.z:
             emu_call=self.mock_sim.get_emulator_calls(z)
             for param in paramList:
-                truth[param].append(emu_call[param])
+                self.truth[param].append(emu_call[param])
 
         return
 

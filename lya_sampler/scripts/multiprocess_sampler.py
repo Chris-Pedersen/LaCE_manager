@@ -79,11 +79,11 @@ if prior==-1:
     prior=None
 
 ## Generate mock P1D measurement
-data=data_MPGADGET.P1D_MPGADGET(sim_number=test_sim_number,
+data=data_MPGADGET.P1D_MPGADGET(sim_label=test_sim_number,
                                 basedir=args.basedir,
                                 skewers_label=args.skewers_label,
                                 data_cov_factor=args.data_cov_factor,
-                                covmat=args.data_year)
+                                data_cov_label=args.data_year)
 zs=data.z
 
 ## Set up emulator training data

@@ -3,7 +3,7 @@ do
     cd $DIR
     xargs rm < files_setup.txt
     rm build/lib/*.py
-    python setup.py install --record files_setup.txt
+    python3 setup.py install --record files_setup.txt --user
     cd ..
 done	
 

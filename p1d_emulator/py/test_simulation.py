@@ -12,27 +12,29 @@ class TestSimulation(object):
     either on the emulator directly in Mpc or on the sampler
     in velocity units """
 
-    def __init__(self,basedir,sim,skewers_label,z_max,kmax_Mpc,kp_Mpc=0.7):
+    def __init__(self,basedir,sim_label,skewers_label,
+            z_max,kmax_Mpc,kp_Mpc):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
-            - sim can be either:
-                -- an integer, representing the index from the Latin hypercube for that suite
+            - sim_label can be either:
+                -- an integer, index from the Latin hypercube for that suite
                 -- "nu", which corresponds to the 0.3eV neutrino sim
                 -- "h", which corresponds to the simulation with h=0.74
+            - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
-            - kp_Mpc sets the comoving pivot scale used to calculate the emulator
-              linear power parameters """
+            - kp_Mpc sets the comoving pivot scale used to calculate the
+              emulator linear power parameters
+        """
 
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
 
-        self.basedir=basedir
-        if type(sim)==int:
-            self.fulldir=repo+basedir+"sim_pair_"+str(sim)
-        elif sim=="nu":
+        if type(sim_label)==int:
+            self.fulldir=repo+basedir+"sim_pair_"+str(sim_label)
+        elif sim_label=="nu":
             self.fulldir=repo+basedir+"nu_sim"
-        elif sim=="h":
+        elif sim_label=="h":
             self.fulldir=repo+basedir+"h_sim"
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
@@ -44,12 +46,14 @@ class TestSimulation(object):
 
         return
 
+
     def _read_json_files(self,z_max,kmax_Mpc):
         """ Read the json files for the given sim suite. Store the P1D
         and emulator parameters for the non-rescaled entries
             - z_max: discard redshifts above this cut
             - kmax_Mpc: take only k bins below this cut """
         
+        # There is a lot of overlap between this and functions in p1d_arxiv.py
         
         ## First get zs from paramfile
         sim_config=read_gadget.read_gadget_paramfile(self.fulldir+
@@ -72,9 +76,9 @@ class TestSimulation(object):
         print('read cosmology from GenIC',genic_fname)
         sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
         # setup CAMB object
-        sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+        self.sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
         # compute linear power parameters at each z (in Mpc units)
-        linP_zs=fit_linP.get_linP_Mpc_zs(sim_cosmo,self.zs,self.kp_Mpc,
+        linP_zs=fit_linP.get_linP_Mpc_zs(self.sim_cosmo,self.zs,self.kp_Mpc,
                 include_f_p=True)
         #print('linP_zs',linP_zs)
         linP_values=list(linP_zs)
@@ -146,7 +150,10 @@ class TestSimulation(object):
             emu_dict["f_p"]=linP_values[len(zs)-aa-1]["f_p"]
             self.emu_calls.append(emu_dict)
             
-        self.k_Mpc=self.k_Mpc[0] ## Discard other k bins as they are all the same
+        # Not all redshifts will have the same number of wavenumbers, because
+        # of annoying numerical errors
+        # self.k_Mpc=self.k_Mpc[0] ## Discard other k bins, they are the same
+
         return
         
         
@@ -165,4 +172,4 @@ class TestSimulation(object):
         assert z in self.zs, "Do not have data for that redshift"
         
         return self.k_Mpc, self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]]
-    
+

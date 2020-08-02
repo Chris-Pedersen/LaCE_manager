@@ -132,21 +132,18 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         """ For each emulator parameter, generate an array of
         true values from the arxiv """
 
-        # WHERE IS THIS FUNCTION USED?
-        print('ignoring for now _set_true_values, using test_simulation')
-
-"""
-        self.truth={} ## Dictionary to hold true values
+        # Dictionary to hold true values
+        self.truth={} 
         paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p","n_p"]
         for param in paramList:
             self.truth[param]=[]
         
-        for item in self.mock_data.data:
+        for z in self.z:
+            emu_call=self.mock_sim.get_emulator_calls(z)
             for param in paramList:
-                self.truth[param].insert(0,item[param])
+                truth[param].append(emu_call[param])
 
         return
-"""
 
 
 def _select_zs(z_in,k_in,Pk_in,cov_in,zs):

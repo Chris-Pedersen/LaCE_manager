@@ -9,6 +9,6 @@ setup(name="lya_sampler",
     description=description,
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/lya_sampler",
     author="Andreu Font-Ribera",
-    py_modules=['emcee_sampler'],
+    py_modules=['emcee_sampler','iminuit_minimizer'],
     package_dir={'': 'py'})
 

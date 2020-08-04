@@ -70,16 +70,9 @@ class Likelihood(object):
 
             if use_sim_cosmo:
                 # Use the simulation cosmology as fiducial, for mock data
-                repo=os.environ['LYA_EMU_REPO']
-                ## Get dictionary with cosmo params from paramfile.genic
-                sim_num=self.data.sim_number
-                dir_name=repo+self.data.basedir+"sim_pair_"+str(sim_num)
-                file_name=dir_name+"/sim_plus/paramfile.genic"
-                sim_cosmo_dict=read_genic.camb_from_genic(file_name)
+                sim_cosmo=self.data.mock_sim.sim_cosmo
                 if self.verbose:
-                    print('use_sim_cosmo',sim_cosmo_dict)
-                ## Create CAMB object from dictionary
-                sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
+                    print('use_sim_cosmo',camb_cosmo.print_info(sim_cosmo))
             else:
                 sim_cosmo=None
             

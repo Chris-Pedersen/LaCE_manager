@@ -44,9 +44,9 @@ def _drop_zbins(z_in,k_in,Pk_in,cov_in,zmin,zmax):
     # figure out how many z to keep
     keep=np.ones(Nz_in, dtype=bool)
     if zmin:
-        keep = np.logical_and(keep,z_in>zmin)
+        keep = np.logical_and(keep,z_in>=zmin)
     if zmax:
-        keep = np.logical_and(keep,z_in<zmax)
+        keep = np.logical_and(keep,z_in<=zmax)
     Nz_out=np.sum(keep)
 
     # setup new arrays

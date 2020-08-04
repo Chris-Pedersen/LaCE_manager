@@ -23,7 +23,7 @@ def _check_gadget_config(config):
     config.validate(vtor)
     # Check unsupported configurations
     if config['MNue']+config['MNum']+config['MNut'] > 0.:
-        raise ValueError("Simulations should not have neutrions")
+        print("Sim has neutrinos")
 
 def read_gadget_paramfile(paramfile, verbose=False):
     """Parse a MP-Gadget parameter file and returns a dictionary"""

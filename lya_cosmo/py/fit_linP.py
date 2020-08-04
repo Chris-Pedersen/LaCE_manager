@@ -14,6 +14,8 @@ def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
     # compute linear power at all zs
     k_Mpc, zs_out, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,zs,camb_results)
 
+    assert kp_Mpc < max(k_Mpc), "Pivot higher than k_max"
+
     # if asked for, compute also logarithmic growth rate
     if use_camb_fz and include_f_p:
         # fast function (already has results in hand)

@@ -365,18 +365,17 @@ class EmceeSampler(object):
         try:
             data_year=config["data_year"]
         except:
-            ## If the data covmat wasn't recorded,
-            ## it was PD2013
+            # if datacov_label wasn't recorded, it was PD2013
             data_year="PD2013"
 
 
         ## Set up mock data
-        data=data_MPGADGET.P1D_MPGADGET(sim_number=config["data_sim_number"],
+        data=data_MPGADGET.P1D_MPGADGET(sim_label=config["data_sim_number"],
                                     basedir=config["basedir"],
                                     skewers_label=config["skewers_label"],
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
-                                    covmat=data_year)
+                                    data_cov_label=data_year)
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -485,9 +484,9 @@ class EmceeSampler(object):
         saveDict["z_list"]=self.like.theory.zs.tolist()
         saveDict["emu_cov_factor"]=self.like.emu_cov_factor
         saveDict["data_basedir"]=self.like.data.basedir
-        saveDict["data_sim_number"]=self.like.data.sim_number
+        saveDict["data_sim_number"]=self.like.data.sim_label
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
-        saveDict["data_year"]=self.like.data.data_year
+        saveDict["data_year"]=self.like.data.data_cov_label
 
         free_params_save=[]
         free_param_limits=[]

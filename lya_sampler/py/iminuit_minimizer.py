@@ -42,7 +42,7 @@ class IminuitMinimizer(object):
         if self.verbose: print('best-fit values =',best_fit_values)
 
         plt.title("iminuit best fit")
-        self.like.plot_p1d(plot_every_iz=2,values=best_fit_values)
+        self.like.plot_p1d(plot_every_iz=plot_every_iz,values=best_fit_values)
         plt.show()
 
         return

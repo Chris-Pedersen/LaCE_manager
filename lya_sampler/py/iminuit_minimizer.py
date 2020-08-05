@@ -8,18 +8,26 @@ import likelihood
 class IminuitMinimizer(object):
     """Wrapper around an iminuit minimizer for Lyman alpha likelihood"""
 
-    def __init__(self,like,error=0.02,print_level=1):
-        """Setup minimizer from likelihood."""
+    def __init__(self,like,start=None,error=0.02,fix=None,print_level=1):
+        """Setup minimizer from likelihood
+            - start (array): specify starting point for minimization
+            - error (float or array): charateristic step size in iminuit
+            - fix (boolean array): do not vary parameter in minimization."""
 
         self.verbose=(print_level>0)
         self.like=like
 
-        # set initial values (for now, center of the unit cube)
-        ini_values=0.5*np.ones(len(self.like.free_params))
+        if start is None:
+            # set initial values (for now, center of the unit cube)
+            start = 0.5*np.ones(len(self.like.free_params))
+
+        # get parameter name from likelihood
+        param_names=like.get_free_parameter_list()
 
         # setup iminuit object (errordef=0.5 if using log-likelihood)
-        self.minimizer = Minuit.from_array_func(like.minus_log_prob,ini_values,
-                error=error,errordef=0.5,print_level=print_level)
+        self.minimizer = Minuit.from_array_func(like.minus_log_prob,
+                start=start,error=error,fix=fix,name=param_names,
+                errordef=0.5,print_level=print_level)
 
 
     def minimize(self,compute_hesse=True):

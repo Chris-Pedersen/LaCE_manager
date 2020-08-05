@@ -10,32 +10,78 @@ class Scan1D(object):
 
     def __init__(self,like,param_grid,verbose=True):
         """Setup with input likelihood, and parameter grid.
-            - like: input likelihood
+            - like: input likelihood (parameter to scan should be free param)
             - param_grid: {name,minval,maxval,nval} for parameter to scan """
 
         self.verbose=verbose
-        self.in_like=like
-        self.param_grid=param_grid
+        self.like=like
+
         # setup parameter values to scan
+        self.param_grid=param_grid
         self.param_values=np.linspace(self.param_grid['minval'],
                 self.param_grid['maxval'],self.param_grid['nval'])
+
+        # best-fit values (when all parameters are free) will be stored later
+        self.global_best_fit=None
         # scan will be computed when needed
         self.chi2_scan=None
 
 
-    def _min_chi2(self,param_value):
-        """Find minimum chi2 for a particular value of the grid parameter"""
+    def _cache_global_best_fit(self):
+        """Maximize likelihood for all parameters and store results"""
 
-        # for now use hack
-        hack_mean=np.mean(self.param_values)
-        hack_error=np.std(self.param_values)
-        chi2 = ((param_value-hack_mean)/hack_error)**2
+        # start at the center of the unit cube
+        start=len(self.like.free_params)*[0.5]
+        # setup iminuit minimizer
+        minimizer = iminuit_minimizer.IminuitMinimizer(self.like,start=start)
+
+        # run minimizer and get best-fit values
+        minimizer.minimize(compute_hesse=False)
+        self.global_best_fit = minimizer.minimizer.np_values()
+
+        if self.verbose:
+            chi2 = self.like.get_chi2(values=self.global_best_fit)
+            print('global chi2 =',chi2,'; best-fit =',self.global_best_fit)
+
+
+    def _min_chi2(self,param_value):
+
+        # figure out index of parameter that is being scanned
+        pname=self.param_grid['name']
+        ip=[i for i,p in enumerate(self.like.free_params) if p.name == pname][0]
+        par=self.like.free_params[ip]
+        fixed_cube_value=par.value_in_cube(param_value)
+        if self.verbose:
+            print(ip,par.name,param_value,'in cube',fixed_cube_value)
+
+        # setup array with starting values, fixed for our scanned parameter
+        start=np.copy(self.global_best_fit)
+        start[ip]=fixed_cube_value
+
+        # setup array of booleans to specify fixed parameter
+        fix=len(self.like.free_params)*[False]
+        fix[ip]=True
+
+        # setup iminuit minimizer
+        minimizer = iminuit_minimizer.IminuitMinimizer(self.like,
+                start=start,fix=fix)
+
+        # run minimizer and get best-fit values
+        minimizer.minimize(compute_hesse=False)
+        local_best_fit = minimizer.minimizer.np_values()
+
+        # compute chi2 for best-fit values
+        chi2 = self.like.get_chi2(values=local_best_fit)
 
         return chi2
 
 
     def _cache_scan(self):
         """Compute and cache 1D chi2 scan"""
+
+        # the global fit will help chose the starting point
+        if self.global_best_fit is None:
+            self._cache_global_best_fit()
 
         # define array of parameter values to use
         self.chi2_scan=np.empty_like(self.param_values)
@@ -53,15 +99,31 @@ class Scan1D(object):
         return self.param_values, self.chi2_scan
 
 
-    def plot_chi2_scan(self):
+    def plot_chi2_scan(self,true_value=None):
         """Plot chi2 scan (compute it if needed)"""
 
         values, chi2 = self.get_chi2_scan()
 
-        plt.plot(values,chi2)
+        # find out name and index of scanned parameter
+        pname=self.param_grid['name']
+        ip=[i for i,p in enumerate(self.like.free_params) if p.name == pname][0]
+        # add vertical line with value from global fit
+        par=self.like.free_params[ip]
+        global_best_fit=par.value_from_cube(self.global_best_fit[ip])
+        plt.axvline(x=global_best_fit,ls=':',label='global fit')
+        # add vertical line with value from global fit
+        if true_value:
+            plt.axvline(x=true_value,ls='-.',label='truth')
+
+        # plot chi2 vs parameter scanned
+        plt.plot(values,chi2,'-',label='scan')
+
         plt.xlabel(self.param_grid['name'])
         plt.ylabel('chi2')
         plt.grid(True)
+        plt.legend()
+
+
 
 class Scan2D(object):
     """Set a 2D grid of values, and minimize likelihood in each point"""
@@ -73,7 +135,7 @@ class Scan2D(object):
             - param_grid_2: same for second parameter (y axis in plot) """
 
         self.verbose=verbose
-        self.in_like=like
+        self.like=like
         self.param_grid_1=param_grid_1
         self.param_grid_2=param_grid_2
         # setup parameter values to scan

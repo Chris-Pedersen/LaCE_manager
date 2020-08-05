@@ -14,11 +14,14 @@ class LikelihoodParameter(object):
         return
 
 
-    def value_in_cube(self):
-        """Normalize parameter value to [0,1]."""
+    def value_in_cube(self,value=None):
+        """Normalize (self or input) parameter value to [0,1]."""
 
-        assert self.value is not None, 'value not set in parameter '+self.name
-        return (self.value-self.min_value)/(self.max_value-self.min_value)
+        if value is None:
+            value = self.value
+
+        assert value is not None, 'value not set in parameter '+self.name
+        return (value-self.min_value)/(self.max_value-self.min_value)
 
 
     def set_from_cube(self,x):

@@ -248,7 +248,8 @@ class Likelihood(object):
         return data_covar, emu_covar
 
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True,camb_evaluation=None):
+    def get_log_like(self,values=None,ignore_log_det_cov=False,
+            camb_evaluation=None):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True."""
 
@@ -295,14 +296,14 @@ class Likelihood(object):
         return log_like
 
 
-    def log_prob(self,values):
+    def log_prob(self,values,ignore_log_det_cov=False):
         """Return log likelihood plus log priors"""
 
         # compute log_prior
         log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
-        log_like=self.get_log_like(values,ignore_log_det_cov=False)
+        log_like=self.get_log_like(values,ignore_log_det_cov=ignore_log_det_cov)
 
         if log_like is None:
             if self.verbose: print('was not able to emulate at least on P1D')
@@ -332,10 +333,10 @@ class Likelihood(object):
             return log_prior
 
 
-    def minus_log_prob(self,values):
+    def minus_log_prob(self,values,ignore_log_det_cov=False):
         """Return minus log_prob (needed to maximise posterior)"""
 
-        return -1.0*self.log_prob(values)
+        return -1.0*self.log_prob(values,ignore_log_det_cov)
 
 
     def maximise_posterior(self,initial_values=None,method='nelder-mead',tol=1e-4):

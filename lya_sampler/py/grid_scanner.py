@@ -304,7 +304,7 @@ class Scan2D(object):
             plt.axhline(y=global_2,ls=':',color='gray')
             if true_values:
                 plt.axvline(x=true_values[0],ls='--',color='gray',label='truth')
-                plt.axhline(x=true_values[1],ls='--',color='gray')
+                plt.axhline(y=true_values[1],ls='--',color='gray')
 
         # set range of values in grid (used by pyplot.contour)
         extent=[np.min(xval),np.max(xval),np.min(yval),np.max(yval)]

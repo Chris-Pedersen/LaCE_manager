@@ -106,7 +106,7 @@ class Scan1D(object):
         """Plot grid scan (compute it if needed)
             - true_value: if provided, will add vertical line
             - cube_values: use cube values [0,1] in x-axis
-            - yaxis: quantity to plot (DeltaChi2,DeltaMinusLogLike')"""
+            - yaxis: quantity to plot (DeltaChi2,MinusLogLike')"""
 
         # get parameter values in grid, and maximum likelihood in each point
         values, max_log_like = self.get_grid_scan()
@@ -135,13 +135,13 @@ class Scan1D(object):
 
         # figure out quantity to use in y axis
         global_log_like=self.like.get_log_like(values=self.global_best_fit)
-        minus_delta_log_like=-1.0*(max_log_like-global_log_like)
         if yaxis is 'DeltaChi2':
+            minus_delta_log_like=-1.0*(max_log_like-global_log_like)
             yval = 2.0*minus_delta_log_like
             plt.ylabel('Delta Chi2')
-        elif yaxis is 'DeltaMinusLogLike':
-            yval = minus_delta_log_like
-            plt.ylabel('minus Delta log like')
+        elif yaxis is 'MinusLogLike':
+            yval = -1.0*max_log_like
+            plt.ylabel('minus log like')
         else:
             raise ValueError('implement plotting for ',yaxis)
 

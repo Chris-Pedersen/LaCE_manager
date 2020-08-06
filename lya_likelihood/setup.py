@@ -10,6 +10,7 @@ setup(name="lya_likelihood",
     url="https://github.com/andreufont/LyaCosmoParams/tree/master/lya_likelihood",
     author="Andreu Font-Ribera",
     py_modules=['lya_theory','likelihood_parameter','likelihood','full_theory',
-                'linear_power_model','recons_cosmo','CAMB_model'],
+                'linear_power_model','recons_cosmo','CAMB_model',
+                'toy_likelihood'],
     package_dir={'': 'py'})
 

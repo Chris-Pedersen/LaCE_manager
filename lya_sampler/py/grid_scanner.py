@@ -6,7 +6,7 @@ import iminuit_minimizer
 
 
 class Scan1D(object):
-    """Set a 1D grid of values, and minimize chi2 in each point"""
+    """Set a 1D grid of values, and minimize minus_log_prob in each point"""
 
     def __init__(self,like,param_grid,verbose=True):
         """Setup with input likelihood, and parameter grid.
@@ -24,11 +24,11 @@ class Scan1D(object):
         # best-fit values (when all parameters are free) will be stored later
         self.global_best_fit=None
         # scan will be computed when needed
-        self.chi2_scan=None
+        self.grid_scan=None
 
 
     def _cache_global_best_fit(self):
-        """Maximize likelihood for all parameters and store results"""
+        """Maximize posterior for all parameters and store results"""
 
         # start at the center of the unit cube
         start=len(self.like.free_params)*[0.5]
@@ -44,8 +44,9 @@ class Scan1D(object):
             print('global chi2 =',chi2,'; best-fit =',self.global_best_fit)
 
 
-    def _min_chi2(self,param_value):
-        """Maximize likelihood for a particular point in grid"""
+    def _max_log_like(self,param_value):
+        """Return max log_like for best-fit model in a particular point
+            (note that the minimization is done in minus_log_prob)."""
 
         # figure out index of parameter that is being scanned
         pname=self.param_grid['name']
@@ -71,71 +72,87 @@ class Scan1D(object):
         minimizer.minimize(compute_hesse=False)
         local_best_fit = minimizer.minimizer.np_values()
 
-        # compute chi2 for best-fit values
-        chi2 = self.like.get_chi2(values=local_best_fit)
+        # compute minus_log_prob for best-fit values
+        max_log_like = self.like.get_log_like(values=local_best_fit)
 
-        return chi2
+        return max_log_like
 
 
     def _cache_scan(self):
-        """Compute and cache 1D chi2 scan"""
+        """Compute and cache 1D grid scan"""
 
         # the global fit will help chose the starting point
         if self.global_best_fit is None:
             self._cache_global_best_fit()
 
         # define array of parameter values to use
-        self.chi2_scan=np.empty_like(self.param_values)
+        self.grid_scan=np.empty_like(self.param_values)
         for i in range(len(self.param_values)):
-            self.chi2_scan[i] = self._min_chi2(self.param_values[i])
+            self.grid_scan[i] = self._max_log_like(self.param_values[i])
 
 
-    def get_chi2_scan(self):
+    def get_grid_scan(self):
         """Compute scan if not computed yet, and return it"""
 
-        if self.chi2_scan is None:
-            if self.verbose: print('will compute chi2 scan')
+        if self.grid_scan is None:
+            if self.verbose: print('will compute grid scan')
             self._cache_scan()
 
-        return self.param_values, self.chi2_scan
+        return self.param_values, self.grid_scan
 
 
-    def plot_chi2_scan(self,true_value=None,plot_delta_chi2=True):
-        """Plot chi2 scan (compute it if needed)
+    def plot_grid_scan(self,true_value=None,cube_values=False,
+            yaxis='DeltaChi2'):
+        """Plot grid scan (compute it if needed)
             - true_value: if provided, will add vertical line
-            - plot_delta_chi2: if True, will subtract global min chi2"""
+            - cube_values: use cube values [0,1] in x-axis
+            - yaxis: quantity to plot (DeltaChi2,DeltaMinusLogLike')"""
 
-        values, chi2 = self.get_chi2_scan()
+        # get parameter values in grid, and maximum likelihood in each point
+        values, max_log_like = self.get_grid_scan()
 
         # find out name and index of scanned parameter
         pname=self.param_grid['name']
         ip=[i for i,p in enumerate(self.like.free_params) if p.name == pname][0]
-        # add vertical line with value from global fit
         par=self.like.free_params[ip]
-        global_best_fit=par.value_from_cube(self.global_best_fit[ip])
-        plt.axvline(x=global_best_fit,ls=':',label='global fit')
-        # add vertical line with value from global fit
-        if true_value:
-            plt.axvline(x=true_value,ls='-.',label='truth')
 
-        if plot_delta_chi2:
-            global_min_chi2=self.like.get_chi2(values=self.global_best_fit)
-            plt.ylabel('Delta chi2')
-            # plot chi2 vs parameter scanned
-            plt.plot(values,chi2-global_min_chi2,'-',label='scan')
+        # add vertical lines with truth and value from global fit
+        global_best_fit_in_cube=self.global_best_fit[ip]
+        if cube_values:
+            xval=[par.value_in_cube(val) for val in values]
+            plt.xlabel(pname+' (in cube)')
+            plt.axvline(x=global_best_fit_in_cube,ls=':',label='global fit')
+            if true_value:
+                true_value_in_cube=par.value_in_cube(true_value)
+                plt.axvline(x=true_value_in_cube,ls='--',label='truth')
         else:
-            plt.ylabel('chi2')
-            plt.plot(values,chi2,'-',label='scan')
+            xval=values
+            plt.xlabel(pname)
+            global_best_fit=par.value_from_cube(global_best_fit_in_cube)
+            plt.axvline(x=global_best_fit,ls=':',label='global fit')
+            if true_value:
+                plt.axvline(x=true_value,ls='--',label='truth')
 
-        plt.xlabel(self.param_grid['name'])
-        plt.grid(True)
+        # figure out quantity to use in y axis
+        global_log_like=self.like.get_log_like(values=self.global_best_fit)
+        minus_delta_log_like=-1.0*(max_log_like-global_log_like)
+        if yaxis is 'DeltaChi2':
+            yval = 2.0*minus_delta_log_like
+            plt.ylabel('Delta Chi2')
+        elif yaxis is 'DeltaMinusLogLike':
+            yval = minus_delta_log_like
+            plt.ylabel('minus Delta log like')
+        else:
+            raise ValueError('implement plotting for ',yaxis)
+
+        plt.plot(xval,yval,'-',label='scan')
         plt.legend()
-
+        plt.grid(True)
 
 
 
 class Scan2D(object):
-    """Set a 2D grid of values, and minimize likelihood in each point"""
+    """Set a 2D grid of values, and minimize minus_log_prob in each point"""
 
     def __init__(self,like,param_grid_1,param_grid_2,verbose=True):
         """Setup with input likelihood, and parameter grids.
@@ -156,11 +173,11 @@ class Scan2D(object):
         # best-fit values (when all parameters are free) will be stored later
         self.global_best_fit=None
         # scan will be computed when needed
-        self.chi2_scan=None
+        self.grid_scan=None
 
 
     def _cache_global_best_fit(self):
-        """Maximize likelihood for all parameters and store results"""
+        """Maximize posterior for all parameters and store results"""
 
         # start at the center of the unit cube
         start=len(self.like.free_params)*[0.5]
@@ -176,8 +193,9 @@ class Scan2D(object):
             print('global chi2 =',chi2,'; best-fit =',self.global_best_fit)
 
 
-    def _min_chi2(self,par_val_1,par_val_2):
-        """Maximize likelihoood in a particular point in the parameter grid"""
+    def _max_log_like(self,par_val_1,par_val_2):
+        """Return max log_like for best-fit model in a particular point
+            (note that the minimization is done in minus_log_prob)."""
 
         # figure out indices of parameters that are being scanned
         pname_1=self.param_grid_1['name']
@@ -210,14 +228,14 @@ class Scan2D(object):
         minimizer.minimize(compute_hesse=False)
         local_best_fit = minimizer.minimizer.np_values()
 
-        # compute chi2 for best-fit values
-        chi2 = self.like.get_chi2(values=local_best_fit)
+        # compute max log-like for best-fit values
+        max_log_like = self.like.get_log_like(values=local_best_fit)
 
-        return chi2
+        return max_log_like
 
 
     def _cache_scan(self):
-        """Compute and cache 2D chi2 scan"""
+        """Compute and cache 2D grid scan"""
 
         # the global fit will help chose the starting point
         if self.global_best_fit is None:
@@ -226,56 +244,83 @@ class Scan2D(object):
         # will loop over all points in the 2D grid
         vals_1=self.param_values_1
         vals_2=self.param_values_2
-        chi2_list=[self._min_chi2(v1,v2) for v2 in vals_2 for v1 in vals_1]
+        grid_list=[self._max_log_like(v1,v2) for v2 in vals_2 for v1 in vals_1]
 
         # convert into numpy array, and reshape to matrix to plot
-        self.chi2_scan=np.array(chi2_list).reshape([len(vals_2),len(vals_1)])
+        self.grid_scan=np.array(grid_list).reshape([len(vals_2),len(vals_1)])
 
 
-    def get_chi2_scan(self):
+    def get_grid_scan(self):
         """Compute scan if not computed yet, and return it"""
-
-        if self.chi2_scan is None:
-            if self.verbose: print('will compute chi2 scan')
+        if self.grid_scan is None:
+            if self.verbose: print('will compute grid scan')
             self._cache_scan()
 
-        return self.param_values_1, self.param_values_2, self.chi2_scan
+        return self.param_values_1, self.param_values_2, self.grid_scan
 
 
-    def plot_chi2_scan(self,true_values=None,
-            delta_chi2_levels=[2.30,6.18,11.83]):
-        """Plot chi2 scan (compute it if needed)
-            - true_values: if provided, will add dashed lines
-            - delta_chi2_levels: specify contours to plot"""
+    def plot_grid_scan(self,true_values=None,cube_values=False,
+            zaxis='DeltaChi2',levels=[2.30,6.18,11.83]):
+        """Plot grid scan (compute it if needed)
+            - true_values: if provided, will add vertical line
+            - cube_values: use cube values [0,1] in x-axis
+            - zaxis: quantity to plot (DeltaChi2,DeltaMinusLogLike')
+            - levels: contours to plot. """
 
-        vals_1, vals_2, chi2_scan = self.get_chi2_scan()
+        # get parameter values in grid, and maximum likelihood in each point
+        vals_1, vals_2, max_log_like = self.get_grid_scan()
 
         # find out names and indices of scanned parameters
         pname_1=self.param_grid_1['name']
         pname_2=self.param_grid_2['name']
         ip1=[i for i,p in enumerate(self.like.free_params) if p.name == pname_1][0]
         ip2=[i for i,p in enumerate(self.like.free_params) if p.name == pname_2][0]
-        # add dotted lines with values from global fit
         par1=self.like.free_params[ip1]
         par2=self.like.free_params[ip2]
-        global_best_fit_1=par1.value_from_cube(self.global_best_fit[ip1])
-        global_best_fit_2=par2.value_from_cube(self.global_best_fit[ip2])
-        plt.axvline(x=global_best_fit_1,ls=':',color='gray',label='global fit')
-        plt.axhline(y=global_best_fit_2,ls=':',color='gray')
 
-        # add vertical line with value from global fit
-        if true_values:
-            print('plot true values',true_values)
-            plt.axvline(x=true_values[0],ls='--',color='gray',label='truth')
-            plt.axhline(y=true_values[1],ls='--',color='gray')
+        # add vertical lines with truth and value from global fit
+        global_1_in_cube=self.global_best_fit[ip1]
+        global_2_in_cube=self.global_best_fit[ip2]
+        if cube_values:
+            xval=[par1.value_in_cube(val) for val in vals_1]
+            yval=[par2.value_in_cube(val) for val in vals_2]
+            plt.xlabel(pname_1+' (in cube)')
+            plt.ylabel(pname_2+' (in cube)')
+            plt.axvline(x=global_1_in_cube,ls=':',color='gray',label='global')
+            plt.axhline(y=global_2_in_cube,ls=':',color='gray')
+            if true_values:
+                true_1_in_cube=par1.value_in_cube(true_values[0])
+                true_2_in_cube=par2.value_in_cube(true_values[1])
+                plt.axvline(x=true_1_in_cube,ls='--',color='gray',label='truth')
+                plt.axhline(y=true_2_in_cube,ls='--',color='gray')
+        else:
+            xval=vals_1
+            yval=vals_2
+            plt.xlabel(pname_1)
+            plt.ylabel(pname_2)
+            global_1=par1.value_from_cube(global_1_in_cube)
+            global_2=par2.value_from_cube(global_2_in_cube)
+            plt.axvline(x=global_1,ls=':',color='gray',label='global')
+            plt.axhline(y=global_2,ls=':',color='gray')
+            if true_values:
+                plt.axvline(x=true_values[0],ls='--',color='gray',label='truth')
+                plt.axhline(x=true_values[1],ls='--',color='gray')
 
-        # get minimum chi2 to compute delta chi2
-        global_min_chi2=self.like.get_chi2(values=self.global_best_fit)
         # set range of values in grid (used by pyplot.contour)
-        extent=[np.min(vals_1),np.max(vals_1),np.min(vals_2),np.max(vals_2)]
-        plt.contour(chi2_scan-global_min_chi2,extent=extent,
-                levels=delta_chi2_levels,origin='lower')
-        plt.xlabel(self.param_grid_1['name'])
-        plt.ylabel(self.param_grid_2['name'])
+        extent=[np.min(xval),np.max(xval),np.min(yval),np.max(yval)]
+
+        # figure out quantity to use in contour
+        global_log_like=self.like.get_log_like(values=self.global_best_fit)
+        minus_delta_log_like=-1.0*(max_log_like-global_log_like)
+        if zaxis is 'DeltaChi2':
+            zval = 2.0*minus_delta_log_like
+            plt.title('Delta Chi2 = '+str(levels))
+        elif zaxis is 'DeltaMinusLogLike':
+            zval = minus_delta_log_like
+            plt.title('minus Delta log like = '+str(levels))
+        else:
+            raise ValueError('implement plotting for ',zaxis)
+
+        plt.contour(zval,extent=extent,levels=levels,origin='lower')
         plt.grid(True)
         plt.legend()

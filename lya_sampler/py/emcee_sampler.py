@@ -25,6 +25,7 @@ import multiprocessing as mg
 import itertools
 from multiprocessing import Pool
 from multiprocessing import Process
+from chainconsumer import ChainConsumer
 
 
 class EmceeSampler(object):
@@ -80,42 +81,14 @@ class EmceeSampler(object):
             # setup walkers
             self.p0=self.get_initial_walkers()
 
-
-        ## Dictionary to convert likelihood parameters into latex strings
-        self.param_dict={
-                        "Delta2_p":"$\Delta^2_p$",
-                        "mF":"$F$",
-                        "gamma":"$\gamma$",
-                        "sigT_Mpc":"$\sigma_T$",
-                        "kF_Mpc":"$k_F$",
-                        "n_p":"$n_p$",
-                        "Delta2_star":"$\Delta^2_\star$",
-                        "n_star":"$n_\star$",
-                        "g_star":"g_\star",
-                        "f_star":"f_\star",
-                        "ln_tau_0":"$ln(\tau_0)$",
-                        "ln_tau_1":"$ln(\tau_1)$",
-                        "ln_sigT_kms_0":"$ln(\sigma^T_0)$",
-                        "ln_sigT_kms_1":"$ln(\sigma^T_1)$",
-                        "ln_gamma_0":"$ln(\gamma_0)$",
-                        "ln_gamma_1":"$ln(\gamma_1)$",
-                        "ln_kF_0":"$ln(kF_0)$",
-                        "ln_kF_1":"$ln(kF_1)$",
-                        "H0":"$H_0$",
-                        "mnu":"$\Sigma_\nu$",
-                        "As":"$A_s$",
-                        "ns":"$n_s$",
-                        "ombh2":"$\omega_b$",
-                        "omch2":"$\omega_c$"
-                        }
-
         ## Set up list of parameter names in tex format for plotting
         self.paramstrings=[]
-        self.truth=[] ## Truth value for chainconsumer plots
+        self.truth={} ## Truth value for chainconsumer plots
         for param in self.like.free_params:
-            self.paramstrings.append(self.param_dict[param.name])
-        for param in self.like.free_params:
-            self.truth.append(param.value)
+            self.paramstrings.append(param_dict[param.name])
+            if param.name in cosmo_params:
+                param_string=param_dict[param.name]
+                self.truth[param_string]=param.value
 
         self.distances=[]
         for aa in range(len(self.like.data.z)):
@@ -640,3 +613,67 @@ class EmceeSampler(object):
             plt.show()
 
         return
+
+
+## Dictionary to convert likelihood parameters into latex strings
+param_dict={
+            "Delta2_p":"$\Delta^2_p$",
+            "mF":"$F$",
+            "gamma":"$\gamma$",
+            "sigT_Mpc":"$\sigma_T$",
+            "kF_Mpc":"$k_F$",
+            "n_p":"$n_p$",
+            "Delta2_star":"$\Delta^2_\star$",
+            "n_star":"$n_\star$",
+            "g_star":"g_\star",
+            "f_star":"f_\star",
+            "ln_tau_0":"$ln(\tau_0)$",
+            "ln_tau_1":"$ln(\tau_1)$",
+            "ln_sigT_kms_0":"$ln(\sigma^T_0)$",
+            "ln_sigT_kms_1":"$ln(\sigma^T_1)$",
+            "ln_gamma_0":"$ln(\gamma_0)$",
+            "ln_gamma_1":"$ln(\gamma_1)$",
+            "ln_kF_0":"$ln(kF_0)$",
+            "ln_kF_1":"$ln(kF_1)$",
+            "H0":"$H_0$",
+            "mnu":"$\Sigma_\nu$",
+            "As":"$A_s$",
+            "ns":"$n_s$",
+            "ombh2":"$\omega_b$",
+            "omch2":"$\omega_c$"
+            }
+
+
+## List of all possibly free cosmology params for the truth array
+## for chainconsumer plots
+cosmo_params=["Delta2_star","n_star","alpha_star",
+                "f_star","g_star",
+                "H0","mnu","As","ns","ombh2","omch2"]
+
+
+def compare_corners(chain_files,labels):
+    """ Function to take a list of chain files and overplot the chains
+    Pass a list of chain files (ints) and a list of labels (strings)"""
+    
+    assert len(chain_files)==len(labels)
+    
+    truth_dict={}
+    c=ChainConsumer()
+    
+    ## Add each chain we want to plot
+    for aa,chain_file in enumerate(chain_files):
+        sampler=EmceeSampler(read_chain_file=chain_file)
+        chain,lnprob=sampler.get_chain(cube=False)
+        c.add_chain(chain,parameters=sampler.paramstrings,name=labels[aa])
+        
+        ## Do not check whether truth results are the same for now
+        ## Take the longest truth dictionary for disjoint chains
+        if len(sampler.truth)>len(truth_dict):
+            truth_dict=sampler.truth
+    
+    c.configure(diagonal_tick_labels=False, tick_font_size=10,
+                label_font_size=25, max_ticks=4)
+    fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    fig.show()
+
+    return

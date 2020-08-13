@@ -75,7 +75,6 @@ class TestSimulation(object):
         
         ## Get cosmology from IC file to get linear power parameters
         genic_fname=self.fulldir+"/sim_plus/paramfile.genic"
-        print('read cosmology from GenIC',genic_fname)
         sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
         # setup CAMB object
         self.sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)

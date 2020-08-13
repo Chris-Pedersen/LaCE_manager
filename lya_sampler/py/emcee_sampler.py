@@ -376,8 +376,8 @@ class EmceeSampler(object):
         self.chain_from_file["chain"]=np.asarray(config["flatchain"])
         self.chain_from_file["lnprob"]=np.asarray(config["lnprob"])
 
-
-        print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
+        if self.verbose:
+            print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
 
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
@@ -625,10 +625,10 @@ param_dict={
             "n_p":"$n_p$",
             "Delta2_star":"$\Delta^2_\star$",
             "n_star":"$n_\star$",
-            "g_star":"g_\star",
-            "f_star":"f_\star",
-            "ln_tau_0":"$ln(\tau_0)$",
-            "ln_tau_1":"$ln(\tau_1)$",
+            "g_star":"$g_\star$",
+            "f_star":"$f_\star$",
+            "ln_tau_0":"$ln(\\tau_0)$",
+            "ln_tau_1":"$ln(\\tau_1)$",
             "ln_sigT_kms_0":"$ln(\sigma^T_0)$",
             "ln_sigT_kms_1":"$ln(\sigma^T_1)$",
             "ln_gamma_0":"$ln(\gamma_0)$",

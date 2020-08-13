@@ -22,7 +22,7 @@ parser.add_argument('-c', '--config', required=False, is_config_file=True, help=
 parser.add_argument('--basedir', help='Which emulator to load')
 parser.add_argument('--emu_type', help='k_bin or polyfit emulator')
 parser.add_argument('--skewers_label', help='Add parameter describing linear growth of structure')
-parser.add_argument('--test_sim_number',type=int, help='Which sim number to use as mock data')
+parser.add_argument('--test_sim_number', help='Which sim number to use as mock data')
 parser.add_argument('--kmax_Mpc',type=float, help='Maximum k to train emulator')
 parser.add_argument('--undersample_z',type=int, help='Undersample redshifts')
 parser.add_argument('--z_max',type=float, help='Maximum redshift')

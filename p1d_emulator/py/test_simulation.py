@@ -32,6 +32,8 @@ class TestSimulation(object):
 
         if type(sim_label)==int:
             self.fulldir=repo+basedir+"sim_pair_"+str(sim_label)
+        elif sim_label[0].isdigit():
+            self.fulldir=repo+basedir+"sim_pair_"+sim_label
         elif sim_label=="nu":
             self.fulldir=repo+basedir+"nu_sim"
         elif sim_label=="h":

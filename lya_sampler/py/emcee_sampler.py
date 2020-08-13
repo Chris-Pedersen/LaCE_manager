@@ -521,56 +521,22 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cube=False,mock_values=True):
-        """Make corner plot, using re-normalized values if cube=True"""
+    def plot_corner(self):
+        """ Make corner plot in ChainConsumer """
 
-        # get chain (from sampler or from file)
-        values,lnprob=self.get_chain(cube=cube)
+        c=ChainConsumer()
+        chain,lnprob=self.get_chain(cube=False)
+        c.add_chain(chain,parameters=self.paramstrings)
 
-        labels=[]
-        for p in self.like.free_params:
-            if cube:
-                labels.append(p.name+' in cube')
-            else:
-                labels.append(p.name)
-        figure = corner.corner(values,labels=labels,
-                                hist_kwargs={"density":True,"color":"blue"})
-
-        # Extract the axes
-        axes = np.array(figure.axes).reshape((self.ndim, self.ndim))
-        if mock_values==True:
-            if cube:
-                list_mock_values=[self.like.free_params[aa].value_in_cube() for aa in range(
-                                                len(self.like.free_params))]
-            else:
-                list_mock_values=[self.like.free_params[aa].value for aa in range(
-                                                len(self.like.free_params))]
-
-            # Loop over the diagonal
-            for i in range(self.ndim):
-                ax = axes[i, i]
-                ax.axvline(list_mock_values[i], color="r")
-                prior=self.get_trunc_norm(self.like.free_params[i].value_in_cube(),
-                                                    100000)
-                if cube:
-                    ax.hist(prior,bins=200,alpha=0.4,color="hotpink",density=True)
-                else:
-                    for aa in range(len(prior)):
-                        prior[aa]=self.like.free_params[i].value_from_cube(prior[aa])
-                    ax.hist(prior,bins=50,alpha=0.4,color="hotpink",density=True)
-
-            # Loop over the histograms
-            for yi in range(self.ndim):
-                for xi in range(yi):
-                    ax = axes[yi, xi]
-                    ax.axvline(list_mock_values[xi], color="r")
-                    ax.axhline(list_mock_values[yi], color="r")
-                    ax.plot(list_mock_values[xi], list_mock_values[yi], "sr")
+        c.configure(diagonal_tick_labels=False, tick_font_size=10,
+                    label_font_size=25, max_ticks=4)
+        fig = c.plotter.plot(figsize=(15,15),truth=self.truth)
 
         if self.save_directory is not None:
-            plt.savefig(self.save_directory+"/corner.pdf")
+            fig.savefig(self.save_directory+"/corner.pdf")
         else:
-            plt.show()
+            fig.show()
+
         return
 
 

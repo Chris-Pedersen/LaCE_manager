@@ -20,6 +20,8 @@ class TestSimulation(object):
                 -- an integer, index from the Latin hypercube for that suite
                 -- "nu", which corresponds to the 0.3eV neutrino sim
                 -- "h", which corresponds to the simulation with h=0.74
+                -- "central", the central simulation of the initial LH,
+                   which is used as the fiducial IGM model
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
@@ -38,6 +40,8 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"nu_sim"
         elif sim_label=="h":
             self.fulldir=repo+basedir+"h_sim"
+        elif sim_label=="central":
+            self.fulldir=repo+basedir+"central"
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
 

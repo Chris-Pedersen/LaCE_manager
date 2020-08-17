@@ -10,6 +10,8 @@ It now contains different folders:
  - user_interface: example of CosmoMC module for the marginalized likelihood
 
 Dependencies:
+Python version 3.6 or later is necessary due to `CAMB` version dependencies.
+
 The following modules are required:
 
 `numpy`
@@ -26,7 +28,9 @@ The following modules are required:
 
 `corner`
 
-`CAMB` version 1.0 or later (Jan 2019) https://github.com/cmbant/CAMB
+`chainconsumer`
+
+`CAMB` version 1.1.3 https://github.com/cmbant/CAMB
 
 `GPy`
 

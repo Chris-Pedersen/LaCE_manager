@@ -20,6 +20,8 @@ class TestSimulation(object):
                 -- an integer, index from the Latin hypercube for that suite
                 -- "nu", which corresponds to the 0.3eV neutrino sim
                 -- "h", which corresponds to the simulation with h=0.74
+                -- "central", the central simulation of the initial LH,
+                   which is used as the fiducial IGM model
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
@@ -32,10 +34,14 @@ class TestSimulation(object):
 
         if type(sim_label)==int:
             self.fulldir=repo+basedir+"sim_pair_"+str(sim_label)
+        elif sim_label[0].isdigit():
+            self.fulldir=repo+basedir+"sim_pair_"+sim_label
         elif sim_label=="nu":
             self.fulldir=repo+basedir+"nu_sim"
         elif sim_label=="h":
             self.fulldir=repo+basedir+"h_sim"
+        elif sim_label=="central":
+            self.fulldir=repo+basedir+"central"
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
 
@@ -73,7 +79,6 @@ class TestSimulation(object):
         
         ## Get cosmology from IC file to get linear power parameters
         genic_fname=self.fulldir+"/sim_plus/paramfile.genic"
-        print('read cosmology from GenIC',genic_fname)
         sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
         # setup CAMB object
         self.sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)

@@ -8,21 +8,18 @@ import cProfile
 import emcee
 import corner
 # our own modules
-import simplest_emulator
-import linear_emulator
 import gp_emulator
 import z_emulator
 import data_PD2013
-import mean_flux_model
-import thermal_model
 import lya_theory
 import likelihood
 import likelihood_parameter
 import scipy.stats
 import p1d_arxiv
+import fit_linP
 import data_MPGADGET
+import camb_cosmo
 import multiprocessing as mg
-import itertools
 from multiprocessing import Pool
 from multiprocessing import Process
 from chainconsumer import ChainConsumer
@@ -83,21 +80,60 @@ class EmceeSampler(object):
 
         ## Set up list of parameter names in tex format for plotting
         self.paramstrings=[]
-        self.truth={} ## Truth value for chainconsumer plots
         for param in self.like.free_params:
             self.paramstrings.append(param_dict[param.name])
-            if param.name in cosmo_params:
-                param_string=param_dict[param.name]
-                self.truth[param_string]=param.value
 
+        self.set_truth()
+
+        ## This was used to store the Euclidean distance
+        ## of each emulator call to the nearest training
+        ## point, might be redundant now
         self.distances=[]
         for aa in range(len(self.like.data.z)):
             self.distances.append([])
 
 
-    def run_sampler(self,burn_in,max_steps,log_func=None,parallel=False,force_steps=False):
+    def set_truth(self):
+        """ Set up dictionary with true values of cosmological
+        likelihood parameters for plotting purposes """
+
+        test_sim_cosmo=self.like.data.mock_sim.sim_cosmo
+        self.truth={}
+
+        ## Are we using full theory or compressed theory
+        if hasattr(self.like.theory,"emu_kp_Mpc"):
+            ## Get all possible likelihood params
+            all_truth={}
+            all_truth["ombh2"]=test_sim_cosmo.ombh2
+            all_truth["omch2"]=test_sim_cosmo.omch2
+            all_truth["As"]=test_sim_cosmo.InitPower.As
+            all_truth["ns"]=test_sim_cosmo.InitPower.ns
+            all_truth["H0"]=test_sim_cosmo.H0
+            all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
+        else:
+            ## Get true fit params
+            ## use pivot k from the theory's recons_cosmo
+            all_truth=fit_linP.parameterize_cosmology_kms(test_sim_cosmo,
+                        self.like.theory.cosmo.z_star,
+                        self.like.theory.cosmo.kp_kms)
+
+        ## Take only free parameters, and store values
+        ## along with LaTeX strings
+        for param in self.like.free_params:
+            if param.name in cosmo_params:
+                param_string=param_dict[param.name]
+                self.truth[param_string]=all_truth[param.name]
+
+        return
+
+
+    def run_sampler(self,burn_in,max_steps,log_func=None,
+                parallel=False,force_steps=False):
         """ Set up sampler, run burn in, run chains,
-        return chains """
+        return chains
+            - force_steps will force the sampler to run
+              until max_steps is reached regardless of
+              convergence """
 
 
         self.burnin_nsteps=burn_in
@@ -492,6 +528,7 @@ class EmceeSampler(object):
         self.plot_best_fit()
         self.plot_prediction()
         self.plot_autocorrelation_time()
+        self.plot_corner()
 
         return
 

@@ -22,7 +22,7 @@ class Likelihood(object):
                     verbose=False,
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,emu_cov_factor=1,
-                    use_sim_cosmo=True):
+                    use_sim_cosmo=False):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names

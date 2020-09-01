@@ -4,18 +4,15 @@ import base_p1d_data
 
 class P1D_PD2013(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,basedir=None,zmin=None,zmax=None,use_FFT=True,
-                add_syst=True,blind_data=False,toy_data=False):
-        """Read measured P1D from files, either FFT or likelihood version.
-            If blind_data=True, use analytical formula instead.
-            If toy_data=True, will use only a few bins in (z,k)"""
+    def __init__(self,zmin=None,zmax=None,use_FFT=True,add_syst=True):
+        """Read measured P1D from files, either FFT or likelihood version."""
 
         # folder storing P1D measurement
-        if not basedir:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            repo=os.environ['LYA_EMU_REPO']
-            basedir=repo+'/p1d_data/data_files/PD2013/'
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+        basedir=repo+'/p1d_data//data_files/PD2013/'
 
+        # read redshifts, wavenumbers, power spectra and covariance matrices
         if use_FFT:
             z,k,Pk,cov=self._setup_FFT(basedir,add_syst)
         else:
@@ -25,26 +22,9 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
         if zmin or zmax:
             z,k,Pk,cov=base_p1d_data._drop_zbins(z,k,Pk,cov,zmin,zmax)
 
-        # option to use simplied mock data
-        if toy_data: 
-            blind_data=True
-            # drop first bins in k, not present in small boxes
-            drop_until_k=3
-            k=k[drop_until_k:]
-            Nk=len(k)
-            z=np.array([2.0, 3.0, 4.0])
-            Pk=np.empty((3,Nk))
-            cov_toy=[cov[0][drop_until_k:,drop_until_k:],
-                    cov[4][drop_until_k:,drop_until_k:],
-                    cov[9][drop_until_k:,drop_until_k:]]
-            cov=cov_toy
-        
-        if blind_data:
-            Nz=len(z)
-            for iz in range(Nz):
-                Pk[iz] = analytic_p1d_PD2013_z_kms(z[iz],k)
-
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
+
+        return
 
 
     def _setup_FFT(self,basedir,add_syst=True):
@@ -58,14 +38,12 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
         # store unique values of redshift and wavenumber
         z=np.unique(inz)
         Nz=len(z)
-        Nz=Nz
         k=np.unique(ink)
         Nk=len(k)
-        Nk=Nk
 
-        # store P1D, statistical error, noise power, metal power and systematic 
+        # store P1D, statistical error, noise power, metal power and systematic
         Pk=np.reshape(inPk,[Nz,Nk])
-        Pkstat=np.reshape(inPkstat,[Nz,Nk])    
+        Pkstat=np.reshape(inPkstat,[Nz,Nk])
         Pknoise=np.reshape(inPknoise,[Nz,Nk])
         Pkmetal=np.reshape(inPkmetal,[Nz,Nk])
         Pksyst=np.reshape(inPksyst,[Nz,Nk])
@@ -75,12 +53,12 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
         for i in range(Nz):
             corr_file=basedir+'/cct4b'+str(i+1)+'.dat'
             corr=np.loadtxt(corr_file,unpack=True)
-            # compute covariance matrix (stats only)
-            sigma=Pkstat[i]
-            zcov=np.dot(corr,np.outer(sigma,sigma))
+            # compute variance (start with statistics only)
+            var=Pkstat[i]**2
             if add_syst:
-                syst=Pksyst[i]
-                zcov+=np.diag(syst)
+                var+=Pksyst[i]**2
+            sigma=np.sqrt(var)
+            zcov=np.multiply(corr,np.outer(sigma,sigma))
             cov.append(zcov)
 
         return z,k,Pk,cov

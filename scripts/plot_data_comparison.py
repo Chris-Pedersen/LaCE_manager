@@ -21,7 +21,7 @@ for item in sim_data:
     sim_z.append(item["z"])
 
 ## Load in PD_2013 data
-realData=data_PD2013.P1D_PD2013(blind_data=False)
+realData=data_PD2013.P1D_PD2013()
 realData_z=realData.z
 
 cm=plt.get_cmap('gnuplot')

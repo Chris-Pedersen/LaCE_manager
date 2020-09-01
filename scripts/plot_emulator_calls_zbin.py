@@ -164,7 +164,7 @@ plt.show()
 ''' 
 ## Old
 # read P1D measurement
-data=data_PD2013.P1D_PD2013(blind_data=True,zmin=2.1,zmax=4.7)
+data=data_PD2013.P1D_PD2013(zmin=2.1,zmax=4.7)
 zs=data.z
 
 #basedir='/home/chris/Projects/LyaCosmoParams/p1d_emulator/sim_suites/emulator_512_18062019/'

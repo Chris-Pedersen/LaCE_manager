@@ -55,7 +55,7 @@ class EmceeSampler(object):
                 self.like=like
             else:
                 if self.verbose: print('use default likelihood')
-                data=data_PD2013.P1D_PD2013(blind_data=True)
+                data=data_PD2013.P1D_PD2013()
                 zs=data.z
                 theory=lya_theory.LyaTheory(zs,emulator=emulator)
                 self.like=likelihood.Likelihood(data=data,theory=theory,

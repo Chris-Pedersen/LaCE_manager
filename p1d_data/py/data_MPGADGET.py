@@ -72,7 +72,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         if self.data_cov_label=="Chabanier2019":
             data_file=data_Chabanier2019.P1D_Chabanier2019()
         elif self.data_cov_label=="PD2013":
-            data_file=data_PD2013.P1D_PD2013(blind_data=False)
+            data_file=data_PD2013.P1D_PD2013()
         else:
             print("Unknown data_cov_label",self.data_cov_label)
             quit()

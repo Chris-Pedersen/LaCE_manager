@@ -19,7 +19,8 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
     def __init__(self,basedir=None,sim_label=None,skewers_label=None,
             zmin=None,zmax=None,z_list=None,kp_Mpc=0.7,
-            data_cov_label="Chabanier2019",data_cov_factor=1.):
+            data_cov_label="Chabanier2019",data_cov_factor=1.,
+            add_syst=True):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
@@ -31,6 +32,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             - kp_Mpc: specify pivot point to compute linP parameters at each z
             - data_cov_label: P1D covariance to use (Chabanier2019 or PD2013)
             - data_cov_factor: multiply covariance by this factor
+            - add_syst: Include systematic estimates in covariance matrices
         """
 
         if basedir:
@@ -53,7 +55,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.kp_Mpc=kp_Mpc
 
         # read P1D from simulation
-        z,k,Pk,cov=self._load_p1d()
+        z,k,Pk,cov=self._load_p1d(add_syst)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -67,12 +69,12 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self._set_true_values()
 
 
-    def _load_p1d(self):
+    def _load_p1d(self,add_syst):
 
         if self.data_cov_label=="Chabanier2019":
-            data_file=data_Chabanier2019.P1D_Chabanier2019()
+            data_file=data_Chabanier2019.P1D_Chabanier2019(add_syst=add_syst)
         elif self.data_cov_label=="PD2013":
-            data_file=data_PD2013.P1D_PD2013()
+            data_file=data_PD2013.P1D_PD2013(add_syst=add_syst)
         else:
             print("Unknown data_cov_label",self.data_cov_label)
             quit()

@@ -67,7 +67,7 @@ class GPEmulator:
             self.arxiv=passArxiv
 
         ## Find max k bin
-        self.k_bin=int(np.max(np.argwhere(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc)))
+        self.k_bin=np.max(np.where(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))+1
         self.training_k_bins=self.arxiv.data[0]["k_Mpc"][1:self.k_bin]
         ## If none, take all parameters
         if paramList==None:

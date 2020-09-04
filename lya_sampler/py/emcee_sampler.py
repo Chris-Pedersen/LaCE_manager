@@ -55,7 +55,7 @@ class EmceeSampler(object):
                 self.like=like
             else:
                 if self.verbose: print('use default likelihood')
-                data=data_PD2013.P1D_PD2013(blind_data=True)
+                data=data_PD2013.P1D_PD2013()
                 zs=data.z
                 theory=lya_theory.LyaTheory(zs,emulator=emulator)
                 self.like=likelihood.Likelihood(data=data,theory=theory,
@@ -654,9 +654,10 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
 
-def compare_corners(chain_files,labels):
+def compare_corners(chain_files,labels,save_string=None):
     """ Function to take a list of chain files and overplot the chains
-    Pass a list of chain files (ints) and a list of labels (strings)"""
+    Pass a list of chain files (ints) and a list of labels (strings)
+     - save_string must include file extension (i.e. .pdf, .png etc)"""
     
     assert len(chain_files)==len(labels)
     
@@ -677,6 +678,8 @@ def compare_corners(chain_files,labels):
     c.configure(diagonal_tick_labels=False, tick_font_size=10,
                 label_font_size=25, max_ticks=4)
     fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    if save_string:
+        fig.savefig("%s" % save_string)
     fig.show()
 
     return

@@ -5,14 +5,15 @@ import os
 class P1D_Chabanier2019(base_p1d_data.BaseDataP1D):
     """Class containing P1D from Chabanier et al. (2019)."""
 
-    def __init__(self,basedir=None,zmin=None,zmax=None,
-                add_syst=True):
+    def __init__(self,zmin=None,zmax=None,add_syst=True):
         """Read measured P1D from Chabanier et al. (2019)."""
 
         # folder storing P1D measurement
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        basedir=os.environ['LYA_EMU_REPO']+'/p1d_data//data_files/Chabanier2019/'
+        repo=os.environ['LYA_EMU_REPO']
+        basedir=repo+'/p1d_data//data_files/Chabanier2019/'
 
+        # read redshifts, wavenumbers, power spectra and covariance matrices
         z,k,Pk,cov=self._setup_from_file(basedir,add_syst)
 
         # drop low-z or high-z bins
@@ -29,8 +30,7 @@ class P1D_Chabanier2019(base_p1d_data.BaseDataP1D):
     
         # start by reading Pk file
         p1d_file=basedir+'/Pk1D_data.dat'
-        inz,ink,inPk,inPkstat,inPknoise,inPkmetal=np.loadtxt(p1d_file,
-                                                                unpack=True)
+        inz,ink,inPk,inPkstat,_,_=np.loadtxt(p1d_file,unpack=True)
 
         # store unique values of redshift and wavenumber
         z=np.unique(inz)
@@ -38,21 +38,18 @@ class P1D_Chabanier2019(base_p1d_data.BaseDataP1D):
         k_kms=np.unique(ink)
         Nk=len(k_kms)
 
-        # continue by reading file with systematic uncertainties
-        syst_file=basedir+'Pk1D_syst.dat'
-        insyst=np.loadtxt(syst_file,unpack=True)
-        # add in quadrature 8 different systematics
-        Nsyst=insyst.shape[0]
-        syst_var=np.zeros(Nz*Nk)
-        for i in range(Nsyst):
-            syst_var += (insyst[i,:]**2)
-
-        # store P1D, statistical error, noise power, metal power and systematic 
+        # re-shape matrices, and compute variance (statistics only for now)
         Pk_kms=np.reshape(inPk,[Nz,Nk])
-        Pkstat=np.reshape(inPkstat,[Nz,Nk])    
-        Pknoise=np.reshape(inPknoise,[Nz,Nk])
-        Pkmetal=np.reshape(inPkmetal,[Nz,Nk])
-        Pksyst=np.reshape(np.sqrt(syst_var),[Nz,Nk])
+        var_Pk_kms=np.reshape(inPkstat**2,[Nz,Nk])
+
+        # if asked to, add systematic variance
+        if add_syst:
+            # read file with systematic uncertainties
+            syst_file=basedir+'Pk1D_syst.dat'
+            insyst=np.loadtxt(syst_file,unpack=True)
+            # add in quadrature 8 different systematics
+            syst_var=np.sum(insyst**2,axis=0)
+            var_Pk_kms+=np.reshape(syst_var,[Nz,Nk])
 
         # now read correlation matrices
         corr_file=basedir+'Pk1D_cor.dat'
@@ -64,12 +61,8 @@ class P1D_Chabanier2019(base_p1d_data.BaseDataP1D):
         cov_Pk_kms=[]
         for i in range(Nz):
             corr=allcorr[:,i,:]
-            # compute covariance matrix (stats only)
-            sigma=Pkstat[i]
-            zcov=np.multiply(sigma,np.multiply(corr,sigma))
-            if add_syst:
-                syst=Pksyst[i]
-                zcov+=np.diag(syst)
+            sigma=np.sqrt(var_Pk_kms[i])
+            zcov=np.multiply(corr,np.outer(sigma,sigma))
             cov_Pk_kms.append(zcov)
 
         return z,k_kms,Pk_kms,cov_Pk_kms

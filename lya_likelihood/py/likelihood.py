@@ -43,7 +43,7 @@ class Likelihood(object):
             self.data=data
         else:
             if self.verbose: print('use default data')
-            self.data=data_PD2013.P1D_PD2013(blind_data=True)
+            self.data=data_PD2013.P1D_PD2013()
 
         # (optionally) get rid of low-k data points
         self.data._cull_data(kmin_kms)

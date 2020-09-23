@@ -1,0 +1,8 @@
+\providecommand{\href}[2]{#2}\begingroup\raggedright\begin{thebibliography}{1}
+
+\bibitem{2006gpml.book.....R}
+C.~E. {Rasmussen} and C.~K.~I. {Williams}, {\em {Gaussian Processes for Machine
+  Learning}}.
+\newblock 2006.
+
+\end{thebibliography}\endgroup

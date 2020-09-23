@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2016)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: main.aux
+The style file: JHEP.bst
+Database file #1: mainNotes.bib
+Database file #2: main.bib
+Warning--empty publisher in 2006gpml.book.....R
+You've used 1 entry,
+            2195 wiz_defined-function locations,
+            515 strings with 3570 characters,
+and the built_in function-call counts, 196 in all, are:
+= -- 15
+> -- 8
+< -- 0
++ -- 3
+- -- 2
+* -- 11
+:= -- 34
+add.period$ -- 2
+call.type$ -- 1
+change.case$ -- 0
+chr.to.int$ -- 0
+cite$ -- 2
+duplicate$ -- 11
+empty$ -- 22
+format.name$ -- 2
+if$ -- 44
+int.to.chr$ -- 0
+int.to.str$ -- 1
+missing$ -- 2
+newline$ -- 7
+num.names$ -- 1
+pop$ -- 9
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 3
+stack$ -- 0
+substring$ -- 0
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 1
+while$ -- 1
+width$ -- 2
+write$ -- 10
+(There was 1 warning)

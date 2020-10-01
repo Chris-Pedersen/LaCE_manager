@@ -287,10 +287,6 @@ class GPEmulator:
             ## Rescale input parameters
             param.append(model[par])
             param[aa]=(param[aa]-self.paramLimits[aa,0])/(self.paramLimits[aa,1]-self.paramLimits[aa,0])
-        if self.checkHulls:
-            if self.hull.find_simplex(np.array(param).reshape(1,-1))<0:
-                #print("Model is outside convex hull:", model)
-                return
         ## Check if model is inside training set
         if self.crossval==True:
             isin=np.isin(param,self.X_param_grid)

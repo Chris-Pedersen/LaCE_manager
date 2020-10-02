@@ -639,7 +639,7 @@ param_dict={
             "ln_kF_0":"$ln(kF_0)$",
             "ln_kF_1":"$ln(kF_1)$",
             "H0":"$H_0$",
-            "mnu":"$\Sigma_\nu$",
+            "mnu":"$\Sigma_\\nu$",
             "As":"$A_s$",
             "ns":"$n_s$",
             "ombh2":"$\omega_b$",

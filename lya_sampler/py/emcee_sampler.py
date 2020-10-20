@@ -654,10 +654,13 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
 
-def compare_corners(chain_files,labels,save_string=None):
+def compare_corners(chain_files,labels,plot_params=None,save_string=None):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
-     - save_string must include file extension (i.e. .pdf, .png etc)"""
+     - plot_params: list of parameters (in code variables, not latex form)
+                    to plot if only a subset is desired
+     - save_string: to save the plot. Must include
+                    file extension (i.e. .pdf, .png etc) """
     
     assert len(chain_files)==len(labels)
     
@@ -677,7 +680,16 @@ def compare_corners(chain_files,labels,save_string=None):
     
     c.configure(diagonal_tick_labels=False, tick_font_size=10,
                 label_font_size=25, max_ticks=4)
-    fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    if plot_params==None:
+        fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    else:
+        ## From plot_param list, build list of parameter
+        ## strings to plot
+        plot_param_strings=[]
+        for par in plot_params:
+            plot_param_strings.append(param_dict[par])
+        fig = c.plotter.plot(figsize=(15,15),
+                parameters=plot_param_strings,truth=truth_dict)
     if save_string:
         fig.savefig("%s" % save_string)
     fig.show()

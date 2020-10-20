@@ -533,10 +533,24 @@ class EmceeSampler(object):
         self._write_dict_to_text(saveDict)
 
         ## Save plots
-        self.plot_best_fit()
-        self.plot_prediction()
-        self.plot_autocorrelation_time()
-        self.plot_corner()
+        ## Using try as have latex issues when running on compute
+        ## nodes on some clusters
+        try:
+            self.plot_best_fit()
+        except:
+            print("Can't plot best fit")
+        try:
+            self.plot_prediction()
+        except:
+            print("Can't plot prediction")
+        try:
+            self.plot_autocorrelation_time()
+        except:
+            print("Can't plot autocorrelation time")
+        try:
+            self.plot_corner()
+        except:
+            print("Can't plot corner")
 
         return
 

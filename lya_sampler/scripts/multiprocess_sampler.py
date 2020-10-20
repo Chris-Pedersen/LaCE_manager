@@ -57,16 +57,21 @@ print("----------")
 ## configargparse cannot accept nested lists or dictionaries
 ## so no elegant solution to passing a prior volume right now
 ## these are still saved with the sampler so no book-keeping issues though
+
+## for reference, the default primordial limits I have been using are
+## [['As', 1.5e-09, 3.5e-09], ['ns', 0.88, 0.99]
+## And for compressed params,
+## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
 free_param_limits=[[0.24, 0.47],
                     [-2.352, -2.25],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2]]
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4]]
 
 skewers_label=args.skewers_label
 p1d_label=None
@@ -146,4 +151,11 @@ multi_time = end - start
 print("Sampling took {0:.1f} seconds".format(multi_time))
 
 sampler.write_chain_to_file()
+
+## Copy corresponding job files to save folder
+jobstring=jobstring="job"+os.environ['SLURM_JOBID']+".out"
+slurmstring="slurm-"+os.environ['SLURM_JOBID']+".out"
+shutil.copy(jobstring,sampler.save_directory+"/"+jobstring)
+shutil.copy(slurmstring,sampler.save_directory+"/"+slurmstring)
+
 

@@ -29,6 +29,7 @@ parser.add_argument('--z_max',type=float, help='Maximum redshift')
 parser.add_argument('--drop_tau_rescalings',action='store_true', help='Drop mean flux rescalings')
 parser.add_argument('--drop_temp_rescalings',action='store_true', help='Drop temperature rescalings')
 parser.add_argument('--nearest_tau', action='store_true',help='Keep only nearest tau rescaling? Only used when tau rescalings are included')
+parser.add_argument('--asym_kernel', action='store_true',help='Use asymmetric, rbf-only kernel for the GP')
 parser.add_argument('--undersample_cube',type=int, help='Undersample the Latin hypercube of training sims')
 parser.add_argument('--z_emulator',action='store_true',help='Whether or not to use a single GP on each redshfit bin')
 parser.add_argument('--free_parameters', nargs="+", help='List of parameters to sample')
@@ -56,16 +57,21 @@ print("----------")
 ## configargparse cannot accept nested lists or dictionaries
 ## so no elegant solution to passing a prior volume right now
 ## these are still saved with the sampler so no book-keeping issues though
+
+## for reference, the default primordial limits I have been using are
+## [['As', 1.5e-09, 3.5e-09], ['ns', 0.88, 0.99]
+## And for compressed params,
+## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
 free_param_limits=[[0.24, 0.47],
                     [-2.352, -2.25],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2],
-                    [-0.2, 0.2]]
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4]]
 
 skewers_label=args.skewers_label
 p1d_label=None
@@ -99,15 +105,15 @@ archive=p1d_arxiv.ArxivP1D(basedir=args.basedir,
 if args.z_emulator==False:
     emu=gp_emulator.GPEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     passArxiv=archive,
-                                    verbose=False,paramList=paramList,train=False,
+                                    verbose=False,paramList=paramList,train=True,
                                     emu_type=args.emu_type, checkHulls=False,kmax_Mpc=kmax_Mpc,
+                                    asymmetric_kernel=args.asym_kernel,rbf_only=args.asym_kernel,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings,
 				                    set_noise_var=args.emu_noise_var)
-    emu.load_default()
 else:
     emu=z_emulator.ZEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
-                                    verbose=False,paramList=paramList,train=False,
+                                    verbose=False,paramList=paramList,train=True,
                                     emu_type=args.emu_type,passArxiv=archive,checkHulls=False,
                                     kmax_Mpc=kmax_Mpc,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
@@ -145,4 +151,11 @@ multi_time = end - start
 print("Sampling took {0:.1f} seconds".format(multi_time))
 
 sampler.write_chain_to_file()
+
+## Copy corresponding job files to save folder
+jobstring=jobstring="job"+os.environ['SLURM_JOBID']+".out"
+slurmstring="slurm-"+os.environ['SLURM_JOBID']+".out"
+shutil.copy(jobstring,sampler.save_directory+"/"+jobstring)
+shutil.copy(slurmstring,sampler.save_directory+"/"+slurmstring)
+
 

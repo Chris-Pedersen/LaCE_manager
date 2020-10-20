@@ -350,24 +350,23 @@ class EmceeSampler(object):
         ## Set up the emulators
         if config["z_emulator"]:
             emulator=z_emulator.ZEmulator(paramList=config["paramList"],
-                                train=False,
+                                train=True,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
                                 reduce_var_mf=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
-            ## Now loop over emulators, passing the saved hyperparameters
-            for aa,emu in enumerate(emulator.emulators):
-                ## Load emulator hyperparams..
-                emu.load_hyperparams(np.asarray(config["emu_hyperparameters"][aa]))
         else:
             emulator=gp_emulator.GPEmulator(paramList=config["paramList"],
-                                train=False,
+                                train=True,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
+                                asymmetric_kernel=config["asym_kernel"],
+                                rbf_only=config["asym_kernel"],
                                 reduce_var_mf=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
-            emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
+        ## Try/excepts are for backwards compatibility
+        ## as old config files don't have these entries
         try:
             data_cov=config["data_cov_factor"]
         except:
@@ -476,6 +475,8 @@ class EmceeSampler(object):
         ## Emulator settings
         saveDict["paramList"]=self.like.theory.emulator.paramList
         saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
+
+        ## Do we train a GP on each z?
         if self.like.theory.emulator.emulators:
             z_emulator=True
             emu_hyperparams=[]
@@ -485,6 +486,13 @@ class EmceeSampler(object):
             z_emulator=False
             emu_hyperparams=self.like.theory.emulator.gp.param_array.tolist()
         saveDict["z_emulator"]=z_emulator
+
+        ## Is this an asymmetric, rbf-only emulator?
+        if self.like.theory.emulator.asymmetric_kernel and self.like.theory.emulator.rbf_only:
+            saveDict["asym_kernel"]=True
+        else:
+            saveDict["asym_kernel"]=False
+
         saveDict["emu_hyperparameters"]=emu_hyperparams
         saveDict["emu_type"]=self.like.theory.emulator.emu_type
         saveDict["reduce_var"]=self.like.theory.emulator.reduce_var_mf
@@ -525,10 +533,24 @@ class EmceeSampler(object):
         self._write_dict_to_text(saveDict)
 
         ## Save plots
-        self.plot_best_fit()
-        self.plot_prediction()
-        self.plot_autocorrelation_time()
-        self.plot_corner()
+        ## Using try as have latex issues when running on compute
+        ## nodes on some clusters
+        try:
+            self.plot_best_fit()
+        except:
+            print("Can't plot best fit")
+        try:
+            self.plot_prediction()
+        except:
+            print("Can't plot prediction")
+        try:
+            self.plot_autocorrelation_time()
+        except:
+            print("Can't plot autocorrelation time")
+        try:
+            self.plot_corner()
+        except:
+            print("Can't plot corner")
 
         return
 
@@ -654,10 +676,13 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
 
-def compare_corners(chain_files,labels,save_string=None):
+def compare_corners(chain_files,labels,plot_params=None,save_string=None):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
-     - save_string must include file extension (i.e. .pdf, .png etc)"""
+     - plot_params: list of parameters (in code variables, not latex form)
+                    to plot if only a subset is desired
+     - save_string: to save the plot. Must include
+                    file extension (i.e. .pdf, .png etc) """
     
     assert len(chain_files)==len(labels)
     
@@ -677,7 +702,16 @@ def compare_corners(chain_files,labels,save_string=None):
     
     c.configure(diagonal_tick_labels=False, tick_font_size=10,
                 label_font_size=25, max_ticks=4)
-    fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    if plot_params==None:
+        fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    else:
+        ## From plot_param list, build list of parameter
+        ## strings to plot
+        plot_param_strings=[]
+        for par in plot_params:
+            plot_param_strings.append(param_dict[par])
+        fig = c.plotter.plot(figsize=(15,15),
+                parameters=plot_param_strings,truth=truth_dict)
     if save_string:
         fig.savefig("%s" % save_string)
     fig.show()

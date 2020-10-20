@@ -350,24 +350,23 @@ class EmceeSampler(object):
         ## Set up the emulators
         if config["z_emulator"]:
             emulator=z_emulator.ZEmulator(paramList=config["paramList"],
-                                train=False,
+                                train=True,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
                                 reduce_var_mf=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
-            ## Now loop over emulators, passing the saved hyperparameters
-            for aa,emu in enumerate(emulator.emulators):
-                ## Load emulator hyperparams..
-                emu.load_hyperparams(np.asarray(config["emu_hyperparameters"][aa]))
         else:
             emulator=gp_emulator.GPEmulator(paramList=config["paramList"],
-                                train=False,
+                                train=True,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
+                                asymmetric_kernel=config["asym_kernel"],
+                                rbf_only=config["asym_kernel"],
                                 reduce_var_mf=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
-            emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
+        ## Try/excepts are for backwards compatibility
+        ## as old config files don't have these entries
         try:
             data_cov=config["data_cov_factor"]
         except:
@@ -476,6 +475,8 @@ class EmceeSampler(object):
         ## Emulator settings
         saveDict["paramList"]=self.like.theory.emulator.paramList
         saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
+
+        ## Do we train a GP on each z?
         if self.like.theory.emulator.emulators:
             z_emulator=True
             emu_hyperparams=[]
@@ -485,6 +486,13 @@ class EmceeSampler(object):
             z_emulator=False
             emu_hyperparams=self.like.theory.emulator.gp.param_array.tolist()
         saveDict["z_emulator"]=z_emulator
+
+        ## Is this an asymmetric, rbf-only emulator?
+        if self.like.theory.emulator.asymmetric_kernel and self.like.theory.emulator.rbf_only:
+            saveDict["asym_kernel"]=True
+        else:
+            saveDict["asym_kernel"]=False
+
         saveDict["emu_hyperparameters"]=emu_hyperparams
         saveDict["emu_type"]=self.like.theory.emulator.emu_type
         saveDict["reduce_var"]=self.like.theory.emulator.reduce_var_mf
@@ -639,7 +647,7 @@ param_dict={
             "ln_kF_0":"$ln(kF_0)$",
             "ln_kF_1":"$ln(kF_1)$",
             "H0":"$H_0$",
-            "mnu":"$\Sigma_\nu$",
+            "mnu":"$\Sigma_\\nu$",
             "As":"$A_s$",
             "ns":"$n_s$",
             "ombh2":"$\omega_b$",

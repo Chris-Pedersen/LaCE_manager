@@ -154,10 +154,8 @@ class TestSimulation(object):
             emu_dict["alpha_p"]=linP_values[len(zs)-aa-1]["alpha_p"]
             emu_dict["f_p"]=linP_values[len(zs)-aa-1]["f_p"]
             self.emu_calls.append(emu_dict)
-            
-        # Not all redshifts will have the same number of wavenumbers, because
-        # of annoying numerical errors
-        # self.k_Mpc=self.k_Mpc[0] ## Discard other k bins, they are the same
+
+        self.k_Mpc=self.k_Mpc[0] ## Discard other k bins, they are the same
 
         return
         

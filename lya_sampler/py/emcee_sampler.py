@@ -430,11 +430,18 @@ class EmceeSampler(object):
         """ Set up a directory to save files for this
         sampler run """
 
+        ## Check if a subdirectory is passed
         repo=os.environ['LYA_EMU_REPO']
         if subfolder:
+            ## If there is one, check if it exists
+            ## if not, make it
+            if not os.path.isdir(repo+"/lya_sampler/chains/"+subfolder):
+                os.mkdir(repo+"/lya_sampler/chains/"+subfolder)
             base_string=repo+"/lya_sampler/chains/"+subfolder+"/chain_"
         else:
             base_string=repo+"/lya_sampler/chains/chain_"
+        
+        ## Create a new folder for this chain
         chain_count=1
         sampler_directory=base_string+str(chain_count)
         while os.path.isdir(sampler_directory):

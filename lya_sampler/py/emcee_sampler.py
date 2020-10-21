@@ -30,6 +30,7 @@ class EmceeSampler(object):
 
     def __init__(self,like=None,emulator=None,free_param_names=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
+                        subfolder=None,
                         save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain."""
@@ -46,7 +47,7 @@ class EmceeSampler(object):
 
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
-            self.read_chain_from_file(read_chain_file)
+            self.read_chain_from_file(read_chain_file,subolder)
             self.p0=None
             self.burnin_pos=None
         else: 
@@ -66,7 +67,7 @@ class EmceeSampler(object):
 
             self.save_directory=None
             if save_chain:
-                self._setup_chain_folder()
+                self._setup_chain_folder(subfolder)
 
             # number of walkers
             if nwalkers:
@@ -315,12 +316,15 @@ class EmceeSampler(object):
         return
 
 
-    def read_chain_from_file(self,chain_number):
+    def read_chain_from_file(self,chain_number,subfolder):
         """Read chain from file, and check parameters"""
         
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
-        self.save_directory=repo+"/lya_sampler/chains/chain_"+str(chain_number)
+        if subfolder:
+            self.save_directory=repo+"/lya_sampler/chains/"+subfolder+"/chain_"+str(chain_number)
+        else:
+            self.save_directory=repo+"/lya_sampler/chains/chain_"+str(chain_number)
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
@@ -422,12 +426,22 @@ class EmceeSampler(object):
         return
 
 
-    def _setup_chain_folder(self):
+    def _setup_chain_folder(self,subfolder):
         """ Set up a directory to save files for this
         sampler run """
 
+        ## Check if a subdirectory is passed
         repo=os.environ['LYA_EMU_REPO']
-        base_string=repo+"/lya_sampler/chains/chain_"
+        if subfolder:
+            ## If there is one, check if it exists
+            ## if not, make it
+            if not os.path.isdir(repo+"/lya_sampler/chains/"+subfolder):
+                os.mkdir(repo+"/lya_sampler/chains/"+subfolder)
+            base_string=repo+"/lya_sampler/chains/"+subfolder+"/chain_"
+        else:
+            base_string=repo+"/lya_sampler/chains/chain_"
+        
+        ## Create a new folder for this chain
         chain_count=1
         sampler_directory=base_string+str(chain_count)
         while os.path.isdir(sampler_directory):

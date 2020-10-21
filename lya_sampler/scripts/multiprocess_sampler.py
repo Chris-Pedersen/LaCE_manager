@@ -42,6 +42,7 @@ parser.add_argument('--emu_noise_var', type=float,help='Emulator noise variable'
 parser.add_argument('--parallel',action='store_true',help='Run sampler in parallel?')
 parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the data covariance by')
 parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
+parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -131,7 +132,8 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 ## Pass likelihood to sampler
 sampler = emcee_sampler.EmceeSampler(like=like,
                         free_param_names=free_parameters,verbose=False,
-                        nwalkers=args.nwalkers)
+                        nwalkers=args.nwalkers,
+                        subfolder=args.subfolder)
 
 ## Copy the config file to the save folder
 shutil.copy(sys.argv[2],sampler.save_directory+"/"+sys.argv[2])

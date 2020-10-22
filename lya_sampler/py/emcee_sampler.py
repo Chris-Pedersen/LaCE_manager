@@ -30,10 +30,12 @@ class EmceeSampler(object):
 
     def __init__(self,like=None,emulator=None,free_param_names=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
-                        subfolder=None,
+                        subfolder=None,rootdir=None,
                         save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
-            If read_chain_file is provided, read pre-computed chain."""
+            If read_chain_file is provided, read pre-computed chain.
+            rootdir allows user to search for saved chains in a different location
+            to the code itself """
 
         # WE SHOULD DOCUMENT BETTER THE OPTIONAL INPUTS
         # WHEN WOULD SOMEONE PASS A LIKELIHOOD AND A LIST OF FREE PARAMETERS?
@@ -47,7 +49,7 @@ class EmceeSampler(object):
 
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
-            self.read_chain_from_file(read_chain_file,subolder)
+            self.read_chain_from_file(read_chain_file,rootdir,subfolder)
             self.p0=None
             self.burnin_pos=None
         else: 
@@ -316,15 +318,18 @@ class EmceeSampler(object):
         return
 
 
-    def read_chain_from_file(self,chain_number,subfolder):
+    def read_chain_from_file(self,chain_number,rootdir,subfolder):
         """Read chain from file, and check parameters"""
         
-        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        repo=os.environ['LYA_EMU_REPO']
-        if subfolder:
-            self.save_directory=repo+"/lya_sampler/chains/"+subfolder+"/chain_"+str(chain_number)
+        if rootdir:
+            chain_location=rootdir
         else:
-            self.save_directory=repo+"/lya_sampler/chains/chain_"+str(chain_number)
+            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+            chain_location=os.environ['LYA_EMU_REPO']+"/lya_sampler/chains/"
+        if subfolder:
+            self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
+        else:
+            self.save_directory=chain_location+"/chain_"+str(chain_number)
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
@@ -690,7 +695,8 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
 
-def compare_corners(chain_files,labels,plot_params=None,save_string=None):
+def compare_corners(chain_files,labels,plot_params=None,save_string=None,
+                    rootdir=None,subfolder=None):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
      - plot_params: list of parameters (in code variables, not latex form)
@@ -705,7 +711,8 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None):
     
     ## Add each chain we want to plot
     for aa,chain_file in enumerate(chain_files):
-        sampler=EmceeSampler(read_chain_file=chain_file)
+        sampler=EmceeSampler(read_chain_file=chain_file,
+                                subfolder=subfolder,rootdir=rootdir)
         chain,lnprob=sampler.get_chain(cube=False)
         c.add_chain(chain,parameters=sampler.paramstrings,name=labels[aa])
         

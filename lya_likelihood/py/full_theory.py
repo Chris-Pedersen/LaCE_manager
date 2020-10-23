@@ -13,7 +13,8 @@ class FullTheory(object):
     going through our Delta^2_\star parametrisation """
 
     def __init__(self,zs,emulator=None,camb_model_fid=None,verbose=False,
-                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None):
+                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
+                    pivot_scalar=0.05):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -36,7 +37,8 @@ class FullTheory(object):
         if camb_model_fid:
             self.camb_model_fid=camb_model_fid
         else:
-            self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs)
+            self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs,
+                            pivot_scalar=pivot_scalar)
 
         # setup fiducial IGM models
         if mf_model_fid:

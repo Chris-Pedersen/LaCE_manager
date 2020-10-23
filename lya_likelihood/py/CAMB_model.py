@@ -8,7 +8,7 @@ import fit_linP
 class CAMBModel(object):
     """ Interface between CAMB object and FullTheory """
 
-    def __init__(self,zs,cosmo=None):
+    def __init__(self,zs,cosmo=None,pivot_scalar=0.05):
         """Setup from CAMB object and list of redshifts."""
 
         # list of redshifts at which we evaluate linear power
@@ -16,7 +16,7 @@ class CAMBModel(object):
         
         # setup CAMB cosmology object
         if cosmo is None:
-            self.cosmo=camb_cosmo.get_cosmology()
+            self.cosmo=camb_cosmo.get_cosmology(pivot_scalar=pivot_scalar)
         else:
             self.cosmo=cosmo
 
@@ -28,6 +28,12 @@ class CAMBModel(object):
 
     def get_likelihood_parameters(self):
         """ Return a list of likelihood parameters """
+
+        ## It apperas to me that the min max values here
+        ## aren't actually used, which is what allows us to set
+        ## custom prior volumes using Likelihood.free_param_limits
+        ## So I will leave these for now, but this should be
+        ## cleared up eventually.
 
         params=[]
         params.append(likelihood_parameter.LikelihoodParameter(

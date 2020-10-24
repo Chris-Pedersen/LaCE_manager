@@ -90,9 +90,10 @@ if prior==-1:
 data=data_MPGADGET.P1D_MPGADGET(sim_label=test_sim_number,
                                 basedir=args.basedir,
                                 skewers_label=args.skewers_label,
-				zmax=args.z_max,
+				                zmax=args.z_max,
                                 data_cov_factor=args.data_cov_factor,
-                                data_cov_label=args.data_year)
+                                data_cov_label=args.data_year,
+                                pivot_scalar=args.pivot_scalar)
 zs=data.z
 
 ## Set up emulator training data

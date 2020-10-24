@@ -86,7 +86,7 @@ class Likelihood(object):
             else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo)
+                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar)
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
                         camb_model_fid=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar)

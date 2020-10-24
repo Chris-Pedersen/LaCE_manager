@@ -43,6 +43,7 @@ parser.add_argument('--parallel',action='store_true',help='Run sampler in parall
 parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the data covariance by')
 parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
+parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -60,11 +61,11 @@ print("----------")
 ## these are still saved with the sampler so no book-keeping issues though
 
 ## for reference, the default primordial limits I have been using are
-## [['As', 1.5e-09, 3.5e-09], ['ns', 0.88, 0.99]
+## (for a pivot_scalar of 0.7)
+## [['As', 1.36e-09, 3.19e-09], ['ns', 0.88, 0.99],
 ## And for compressed params,
 ## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
-free_param_limits=[[0.24, 0.47],
-                    [-2.352, -2.25],
+free_param_limits=[[1.36e-09, 3.19e-09], [0.88, 0.99],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
@@ -101,7 +102,7 @@ archive=p1d_arxiv.ArxivP1D(basedir=args.basedir,
                             drop_temp_rescalings=args.drop_temp_rescalings,skewers_label=skewers_label,
                             undersample_cube=args.undersample_cube,undersample_z=args.undersample_z)
 
-
+print(len(archive.data))
 ## Set up an emulator
 if args.z_emulator==False:
     emu=gp_emulator.GPEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
@@ -127,7 +128,8 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 			                free_param_limits=free_param_limits,
 			                verbose=False,
                             prior_Gauss_rms=prior,
-                            emu_cov_factor=args.emu_cov_factor)
+                            emu_cov_factor=args.emu_cov_factor,
+                            pivot_scalar=args.pivot_scalar)
 
 ## Pass likelihood to sampler
 sampler = emcee_sampler.EmceeSampler(like=like,
@@ -159,5 +161,4 @@ jobstring=jobstring="job"+os.environ['SLURM_JOBID']+".out"
 slurmstring="slurm-"+os.environ['SLURM_JOBID']+".out"
 shutil.copy(jobstring,sampler.save_directory+"/"+jobstring)
 shutil.copy(slurmstring,sampler.save_directory+"/"+slurmstring)
-
 

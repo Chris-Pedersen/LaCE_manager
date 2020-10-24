@@ -406,13 +406,20 @@ class EmceeSampler(object):
             free_param_limits=config["free_param_limits"]
         except:
             free_param_limits=None
+
+        ## Old chains won't have pivot_scalar saved
+        if "pivot_scalar" in config.keys():
+            pivot_scalar=config["pivot_scalar"]
+        else:
+            pivot_scalar=0.05
     
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
-                            emu_cov_factor=config["emu_cov_factor"])
+                            emu_cov_factor=config["emu_cov_factor"],
+                            pivot_scalar=pivot_scalar)
 
         if self.verbose: print("Load sampler data")
         ## Load chains
@@ -524,6 +531,14 @@ class EmceeSampler(object):
         saveDict["data_sim_number"]=self.like.data.sim_label
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
+
+        ## If we are sampling primordial power, save the pivot scale
+        ## used to define As, ns
+        if hasattr(self.like.theory,"camb_model_fid"):
+            pivot_scalar=self.like.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+        else:
+            pivot_scalar=0.05
+        saveDict["pivot_scalar"]=pivot_scalar
 
         free_params_save=[]
         free_param_limits=[]

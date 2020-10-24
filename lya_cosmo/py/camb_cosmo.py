@@ -285,3 +285,20 @@ def dkms_dhMpc(cosmo,z,camb_results=None):
     H_z=camb_results.hubble_parameter(z)
     dvdX=H_z/(1+z)/(cosmo.H0/100.0)
     return dvdX
+
+
+def shift_primordial_pivot(cosmo_dict,pivot_scalar):
+    """ Shift the value of A_s calculated at a new
+    pivot scale. Currently assumes zero running """
+
+    if "pivot_scalar" in cosmo_dict.keys():
+        pivot_old=cosmo_dict["pivot_scalar"]
+    else:
+        pivot_old=0.05
+
+    new_As=cosmo_dict["As"]*(pivot_scalar/pivot_old)**(cosmo_dict["ns"]-1)
+    ## Update dictionary with new As and pivot
+    cosmo_dict["As"]=new_As
+    cosmo_dict["pivot_scalar"]=pivot_scalar
+
+    return cosmo_dict

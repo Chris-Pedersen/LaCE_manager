@@ -386,6 +386,11 @@ class EmceeSampler(object):
             # if datacov_label wasn't recorded, it was PD2013
             data_year="PD2013"
 
+        ## Old chains won't have pivot_scalar saved
+        if "pivot_scalar" in config.keys():
+            pivot_scalar=config["pivot_scalar"]
+        else:
+            pivot_scalar=0.05
 
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_label=config["data_sim_number"],
@@ -393,7 +398,8 @@ class EmceeSampler(object):
                                     skewers_label=config["skewers_label"],
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
-                                    data_cov_label=data_year)
+                                    data_cov_label=data_year,
+                                    pivot_scalar=pivot_scalar)
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -407,11 +413,7 @@ class EmceeSampler(object):
         except:
             free_param_limits=None
 
-        ## Old chains won't have pivot_scalar saved
-        if "pivot_scalar" in config.keys():
-            pivot_scalar=config["pivot_scalar"]
-        else:
-            pivot_scalar=0.05
+
     
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,

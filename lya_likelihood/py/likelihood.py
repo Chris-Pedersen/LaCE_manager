@@ -90,6 +90,7 @@ class Likelihood(object):
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
                         camb_model_fid=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar)
+                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
                 if not full:
                     print("No cosmology parameters are varied")
 

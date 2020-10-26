@@ -22,7 +22,8 @@ class Likelihood(object):
                     verbose=False,
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,emu_cov_factor=1,
-                    use_sim_cosmo=False):
+                    use_sim_cosmo=False,
+                    pivot_scalar=0.05):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
@@ -32,7 +33,9 @@ class Likelihood(object):
             set between 0 and 1.
             - use_sim_cosmo will extract the cosmological likelihood
               parameters from the fiducial simulation, and use these
-              as a fiducial model"""
+              as a fiducial model
+            - pivot_scalar sets the pivot scale used for the primordial
+              power spectrum in the case of using a full_theory object """
 
 
         self.verbose=verbose
@@ -83,9 +86,11 @@ class Likelihood(object):
             else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo)
+                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar)
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                        camb_model_fid=camb_model_sim,verbose=self.verbose)
+                        camb_model_fid=camb_model_sim,verbose=self.verbose,
+                        pivot_scalar=pivot_scalar)
+                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
                 if not full:
                     print("No cosmology parameters are varied")
 

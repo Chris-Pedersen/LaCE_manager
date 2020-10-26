@@ -47,6 +47,10 @@ parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial p
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
+## Make sure test sim is dropped from training data
+## in the case of running on one of the LH sims
+if test_sim_number.isdigit():
+    test_sim_number=int(test_sim_number)
 
 print('--- print options from parser ---')
 print(args)
@@ -103,7 +107,6 @@ archive=p1d_arxiv.ArxivP1D(basedir=args.basedir,
                             drop_temp_rescalings=args.drop_temp_rescalings,skewers_label=skewers_label,
                             undersample_cube=args.undersample_cube,undersample_z=args.undersample_z)
 
-print(len(archive.data))
 ## Set up an emulator
 if args.z_emulator==False:
     emu=gp_emulator.GPEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,

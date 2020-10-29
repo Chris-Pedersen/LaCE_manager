@@ -72,6 +72,8 @@ class EmceeSampler(object):
                 self._setup_chain_folder(rootdir,subfolder)
                 backend_string=self.save_directory+"/backend.h5"
                 self.backend=emcee.backends.HDFBackend(backend_string)
+            else:
+                self.backend=None
 
             # number of walkers
             if nwalkers:
@@ -153,9 +155,10 @@ class EmceeSampler(object):
             ## Get initial walkers
             p0=self.get_initial_walkers()
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    self.like.log_prob)
+                                                    self.like.log_prob,
+                                                    backend=self.backend)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
-                                    progress=self.progress,backend=self.backend):
+                                    progress=self.progress,):
                 # Only check convergence every 100 steps
                 if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                     continue
@@ -232,7 +235,7 @@ class EmceeSampler(object):
 
         ## Make sure we have a backend
         assert self.backend is not None, "No backend found, cannot run sampler"
-
+        old_tau = np.inf
         with Pool() as pool:
             sampler=emcee.EnsembleSampler(self.backend.shape[0],
                                          self.backend.shape[1],
@@ -260,14 +263,13 @@ class EmceeSampler(object):
                 # Check convergence
                 converged = np.all(tau * 100 < sampler.iteration)
                 converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                if force_steps == False:
-                    if converged:
-                        print("Chains have converged")
+                if converged:
+                    print("Chains have converged")
+                    break
+                if timeout:
+                    if time.time()>time_end:
+                        print("Timed out")
                         break
-                    if timeout:
-                        if time.time()>time_end:
-                            print("Timed out")
-                            break
                 old_tau = tau
 
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)

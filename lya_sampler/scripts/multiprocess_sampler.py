@@ -66,10 +66,10 @@ print("----------")
 
 ## for reference, the default primordial limits I have been using are
 ## (for a pivot_scalar of 0.7)
-## [['As', 1.36e-09, 3.19e-09], ['ns', 0.88, 0.99],
+## [[1.1e-09, 3.19e-09], [0.89, 1.05],
 ## And for compressed params,
 ## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
-free_param_limits=[[1.1e-09, 3.19e-09], [0.88, 0.99],
+free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
                     [-0.4, 0.4],

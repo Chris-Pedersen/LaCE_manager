@@ -179,20 +179,15 @@ class EmceeSampler(object):
 
         else:
             p0=self.get_initial_walkers()
-            print("here 1")
             with Pool() as pool:
-                print("here 2")
                 sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                         log_func,
                                                         pool=pool,
                                                         backend=self.backend)
-                print("here 3")
                 if timeout:
                     time_end=time.time() + 3600*timeout
-                print("here 4")
                 for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                         progress=self.progress):
-                    print("Step %d",sampler.iteration)
                     # Only check convergence every 100 steps
                     if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                         continue
@@ -227,6 +222,16 @@ class EmceeSampler(object):
 
 
     def resume_sampler(self,max_steps,log_func=None,timeout=None):
+        """ Use the emcee backend to restart a chain from the last iteration
+            - max_steps is the maximum number of steps for this run
+            - log_func is sampler.like.log_prob, can't use self. objects
+              with pool apparently
+            - timeout is the amount of time to run in hours before wrapping
+              the job up. This is used to make sure timeouts on compute nodes
+              don't corrupt the backend """
+
+        ## Make sure we have a backend
+        assert self.backend is not None, "No backend found, cannot run sampler"
 
         with Pool() as pool:
             sampler=emcee.EnsembleSampler(self.backend.shape[0],
@@ -393,7 +398,11 @@ class EmceeSampler(object):
         else:
             self.save_directory=chain_location+"/chain_"+str(chain_number)
 
-        self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+        if os.path.isfile(self.save_directory+"/backend.h5"):
+            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+        else:
+            self.backend=None
+            print("No backend found - will be able to plot chains but not run sampler")
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)

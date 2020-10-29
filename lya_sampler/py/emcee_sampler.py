@@ -69,7 +69,9 @@ class EmceeSampler(object):
 
             self.save_directory=None
             if save_chain:
-                self._setup_chain_folder(subfolder)
+                self._setup_chain_folder(rootdir,subfolder)
+                backend_string=self.save_directory+"/backend.h5"
+                self.backend=emcee.backends.HDFBackend(backend_string)
 
             # number of walkers
             if nwalkers:
@@ -131,12 +133,14 @@ class EmceeSampler(object):
 
 
     def run_sampler(self,burn_in,max_steps,log_func=None,
-                parallel=False,force_steps=False):
+                parallel=False,force_steps=False,timeout=None):
         """ Set up sampler, run burn in, run chains,
         return chains
             - force_steps will force the sampler to run
               until max_steps is reached regardless of
-              convergence """
+              convergence
+            - timeout is the time in hours to run the
+              sampler for """
 
 
         self.burnin_nsteps=burn_in
@@ -151,7 +155,7 @@ class EmceeSampler(object):
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                     self.like.log_prob)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
-                                    progress=self.progress):
+                                    progress=self.progress,backend=self.backend):
                 # Only check convergence every 100 steps
                 if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                     continue
@@ -175,12 +179,20 @@ class EmceeSampler(object):
 
         else:
             p0=self.get_initial_walkers()
+            print("here 1")
             with Pool() as pool:
+                print("here 2")
                 sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                         log_func,
-                                                        pool=pool)
+                                                        pool=pool,
+                                                        backend=self.backend)
+                print("here 3")
+                if timeout:
+                    time_end=time.time() + 3600*timeout
+                print("here 4")
                 for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                         progress=self.progress):
+                    print("Step %d",sampler.iteration)
                     # Only check convergence every 100 steps
                     if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                         continue
@@ -199,7 +211,12 @@ class EmceeSampler(object):
                     converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
                     if force_steps == False:
                         if converged:
+                            print("Chains have converged")
                             break
+                        if timeout:
+                            if time.time()>time_end:
+                                print("Timed out")
+                                break
                     old_tau = tau
 
         ## Save chains
@@ -207,6 +224,51 @@ class EmceeSampler(object):
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
 
         return 
+
+
+    def resume_sampler(self,max_steps,log_func=None,timeout=None):
+
+        with Pool() as pool:
+            sampler=emcee.EnsembleSampler(self.backend.shape[0],
+                                         self.backend.shape[1],
+                                        log_func,
+                                        pool=pool,
+                                        backend=self.backend)
+            if timeout:
+                time_end=time.time() + 3600*timeout
+            start_step=self.backend.iteration
+            for sample in sampler.sample(self.backend.get_last_sample(), iterations=max_steps,           
+                                    progress=self.progress):
+                # Only check convergence every 100 steps
+                if sampler.iteration % 100:
+                    continue
+
+                if self.progress==False:
+                    print("Step %d out of %d " % (self.backend.iteration, start_step+max_steps))
+
+                # Compute the autocorrelation time so far
+                # Using tol=0 means that we'll always get an estimate even
+                # if it isn't trustworthy
+                tau = sampler.get_autocorr_time(tol=0)
+                self.autocorr= np.append(self.autocorr,np.mean(tau))
+
+                # Check convergence
+                converged = np.all(tau * 100 < sampler.iteration)
+                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+                if force_steps == False:
+                    if converged:
+                        print("Chains have converged")
+                        break
+                    if timeout:
+                        if time.time()>time_end:
+                            print("Timed out")
+                            break
+                old_tau = tau
+
+        self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
+        self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        
+        return
 
 
     def get_initial_walkers(self):
@@ -331,6 +393,8 @@ class EmceeSampler(object):
         else:
             self.save_directory=chain_location+"/chain_"+str(chain_number)
 
+        self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
 
@@ -440,20 +504,23 @@ class EmceeSampler(object):
         return
 
 
-    def _setup_chain_folder(self,subfolder):
+    def _setup_chain_folder(self,rootdir=None,subfolder=None):
         """ Set up a directory to save files for this
         sampler run """
 
-        ## Check if a subdirectory is passed
-        repo=os.environ['LYA_EMU_REPO']
+        if rootdir:
+            chain_location=rootdir
+        else:
+            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+            chain_location=os.environ['LYA_EMU_REPO']+"/lya_sampler/chains/"
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it
-            if not os.path.isdir(repo+"/lya_sampler/chains/"+subfolder):
-                os.mkdir(repo+"/lya_sampler/chains/"+subfolder)
-            base_string=repo+"/lya_sampler/chains/"+subfolder+"/chain_"
+            if not os.path.isdir(chain_location+subfolder):
+                os.mkdir(chain_location+"/"+subfolder)
+            base_string=chain_location+"/"+subfolder+"/chain_"
         else:
-            base_string=repo+"/lya_sampler/chains/chain_"
+            base_string=chain_location+"/chain_"
         
         ## Create a new folder for this chain
         chain_count=1

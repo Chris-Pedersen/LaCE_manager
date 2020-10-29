@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import cProfile
 import emcee
-import corner
+import time
 # our own modules
 import gp_emulator
 import z_emulator

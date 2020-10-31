@@ -99,7 +99,13 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
             sk_filename=get_skewers_filename(num,n_skewers,width_Mpc,
                                     scale_T0,scale_gamma)
 
-            skewers=get_skewers_snapshot(simdir,skewers_dir,num,
+            # avoid (if possible) to use set_T0, might break fake_spectra
+            if (scale_T0==1.0) and (scale_gamma==1.0):
+                skewers=get_skewers_snapshot(simdir,skewers_dir,num,
+                            n_skewers=n_skewers,width_kms=width_kms,
+                            skewers_filename=sk_filename)
+            else:
+                skewers=get_skewers_snapshot(simdir,skewers_dir,num,
                             n_skewers=n_skewers,width_kms=width_kms,
                             set_T0=T0,set_gamma=gamma,
                             skewers_filename=sk_filename)
@@ -136,55 +142,6 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
     return sim_info
 
 
-def write_default_skewers(simdir,skewers_dir=None,zmax=6.0,n_skewers=50,
-            width_kms=10):
-    """Extract skewers for all snapshots, default temperature."""
-
-    # make sure output directory exists (will write skewers there)
-    if skewers_dir is None:
-        skewers_dir=simdir+'/output/skewers/'
-    os.makedirs(skewers_dir,exist_ok=True)
-
-    # figure out number of snapshots and redshifts
-    paramfile=simdir+'/paramfile.gadget'
-    zs=read_gadget.redshifts_from_paramfile(paramfile)
-    Nsnap=len(zs)
-
-    # will store information to write to JSON file later
-    mf_snap=[]
-    mf_z=[]
-    mf_val=[]
-    sk_files=[]
-
-    # loop over snapshots and extract skewers
-    for num in range(Nsnap):
-        z=zs[num]
-        if z < zmax:
-            # extract skewers
-            skewers=get_skewers_snapshot(simdir,skewers_dir,num,
-                        n_skewers=n_skewers,width_kms=width_kms)
-            # call mean flux, so that the skewers are really computed
-            mf=skewers.get_mean_flux()
-            # figure out filename for skewers
-            set_skewers_filename(simdir,skewers)
-            skewers.save_file()
-            mf_snap.append(num)
-            mf_z.append(z)
-            mf_val.append(mf)
-            sk_files.append(skewers.savefile)
-
-    # dictionary for mean flux in default settings
-    mf_info={'number':mf_snap,'z':mf_z,'mean_flux':mf}
-    mf_info['skewer_files']=sk_files
-    mf_info['simdir']=simdir
-    mf_info['skewers_dir']=skewers_dir
-    mf_info['zmax']=zmax
-    mf_info['n_skewers']=n_skewers
-    mf_info['width_kms']=width_kms
-
-    return mf_info
-
-
 def get_skewers_snapshot(simdir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
                 set_T0=None,set_gamma=None,skewers_filename=None):
     """Extract skewers for a particular snapshot"""
@@ -202,10 +159,17 @@ def get_skewers_snapshot(simdir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
     if os.path.exists(skewers_dir+'/'+skewers_filename):
         print(skewers_filename,'already exists in',skewers_dir)
 
-    skewers = grid_spec.GriddedSpectra(snap_num,simdir+'/output/',
+    # avoid (if possible) to use set_T0, not always present in fake_spectra
+    if (set_T0 is None) and (set_gamma is None):
+        skewers = grid_spec.GriddedSpectra(snap_num,simdir+'/output/',
                 nspec=n_skewers,res=width_kms,savefile=skewers_filename,
-                savedir=skewers_dir,
-                reload_file=True,set_T0=set_T0,set_gamma=set_gamma)
+                savedir=skewers_dir,reload_file=True)
+    else:
+        skewers = grid_spec.GriddedSpectra(snap_num,simdir+'/output/',
+                nspec=n_skewers,res=width_kms,savefile=skewers_filename,
+                savedir=skewers_dir,reload_file=True,
+                set_T0=set_T0,set_gamma=set_gamma)
+
 
     return skewers
 

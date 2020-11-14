@@ -224,14 +224,16 @@ class EmceeSampler(object):
         return 
 
 
-    def resume_sampler(self,max_steps,log_func=None,timeout=None):
+    def resume_sampler(self,max_steps,log_func=None,timeout=None,force_timeout=False):
         """ Use the emcee backend to restart a chain from the last iteration
             - max_steps is the maximum number of steps for this run
             - log_func is sampler.like.log_prob, can't use self. objects
               with pool apparently
             - timeout is the amount of time to run in hours before wrapping
               the job up. This is used to make sure timeouts on compute nodes
-              don't corrupt the backend """
+              don't corrupt the backend 
+            - force_timeout will force chains to run for the time duration set
+              instead of cutting at autocorrelation time convergence """
 
         ## Make sure we have a backend
         assert self.backend is not None, "No backend found, cannot run sampler"
@@ -263,9 +265,10 @@ class EmceeSampler(object):
                 # Check convergence
                 converged = np.all(tau * 100 < sampler.iteration)
                 converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                if converged:
-                    print("Chains have converged")
-                    break
+                if force_timeout==False:
+                    if converged:
+                        print("Chains have converged")
+                        break
                 if timeout:
                     if time.time()>time_end:
                         print("Timed out")
@@ -766,16 +769,16 @@ param_dict={
             "n_star":"$n_\star$",
             "g_star":"$g_\star$",
             "f_star":"$f_\star$",
-            "ln_tau_0":"$ln(\\tau_0)$",
-            "ln_tau_1":"$ln(\\tau_1)$",
-            "ln_sigT_kms_0":"$ln(\sigma^T_0)$",
-            "ln_sigT_kms_1":"$ln(\sigma^T_1)$",
-            "ln_gamma_0":"$ln(\gamma_0)$",
-            "ln_gamma_1":"$ln(\gamma_1)$",
-            "ln_kF_0":"$ln(kF_0)$",
-            "ln_kF_1":"$ln(kF_1)$",
+            "ln_tau_0":"$\mathrm{ln}\,\\tau_0$",
+            "ln_tau_1":"$\mathrm{ln}\,\\tau_1$",
+            "ln_sigT_kms_0":"$\mathrm{ln}\,\sigma^T_0$",
+            "ln_sigT_kms_1":"$\mathrm{ln}\,\sigma^T_1$",
+            "ln_gamma_0":"$\mathrm{ln}\,\gamma_0$",
+            "ln_gamma_1":"$\mathrm{ln}\,\gamma_1$",
+            "ln_kF_0":"$\mathrm{ln}\,kF_0$",
+            "ln_kF_1":"$\mathrm{ln}\,kF_1$",
             "H0":"$H_0$",
-            "mnu":"$\Sigma_\\nu$",
+            "mnu":"$\Sigma m_\\nu$",
             "As":"$A_s$",
             "ns":"$n_s$",
             "ombh2":"$\omega_b$",

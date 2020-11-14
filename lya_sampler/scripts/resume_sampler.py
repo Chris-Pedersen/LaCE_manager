@@ -1,5 +1,6 @@
 import matplotlib ## Suppresses plotting issues on compute nodes
 matplotlib.use("Agg")
+import shutil
 import os
 import emcee_sampler
 

@@ -13,7 +13,7 @@ class TestSimulation(object):
     in velocity units """
 
     def __init__(self,basedir,sim_label,skewers_label,
-            z_max,kmax_Mpc,kp_Mpc):
+            z_max,kmax_Mpc,kp_Mpc,pivot_scalar=0.05):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
             - sim_label can be either:
@@ -27,6 +27,9 @@ class TestSimulation(object):
             - kmax_Mpc sets the highest k bin to store the P_1D for
             - kp_Mpc sets the comoving pivot scale used to calculate the
               emulator linear power parameters
+            - pivot_scalar sets the pivot scale to define primordial
+              parameters, in 1/Mpc when setting up the camb cosmology
+              object
         """
 
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
@@ -48,12 +51,12 @@ class TestSimulation(object):
         self.skewers_label=skewers_label
         self.p1d_label="p1d"
         
-        self._read_json_files(z_max,kmax_Mpc)
+        self._read_json_files(z_max,kmax_Mpc,pivot_scalar=pivot_scalar)
 
         return
 
 
-    def _read_json_files(self,z_max,kmax_Mpc):
+    def _read_json_files(self,z_max,kmax_Mpc,pivot_scalar):
         """ Read the json files for the given sim suite. Store the P1D
         and emulator parameters for the non-rescaled entries
             - z_max: discard redshifts above this cut
@@ -80,6 +83,7 @@ class TestSimulation(object):
         ## Get cosmology from IC file to get linear power parameters
         genic_fname=self.fulldir+"/sim_plus/paramfile.genic"
         sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
+        sim_cosmo_dict=camb_cosmo.shift_primordial_pivot(sim_cosmo_dict,pivot_scalar)
         # setup CAMB object
         self.sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
         # compute linear power parameters at each z (in Mpc units)
@@ -154,10 +158,8 @@ class TestSimulation(object):
             emu_dict["alpha_p"]=linP_values[len(zs)-aa-1]["alpha_p"]
             emu_dict["f_p"]=linP_values[len(zs)-aa-1]["f_p"]
             self.emu_calls.append(emu_dict)
-            
-        # Not all redshifts will have the same number of wavenumbers, because
-        # of annoying numerical errors
-        # self.k_Mpc=self.k_Mpc[0] ## Discard other k bins, they are the same
+
+        self.k_Mpc=self.k_Mpc[0] ## Discard other k bins, they are the same
 
         return
         

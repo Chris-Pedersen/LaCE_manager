@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import cProfile
 import emcee
-import corner
+import time
 # our own modules
 import gp_emulator
 import z_emulator
@@ -30,9 +30,12 @@ class EmceeSampler(object):
 
     def __init__(self,like=None,emulator=None,free_param_names=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
+                        subfolder=None,rootdir=None,
                         save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
-            If read_chain_file is provided, read pre-computed chain."""
+            If read_chain_file is provided, read pre-computed chain.
+            rootdir allows user to search for saved chains in a different location
+            to the code itself """
 
         # WE SHOULD DOCUMENT BETTER THE OPTIONAL INPUTS
         # WHEN WOULD SOMEONE PASS A LIKELIHOOD AND A LIST OF FREE PARAMETERS?
@@ -46,7 +49,7 @@ class EmceeSampler(object):
 
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
-            self.read_chain_from_file(read_chain_file)
+            self.read_chain_from_file(read_chain_file,rootdir,subfolder)
             self.p0=None
             self.burnin_pos=None
         else: 
@@ -66,7 +69,11 @@ class EmceeSampler(object):
 
             self.save_directory=None
             if save_chain:
-                self._setup_chain_folder()
+                self._setup_chain_folder(rootdir,subfolder)
+                backend_string=self.save_directory+"/backend.h5"
+                self.backend=emcee.backends.HDFBackend(backend_string)
+            else:
+                self.backend=None
 
             # number of walkers
             if nwalkers:
@@ -128,12 +135,14 @@ class EmceeSampler(object):
 
 
     def run_sampler(self,burn_in,max_steps,log_func=None,
-                parallel=False,force_steps=False):
+                parallel=False,force_steps=False,timeout=None):
         """ Set up sampler, run burn in, run chains,
         return chains
             - force_steps will force the sampler to run
               until max_steps is reached regardless of
-              convergence """
+              convergence
+            - timeout is the time in hours to run the
+              sampler for """
 
 
         self.burnin_nsteps=burn_in
@@ -146,9 +155,10 @@ class EmceeSampler(object):
             ## Get initial walkers
             p0=self.get_initial_walkers()
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    self.like.log_prob)
+                                                    self.like.log_prob,
+                                                    backend=self.backend)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
-                                    progress=self.progress):
+                                    progress=self.progress,):
                 # Only check convergence every 100 steps
                 if sampler.iteration % 100 or sampler.iteration < burn_in+1:
                     continue
@@ -175,7 +185,10 @@ class EmceeSampler(object):
             with Pool() as pool:
                 sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                         log_func,
-                                                        pool=pool)
+                                                        pool=pool,
+                                                        backend=self.backend)
+                if timeout:
+                    time_end=time.time() + 3600*timeout
                 for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                         progress=self.progress):
                     # Only check convergence every 100 steps
@@ -196,7 +209,12 @@ class EmceeSampler(object):
                     converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
                     if force_steps == False:
                         if converged:
+                            print("Chains have converged")
                             break
+                        if timeout:
+                            if time.time()>time_end:
+                                print("Timed out")
+                                break
                     old_tau = tau
 
         ## Save chains
@@ -204,6 +222,63 @@ class EmceeSampler(object):
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
 
         return 
+
+
+    def resume_sampler(self,max_steps,log_func=None,timeout=None,force_timeout=False):
+        """ Use the emcee backend to restart a chain from the last iteration
+            - max_steps is the maximum number of steps for this run
+            - log_func is sampler.like.log_prob, can't use self. objects
+              with pool apparently
+            - timeout is the amount of time to run in hours before wrapping
+              the job up. This is used to make sure timeouts on compute nodes
+              don't corrupt the backend 
+            - force_timeout will force chains to run for the time duration set
+              instead of cutting at autocorrelation time convergence """
+
+        ## Make sure we have a backend
+        assert self.backend is not None, "No backend found, cannot run sampler"
+        old_tau = np.inf
+        with Pool() as pool:
+            sampler=emcee.EnsembleSampler(self.backend.shape[0],
+                                         self.backend.shape[1],
+                                        log_func,
+                                        pool=pool,
+                                        backend=self.backend)
+            if timeout:
+                time_end=time.time() + 3600*timeout
+            start_step=self.backend.iteration
+            for sample in sampler.sample(self.backend.get_last_sample(), iterations=max_steps,           
+                                    progress=self.progress):
+                # Only check convergence every 100 steps
+                if sampler.iteration % 100:
+                    continue
+
+                if self.progress==False:
+                    print("Step %d out of %d " % (self.backend.iteration, start_step+max_steps))
+
+                # Compute the autocorrelation time so far
+                # Using tol=0 means that we'll always get an estimate even
+                # if it isn't trustworthy
+                tau = sampler.get_autocorr_time(tol=0)
+                self.autocorr= np.append(self.autocorr,np.mean(tau))
+
+                # Check convergence
+                converged = np.all(tau * 100 < sampler.iteration)
+                converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+                if force_timeout==False:
+                    if converged:
+                        print("Chains have converged")
+                        break
+                if timeout:
+                    if time.time()>time_end:
+                        print("Timed out")
+                        break
+                old_tau = tau
+
+        self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
+        self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        
+        return
 
 
     def get_initial_walkers(self):
@@ -315,12 +390,24 @@ class EmceeSampler(object):
         return
 
 
-    def read_chain_from_file(self,chain_number):
+    def read_chain_from_file(self,chain_number,rootdir,subfolder):
         """Read chain from file, and check parameters"""
         
-        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        repo=os.environ['LYA_EMU_REPO']
-        self.save_directory=repo+"/lya_sampler/chains/chain_"+str(chain_number)
+        if rootdir:
+            chain_location=rootdir
+        else:
+            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+            chain_location=os.environ['LYA_EMU_REPO']+"/lya_sampler/chains/"
+        if subfolder:
+            self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
+        else:
+            self.save_directory=chain_location+"/chain_"+str(chain_number)
+
+        if os.path.isfile(self.save_directory+"/backend.h5"):
+            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+        else:
+            self.backend=None
+            print("No backend found - will be able to plot chains but not run sampler")
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
@@ -350,24 +437,23 @@ class EmceeSampler(object):
         ## Set up the emulators
         if config["z_emulator"]:
             emulator=z_emulator.ZEmulator(paramList=config["paramList"],
-                                train=False,
+                                train=True,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
                                 reduce_var_mf=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
-            ## Now loop over emulators, passing the saved hyperparameters
-            for aa,emu in enumerate(emulator.emulators):
-                ## Load emulator hyperparams..
-                emu.load_hyperparams(np.asarray(config["emu_hyperparameters"][aa]))
         else:
             emulator=gp_emulator.GPEmulator(paramList=config["paramList"],
-                                train=False,
+                                train=True,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
+                                asymmetric_kernel=config["asym_kernel"],
+                                rbf_only=config["asym_kernel"],
                                 reduce_var_mf=reduce_var,
                                 passArxiv=archive,verbose=self.verbose)
-            emulator.load_hyperparams(np.asarray(config["emu_hyperparameters"]))
 
+        ## Try/excepts are for backwards compatibility
+        ## as old config files don't have these entries
         try:
             data_cov=config["data_cov_factor"]
         except:
@@ -378,6 +464,11 @@ class EmceeSampler(object):
             # if datacov_label wasn't recorded, it was PD2013
             data_year="PD2013"
 
+        ## Old chains won't have pivot_scalar saved
+        if "pivot_scalar" in config.keys():
+            pivot_scalar=config["pivot_scalar"]
+        else:
+            pivot_scalar=0.05
 
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_label=config["data_sim_number"],
@@ -385,7 +476,8 @@ class EmceeSampler(object):
                                     skewers_label=config["skewers_label"],
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
-                                    data_cov_label=data_year)
+                                    data_cov_label=data_year,
+                                    pivot_scalar=pivot_scalar)
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -398,13 +490,16 @@ class EmceeSampler(object):
             free_param_limits=config["free_param_limits"]
         except:
             free_param_limits=None
+
+
     
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
-                            emu_cov_factor=config["emu_cov_factor"])
+                            emu_cov_factor=config["emu_cov_factor"],
+                            pivot_scalar=pivot_scalar)
 
         if self.verbose: print("Load sampler data")
         ## Load chains
@@ -423,12 +518,25 @@ class EmceeSampler(object):
         return
 
 
-    def _setup_chain_folder(self):
+    def _setup_chain_folder(self,rootdir=None,subfolder=None):
         """ Set up a directory to save files for this
         sampler run """
 
-        repo=os.environ['LYA_EMU_REPO']
-        base_string=repo+"/lya_sampler/chains/chain_"
+        if rootdir:
+            chain_location=rootdir
+        else:
+            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+            chain_location=os.environ['LYA_EMU_REPO']+"/lya_sampler/chains/"
+        if subfolder:
+            ## If there is one, check if it exists
+            ## if not, make it
+            if not os.path.isdir(chain_location+subfolder):
+                os.mkdir(chain_location+"/"+subfolder)
+            base_string=chain_location+"/"+subfolder+"/chain_"
+        else:
+            base_string=chain_location+"/chain_"
+        
+        ## Create a new folder for this chain
         chain_count=1
         sampler_directory=base_string+str(chain_count)
         while os.path.isdir(sampler_directory):
@@ -476,6 +584,8 @@ class EmceeSampler(object):
         ## Emulator settings
         saveDict["paramList"]=self.like.theory.emulator.paramList
         saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
+
+        ## Do we train a GP on each z?
         if self.like.theory.emulator.emulators:
             z_emulator=True
             emu_hyperparams=[]
@@ -485,6 +595,13 @@ class EmceeSampler(object):
             z_emulator=False
             emu_hyperparams=self.like.theory.emulator.gp.param_array.tolist()
         saveDict["z_emulator"]=z_emulator
+
+        ## Is this an asymmetric, rbf-only emulator?
+        if self.like.theory.emulator.asymmetric_kernel and self.like.theory.emulator.rbf_only:
+            saveDict["asym_kernel"]=True
+        else:
+            saveDict["asym_kernel"]=False
+
         saveDict["emu_hyperparameters"]=emu_hyperparams
         saveDict["emu_type"]=self.like.theory.emulator.emu_type
         saveDict["reduce_var"]=self.like.theory.emulator.reduce_var_mf
@@ -497,6 +614,14 @@ class EmceeSampler(object):
         saveDict["data_sim_number"]=self.like.data.sim_label
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
+
+        ## If we are sampling primordial power, save the pivot scale
+        ## used to define As, ns
+        if hasattr(self.like.theory,"camb_model_fid"):
+            pivot_scalar=self.like.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+        else:
+            pivot_scalar=0.05
+        saveDict["pivot_scalar"]=pivot_scalar
 
         free_params_save=[]
         free_param_limits=[]
@@ -525,10 +650,24 @@ class EmceeSampler(object):
         self._write_dict_to_text(saveDict)
 
         ## Save plots
-        self.plot_best_fit()
-        self.plot_prediction()
-        self.plot_autocorrelation_time()
-        self.plot_corner()
+        ## Using try as have latex issues when running on compute
+        ## nodes on some clusters
+        try:
+            self.plot_best_fit()
+        except:
+            print("Can't plot best fit")
+        try:
+            self.plot_prediction()
+        except:
+            print("Can't plot prediction")
+        try:
+            self.plot_autocorrelation_time()
+        except:
+            print("Can't plot autocorrelation time")
+        try:
+            self.plot_corner()
+        except:
+            print("Can't plot corner")
 
         return
 
@@ -630,16 +769,16 @@ param_dict={
             "n_star":"$n_\star$",
             "g_star":"$g_\star$",
             "f_star":"$f_\star$",
-            "ln_tau_0":"$ln(\\tau_0)$",
-            "ln_tau_1":"$ln(\\tau_1)$",
-            "ln_sigT_kms_0":"$ln(\sigma^T_0)$",
-            "ln_sigT_kms_1":"$ln(\sigma^T_1)$",
-            "ln_gamma_0":"$ln(\gamma_0)$",
-            "ln_gamma_1":"$ln(\gamma_1)$",
-            "ln_kF_0":"$ln(kF_0)$",
-            "ln_kF_1":"$ln(kF_1)$",
+            "ln_tau_0":"$\mathrm{ln}\,\\tau_0$",
+            "ln_tau_1":"$\mathrm{ln}\,\\tau_1$",
+            "ln_sigT_kms_0":"$\mathrm{ln}\,\sigma^T_0$",
+            "ln_sigT_kms_1":"$\mathrm{ln}\,\sigma^T_1$",
+            "ln_gamma_0":"$\mathrm{ln}\,\gamma_0$",
+            "ln_gamma_1":"$\mathrm{ln}\,\gamma_1$",
+            "ln_kF_0":"$\mathrm{ln}\,kF_0$",
+            "ln_kF_1":"$\mathrm{ln}\,kF_1$",
             "H0":"$H_0$",
-            "mnu":"$\Sigma_\\nu$",
+            "mnu":"$\Sigma m_\\nu$",
             "As":"$A_s$",
             "ns":"$n_s$",
             "ombh2":"$\omega_b$",
@@ -654,10 +793,14 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
 
-def compare_corners(chain_files,labels,save_string=None):
+def compare_corners(chain_files,labels,plot_params=None,save_string=None,
+                    rootdir=None,subfolder=None):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
-     - save_string must include file extension (i.e. .pdf, .png etc)"""
+     - plot_params: list of parameters (in code variables, not latex form)
+                    to plot if only a subset is desired
+     - save_string: to save the plot. Must include
+                    file extension (i.e. .pdf, .png etc) """
     
     assert len(chain_files)==len(labels)
     
@@ -666,7 +809,8 @@ def compare_corners(chain_files,labels,save_string=None):
     
     ## Add each chain we want to plot
     for aa,chain_file in enumerate(chain_files):
-        sampler=EmceeSampler(read_chain_file=chain_file)
+        sampler=EmceeSampler(read_chain_file=chain_file,
+                                subfolder=subfolder,rootdir=rootdir)
         chain,lnprob=sampler.get_chain(cube=False)
         c.add_chain(chain,parameters=sampler.paramstrings,name=labels[aa])
         
@@ -677,7 +821,16 @@ def compare_corners(chain_files,labels,save_string=None):
     
     c.configure(diagonal_tick_labels=False, tick_font_size=10,
                 label_font_size=25, max_ticks=4)
-    fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    if plot_params==None:
+        fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
+    else:
+        ## From plot_param list, build list of parameter
+        ## strings to plot
+        plot_param_strings=[]
+        for par in plot_params:
+            plot_param_strings.append(param_dict[par])
+        fig = c.plotter.plot(figsize=(15,15),
+                parameters=plot_param_strings,truth=truth_dict)
     if save_string:
         fig.savefig("%s" % save_string)
     fig.show()

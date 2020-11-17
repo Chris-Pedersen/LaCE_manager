@@ -1,3 +1,4 @@
 lya_sampler/chains/*
 all_setup.sh
 */files_setup.txt
+*/backend.h5

@@ -20,7 +20,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     def __init__(self,basedir=None,sim_label=None,skewers_label=None,
             zmin=None,zmax=None,z_list=None,kp_Mpc=0.7,
             data_cov_label="Chabanier2019",data_cov_factor=1.,
-            add_syst=True):
+            add_syst=True,pivot_scalar=0.05):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
@@ -55,7 +55,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.kp_Mpc=kp_Mpc
 
         # read P1D from simulation
-        z,k,Pk,cov=self._load_p1d(add_syst)
+        z,k,Pk,cov=self._load_p1d(add_syst,pivot_scalar=pivot_scalar)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -69,7 +69,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self._set_true_values()
 
 
-    def _load_p1d(self,add_syst):
+    def _load_p1d(self,add_syst,pivot_scalar):
 
         if self.data_cov_label=="Chabanier2019":
             data_file=data_Chabanier2019.P1D_Chabanier2019(add_syst=add_syst)
@@ -85,7 +85,8 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         # setup TestSimulation object to read json files from sim directory
         self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
                 sim_label=self.sim_label,skewers_label=self.skewers_label,
-                z_max=10,kmax_Mpc=1e5,kp_Mpc=self.kp_Mpc)
+                z_max=10,kmax_Mpc=30,kp_Mpc=self.kp_Mpc,
+                pivot_scalar=pivot_scalar)
 
         # get redshifts in simulation
         z_sim=self.mock_sim.zs
@@ -100,7 +101,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         dkms_dMpc_zmin=sim_camb_results.hubble_parameter(zmin_sim)/(1+zmin_sim)
 
         # Get k_min for the sim data, & cut k values below that
-        k_min_Mpc=self.mock_sim.k_Mpc[0][1]
+        k_min_Mpc=self.mock_sim.k_Mpc[1]
         k_min_kms=k_min_Mpc/dkms_dMpc_zmin
         Ncull=np.sum(k<k_min_kms)
         k=k[Ncull:]
@@ -111,9 +112,9 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         for iz,z in enumerate(z_sim):
             # store P1D in Mpc, except k=0
             p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
-            k_Mpc=np.asarray(self.mock_sim.k_Mpc[iz][1:])
+            k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
             conversion_factor=sim_camb_results.hubble_parameter(z)/(1+z)
-
+            
             # evaluate P1D in data wavenumbers (in velocity units)
             interpolator=interp1d(k_Mpc,p1d_Mpc,"cubic")
             k_interp=k*conversion_factor

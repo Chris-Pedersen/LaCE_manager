@@ -13,7 +13,8 @@ class FullTheory(object):
     going through our Delta^2_\star parametrisation """
 
     def __init__(self,zs,emulator=None,camb_model_fid=None,verbose=False,
-                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None):
+                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
+                    pivot_scalar=0.05):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -36,7 +37,8 @@ class FullTheory(object):
         if camb_model_fid:
             self.camb_model_fid=camb_model_fid
         else:
-            self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs)
+            self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs,
+                            pivot_scalar=pivot_scalar)
 
         # setup fiducial IGM models
         if mf_model_fid:
@@ -59,16 +61,16 @@ class FullTheory(object):
 
         # look for parameters that would change background
         for par in like_params:
-            if par.name is 'ombh2':
+            if par.name == 'ombh2':
                 if not np.isclose(par.value,self.camb_model_fid.cosmo.ombh2):
                     return False
-            if par.name is 'omch2':
+            if par.name == 'omch2':
                 if not np.isclose(par.value,self.camb_model_fid.cosmo.omch2):
                     return False
-            if par.name is 'H0':
+            if par.name == 'H0':
                 if not np.isclose(par.value,self.camb_model_fid.cosmo.H0):
                     return False
-            if par.name is 'mnu':
+            if par.name == 'mnu':
                 if not np.isclose(par.value,camb_cosmo.get_mnu(
                             self.camb_model_fid.cosmo)):
                     return False
@@ -95,10 +97,10 @@ class FullTheory(object):
         ratio_As=1.0
         delta_ns=0.0
         for par in like_params:
-            if par.name is 'As':
+            if par.name == 'As':
                 fid_As = self.camb_model_fid.cosmo.InitPower.As
                 ratio_As = par.value / fid_As
-            if par.name is 'ns':
+            if par.name == 'ns':
                 fid_ns = self.camb_model_fid.cosmo.InitPower.ns
                 delta_ns = par.value - fid_ns
 

@@ -12,6 +12,7 @@ import fit_linP
 import full_theory
 import read_genic
 import CAMB_model
+import math
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -309,7 +310,7 @@ class Likelihood(object):
         # compute log_like (option to ignore emulator covariance)
         log_like=self.get_log_like(values,ignore_log_det_cov=False)
 
-        if log_like is None:
+        if log_like == None or math.isnan(log_like)==True:
             if self.verbose: print('was not able to emulate at least on P1D')
             return -np.inf
 

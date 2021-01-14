@@ -10,7 +10,7 @@ class ThermalModel(object):
         of the initial Latin hypercube in simulation space."""
 
     def __init__(self,z_T=3.0,ln_sigT_kms_coeff=None,ln_gamma_coeff=None,
-                            basedir="/p1d_emulator/sim_suites/Australia20/"):
+                            basedir="/LyaCosmoParams/emulator/sim_suites/Australia20/"):
         """ Model the redshift evolution of the thermal broadening scale and gamma.
         We use a power law rescaling around a fiducial simulation at the centre
         of the initial Latin hypercube in simulation space."""

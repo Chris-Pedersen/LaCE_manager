@@ -12,7 +12,7 @@ class PressureModel(object):
         of the initial Latin hypercube in simulation space."""
 
     def __init__(self,z_kF=3.0,ln_kF_coeff=None,
-                    basedir="/p1d_emulator/sim_suites/Australia20/"):
+                    basedir="/LyaCosmoParams/emulator/sim_suites/Australia20/"):
         """Construct model with central redshift and (x2,x1,x0) polynomial."""
 
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'

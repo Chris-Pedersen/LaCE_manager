@@ -18,7 +18,7 @@ class MeanFluxModel(object):
          """
 
     def __init__(self,z_tau=3.0,ln_tau_coeff=None,
-                    basedir="/p1d_emulator/sim_suites/Australia20/"):
+                    basedir="/LyaCosmoParams/emulator/sim_suites/Australia20/"):
         """Construct model as a rescaling around a fiducial mean flux evolution"""
 
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'

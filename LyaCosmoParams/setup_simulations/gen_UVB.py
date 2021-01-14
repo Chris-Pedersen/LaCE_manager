@@ -459,7 +459,7 @@ def generate_treecool_file(output_file='test_TREECOOL.txt',
                     z_mid_HI_reion=7.65, z_end_HeII_reion = 3.5,
                     DeltaTHI = 2.e4, DeltaTHeII = 1.5e+4):
     # input model will be, for now, that of HM2012
-    treecool_dir=os.environ['LYA_EMU_REPO']+'/setup_simulations/test_sim/'
+    treecool_dir=os.environ['LYA_EMU_REPO']+'/LyaCosmoParams/setup_simulations/treecool/'
     input_file=treecool_dir+'/TREECOOL_HM12.txt'
     # cosmology in HM2012
     Om=0.3

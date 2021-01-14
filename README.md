@@ -32,7 +32,7 @@ The following modules are required:
 
 `CAMB` version 1.1.3 https://github.com/cmbant/CAMB
 
-`GPy`
+`GPy` (only works with Python 3.8 or lower, not compatible with 3.9 as of 14/01/2021)
 
 `cProfile`
 

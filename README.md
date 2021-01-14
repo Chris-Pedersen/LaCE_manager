@@ -30,7 +30,7 @@ The following modules are required:
 
 `chainconsumer`
 
-`CAMB` version 1.1.3 https://github.com/cmbant/CAMB
+`CAMB` version 1.1.3 or later https://github.com/cmbant/CAMB (only works with Python 3.6 or later as of 14/01/2021)
 
 `GPy` (only works with Python 3.8 or lower, not compatible with 3.9 as of 14/01/2021)
 

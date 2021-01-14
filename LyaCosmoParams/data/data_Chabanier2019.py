@@ -11,7 +11,7 @@ class P1D_Chabanier2019(base_p1d_data.BaseDataP1D):
         # folder storing P1D measurement
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
-        basedir=repo+'/p1d_data//data_files/Chabanier2019/'
+        basedir=repo+'/data_files/Chabanier2019/'
 
         # read redshifts, wavenumbers, power spectra and covariance matrices
         z,k,Pk,cov=self._setup_from_file(basedir,add_syst)

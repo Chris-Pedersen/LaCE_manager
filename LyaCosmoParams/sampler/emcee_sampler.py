@@ -396,7 +396,7 @@ class EmceeSampler(object):
             chain_location=rootdir
         else:
             assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            chain_location=os.environ['LYA_EMU_REPO']+"/chains/"
+            chain_location=os.environ['LYA_EMU_REPO']+"/LyaCosmoParams/sampler/chains/"
         if subfolder:
             self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
         else:

@@ -10,7 +10,7 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
         # folder storing P1D measurement
         assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
         repo=os.environ['LYA_EMU_REPO']
-        basedir=repo+'/data_files/PD2013/'
+        basedir=repo+'/LyaCosmoParams/data/data_files/PD2013/'
 
         # read redshifts, wavenumbers, power spectra and covariance matrices
         if use_FFT:

@@ -2,9 +2,11 @@ import os
 import sys
 import json
 import configargparse
-import read_gadget
-import write_submit_skewers_dirac as wsd
-import filtering_length
+from LyaCosmoParams.setup_simulations import read_gadget
+from LyaCosmoParams.postprocess import filtering_length
+
+""" This step of the postprocessing does not involve job submission scripts
+as the fits are computationally fast """
 
 # get options from command line
 parser = configargparse.ArgumentParser()

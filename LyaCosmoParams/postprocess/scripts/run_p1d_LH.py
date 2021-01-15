@@ -4,7 +4,7 @@ import json
 import configargparse
 from shutil import copy
 import read_gadget
-import write_submit_p1d_dirac as wsd
+from LyaCosmoParams.postprocess import write_p1d_script as wps
 
 # get options from command line
 parser = configargparse.ArgumentParser()
@@ -54,7 +54,7 @@ for sample in range(nsamples):
         print('writing scripts for pair in',pair_dir)
 
     for sim in ['sim_plus','sim_minus']:
-        wsd.write_p1d_scripts_in_sim(simdir=pair_dir+'/'+sim,
+        wps.write_p1d_scripts_in_sim(simdir=pair_dir+'/'+sim,
                 n_skewers=args.n_skewers,width_Mpc=args.width_Mpc,
                 scales_tau=args.scales_tau,
                 time=args.time,zmax=args.zmax,

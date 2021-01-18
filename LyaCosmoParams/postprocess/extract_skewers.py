@@ -5,9 +5,9 @@ import json
 import fake_spectra.tempdens as tdr
 import fake_spectra.griddedspectra as grid_spec 
 # our modules
-import read_gadget
-import camb_cosmo
-import thermal_model
+from LyaCosmoParams.setup_simulations import read_gadget
+from LyaCosmoParams.cosmo import camb_cosmo
+from LyaCosmoParams.nuisance import thermal_model
 
 def get_skewers_filename(num,n_skewers,width_Mpc,scale_T0=None,
             scale_gamma=None):

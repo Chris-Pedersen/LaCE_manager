@@ -62,7 +62,7 @@ class TestSimulation(object):
             - z_max: discard redshifts above this cut
             - kmax_Mpc: take only k bins below this cut """
         
-        # There is a lot of overlap between this and functions in p1d_arxiv.py
+        # There is a lot of overlap between this and functions in p1d_archive.py
         
         ## First get zs from paramfile
         sim_config=read_gadget.read_gadget_paramfile(self.fulldir+

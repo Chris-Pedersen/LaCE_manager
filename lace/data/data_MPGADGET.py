@@ -6,7 +6,7 @@ import camb
 from lace.data import base_p1d_data
 from lace.data import data_PD2013
 from lace.data import data_Chabanier2019
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 from lace.emulator import test_simulation
 from lace.setup_simulations import read_genic
 from lace.cosmo import camb_cosmo
@@ -131,7 +131,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
     def _set_true_values(self):
         """ For each emulator parameter, generate an array of
-        true values from the arxiv """
+        true values from the archive """
 
         # Dictionary to hold true values
         self.truth={} 

@@ -8,17 +8,17 @@ from lace.setup_simulations import read_genic
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
 
-class ArxivP1D(object):
+class archiveP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
 
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 keep_every_other_rescaling=False,nearest_tau=False,
-                max_arxiv_size=None,undersample_z=1,verbose=False,
+                max_archive_size=None,undersample_z=1,verbose=False,
                 no_skewers=False,pick_sim_number=None,drop_sim_number=None,
                 z_max=5.,nsamples=None,undersample_cube=1,
                 kp_Mpc=None):
-        """Load arxiv from base sim directory and (optional) label
+        """Load archive from base sim directory and (optional) label
             identifying skewer configuration (number, width).
             If kp_Mpc is specified, recompute linP params in archive"""
 
@@ -48,7 +48,7 @@ class ArxivP1D(object):
         self.kp_Mpc=kp_Mpc
 
         self._load_data(drop_tau_rescalings,drop_temp_rescalings,
-                            max_arxiv_size,undersample_z,no_skewers,
+                            max_archive_size,undersample_z,no_skewers,
                             pick_sim_number,self.drop_sim_number,
                             keep_every_other_rescaling,
                             z_max,undersample_cube,nsamples)
@@ -60,11 +60,11 @@ class ArxivP1D(object):
 
 
     def _load_data(self,drop_tau_rescalings,drop_temp_rescalings,
-                            max_arxiv_size,undersample_z,no_skewers,
+                            max_archive_size,undersample_z,no_skewers,
                             pick_sim_number,drop_sim_number,
                             keep_every_other_rescaling,
                             z_max,undersample_cube,nsamples=None):
-        """Setup arxiv by looking at all measured power spectra in sims"""
+        """Setup archive by looking at all measured power spectra in sims"""
 
         # each measured power will have a dictionary, stored here
         self.data=[]
@@ -88,7 +88,7 @@ class ArxivP1D(object):
             self.kp_Mpc = n_star['kp_Mpc']
             update_kp=False
         elif self.kp_Mpc == self.cube_data['param_space']['n_star']['kp_Mpc']:
-            ## If selected k_p is same as in the arxiv, do not recompute
+            ## If selected k_p is same as in the archive, do not recompute
             update_kp=False
         else:
             # will trigger slow code, might be good to check that kp has indeed changed
@@ -219,27 +219,27 @@ class ArxivP1D(object):
                     self.data.append(p1d_data)                
 
         if keep_every_other_rescaling:
-            if self.verbose: print('will keep every other rescaling in arxiv')
+            if self.verbose: print('will keep every other rescaling in archive')
             self._keep_every_other_rescaling()
         if drop_tau_rescalings:
-            if self.verbose: print('will drop tau scalings from arxiv')
+            if self.verbose: print('will drop tau scalings from archive')
             self._drop_tau_rescalings()
         if drop_temp_rescalings:
-            if self.verbose: print('will drop temperature scalings from arxiv')
+            if self.verbose: print('will drop temperature scalings from archive')
             self._drop_temperature_rescalings()
 
-        if max_arxiv_size is not None:
+        if max_archive_size is not None:
             Ndata=len(self.data)
-            if Ndata > max_arxiv_size:
+            if Ndata > max_archive_size:
                 if self.verbose:
-                    print('will keep only',max_arxiv_size,'entries')
-                keep=np.random.randint(0,Ndata,max_arxiv_size)
+                    print('will keep only',max_archive_size,'entries')
+                keep=np.random.randint(0,Ndata,max_archive_size)
                 keep_data=[self.data[i] for i in keep]
                 self.data=keep_data
 
         N=len(self.data)
         if self.verbose:
-            print('Arxiv setup, containing %d entries'%len(self.data))
+            print('archive setup, containing %d entries'%len(self.data))
 
         # create 1D arrays with all entries for a given parameter
         self._store_param_arrays()
@@ -318,10 +318,10 @@ class ArxivP1D(object):
 
     def print_entry(self,entry,keys=['z','Delta2_p','n_p','alpha_p','f_p',
                                     'mF','sigT_Mpc','gamma','kF_Mpc']):
-        """Print basic information about a particular entry in the arxiv"""
+        """Print basic information about a particular entry in the archive"""
 
         if entry >= len(self.data):
-            raise ValueError('{} entry does not exist in arxiv'.format(entry))
+            raise ValueError('{} entry does not exist in archive'.format(entry))
 
         data = self.data[entry]
         info='entry = {}'.format(entry)
@@ -333,7 +333,7 @@ class ArxivP1D(object):
 
     def plot_samples(self,param_1,param_2,
                         tau_scalings=True,temp_scalings=True):
-        """For parameter pair (param1,param2), plot each point in the arxiv"""
+        """For parameter pair (param1,param2), plot each point in the archive"""
 
         # mask post-process scalings (optional)
         emu_data=self.data
@@ -348,7 +348,7 @@ class ArxivP1D(object):
         else:
             mask_temp=[True]*Nemu
 
-        # figure out values of param_1,param_2 in arxiv
+        # figure out values of param_1,param_2 in archive
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
                                                 mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
@@ -369,7 +369,7 @@ class ArxivP1D(object):
 
     def plot_3D_samples(self,param_1,param_2, param_3,
                         tau_scalings=True,temp_scalings=True):
-        """For parameter trio (param1,param2,param3), plot each point in the arxiv"""
+        """For parameter trio (param1,param2,param3), plot each point in the archive"""
 
         from mpl_toolkits import mplot3d
         # mask post-process scalings (optional)
@@ -385,7 +385,7 @@ class ArxivP1D(object):
         else:
             mask_temp=[True]*Nemu
 
-        # figure out values of param_1,param_2 in arxiv
+        # figure out values of param_1,param_2 in archive
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
                                                 mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (
@@ -407,30 +407,30 @@ class ArxivP1D(object):
 
         return
 
-    def sub_arxiv_mf(self,min_mf=0.0,max_mf=1.0):
-        """ Return copy of arxiv, with entries in a given mean flux range. """
+    def sub_archive_mf(self,min_mf=0.0,max_mf=1.0):
+        """ Return copy of archive, with entries in a given mean flux range. """
 
-        # make copy of arxiv
-        copy_arxiv=copy.deepcopy(self)
-        copy_arxiv.min_mf=min_mf
-        copy_arxiv.max_mf=max_mf
+        # make copy of archive
+        copy_archive=copy.deepcopy(self)
+        copy_archive.min_mf=min_mf
+        copy_archive.max_mf=max_mf
 
-        print(len(copy_arxiv.data),'initial entries')
+        print(len(copy_archive.data),'initial entries')
 
         # select entries in a given mean flux range
-        new_data=[d for d in copy_arxiv.data if (
+        new_data=[d for d in copy_archive.data if (
                                         d['mF'] < max_mf and d['mF'] > min_mf)]
 
         if self.verbose:
             print('use %d/%d entries'%(len(new_data),len(self.data)))
 
         # store new sub-data
-        copy_arxiv.data=new_data
+        copy_archive.data=new_data
 
         # re-create 1D arrays with all entries for a given parameter
-        copy_arxiv._store_param_arrays()
+        copy_archive._store_param_arrays()
 
-        return copy_arxiv
+        return copy_archive
 
 
     def get_param_values(self,param,tau_scalings=True,temp_scalings=True):
@@ -447,7 +447,7 @@ class ArxivP1D(object):
         else:
             mask_temp=[True]*N
 
-        # figure out values of param in arxiv
+        # figure out values of param in archive
         values=np.array([self.data[i][param] for i in range(N) if (
                                                 mask_tau[i] & mask_temp[i])])
 

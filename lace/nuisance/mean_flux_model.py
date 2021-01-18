@@ -6,7 +6,7 @@ import os
 
 def mean_flux_Kamble2019(z):
     """Mean transmitted flux fraction from eBOSS data (Kamble et al. 2019)"""
-    # unpublished work by Kamble et al., soon to appear on the arXiv
+    # unpublished work by Kamble et al., soon to appear on the archive
     tau = 0.0055*(1+z)**3.18
     return np.exp(-tau)
 

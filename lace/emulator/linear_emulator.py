@@ -3,7 +3,7 @@ import sys
 import os
 import json
 import scipy.interpolate
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 from lace.emulator import poly_p1d
 
 class LinearEmulator(object):
@@ -14,7 +14,7 @@ class LinearEmulator(object):
             emulate_growth=False,emulate_pressure=True,
             drop_tau_rescalings=False,drop_temp_rescalings=False,
             keep_every_other_rescaling=False,
-            deg=4,kmax_Mpc=10.0,max_arxiv_size=None,
+            deg=4,kmax_Mpc=10.0,max_archive_size=None,
             undersample_z=1,verbose=False):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
@@ -22,15 +22,15 @@ class LinearEmulator(object):
         self.verbose=verbose
 
         # read all files with P1D measured in simulation suite
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
+        self.archive=p1d_archive.archiveP1D(basedir,p1d_label,skewers_label,
                     drop_tau_rescalings=drop_tau_rescalings,
                     drop_temp_rescalings=drop_temp_rescalings,
                     keep_every_other_rescaling=keep_every_other_rescaling,
-                    max_arxiv_size=max_arxiv_size,undersample_z=undersample_z,
+                    max_archive_size=max_archive_size,undersample_z=undersample_z,
                     verbose=verbose)
 
-        # for each model in arxiv, fit smooth function to P1D
-        self._fit_p1d_in_arxiv(deg,kmax_Mpc)
+        # for each model in archive, fit smooth function to P1D
+        self._fit_p1d_in_archive(deg,kmax_Mpc)
 
         # setup parameter space to be used in emulator
         self._setup_param_space(emulate_slope=emulate_slope,
@@ -42,10 +42,10 @@ class LinearEmulator(object):
         self._setup_interp(deg)
         
 
-    def _fit_p1d_in_arxiv(self,deg,kmax_Mpc):
-        """For each entry in arxiv, fit polynomial to log(p1d)"""
+    def _fit_p1d_in_archive(self,deg,kmax_Mpc):
+        """For each entry in archive, fit polynomial to log(p1d)"""
         
-        for entry in self.arxiv.data:
+        for entry in self.archive.data:
             k_Mpc = entry['k_Mpc']
             p1d_Mpc = entry['p1d_Mpc']
             fit_p1d = poly_p1d.PolyP1D(k_Mpc,p1d_Mpc,kmin_Mpc=1.e-3,
@@ -74,18 +74,18 @@ class LinearEmulator(object):
     def _setup_interp(self,deg):
         """For each order in polynomial, setup interpolation object"""
 
-        # for each parameter in params, get values from arxiv
+        # for each parameter in params, get values from archive
         point_params=[]
         for par in self.params:
-            values = np.array([entry[par] for entry in self.arxiv.data])
+            values = np.array([entry[par] for entry in self.archive.data])
             point_params.append(values)
         self.points=np.vstack(point_params).transpose()
 
-        N=len(self.arxiv.data)
+        N=len(self.archive.data)
         self.linterps=[]
         for p in range(deg+1):
             print('setup interpolator for coefficient',p)
-            values = [entry['fit_p1d'].lnP[p] for entry in self.arxiv.data] 
+            values = [entry['fit_p1d'].lnP[p] for entry in self.archive.data] 
             linterp = scipy.interpolate.LinearNDInterpolator(self.points,values)
             self.linterps.append(linterp)
             # it is good to try the interpolator to finish the setup
@@ -129,7 +129,7 @@ class LinearEmulator(object):
         if self.verbose: print('got coefficients',coeffs)
 
         # set P1D object
-        kmin_Mpc=self.arxiv.data[0]['fit_p1d'].kmin_Mpc
+        kmin_Mpc=self.archive.data[0]['fit_p1d'].kmin_Mpc
         smooth_p1d = poly_p1d.PolyP1D(lnP_fit=coeffs,kmin_Mpc=kmin_Mpc)
         p1d_Mpc = smooth_p1d.P_Mpc(k_Mpc)
 

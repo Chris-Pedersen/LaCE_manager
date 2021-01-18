@@ -62,7 +62,7 @@ if verbose:
     print('snapshot has {} temperature rescalings'.format(Nsk))
 
 # measure flux power for all tau scalings, for all temperature scalings
-arxiv_p1d=snapshot.get_all_flux_power()
+archive_p1d=snapshot.get_all_flux_power()
 
 # write all measured power in a JSON file
 snapshot.write_p1d_json(p1d_label=args.p1d_label)

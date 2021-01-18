@@ -6,7 +6,7 @@ from lace.emulator import gp_emulator
 from lace.likelihood import likelihood
 from lace.sampler import emcee_sampler
 from lace.data import data_MPGADGET
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 
 
 rootdir="/media/chris/Hard/Work/EmulatorChains/chains" ## Directory where chains are stored
@@ -31,7 +31,7 @@ data=data_MPGADGET.P1D_MPGADGET(basedir=basedir,
 
 # Set up emulator training set
 z_max=4
-arxiv=p1d_arxiv.ArxivP1D(basedir=basedir,drop_sim_number=drop_sim_number,
+archive=p1d_archive.archiveP1D(basedir=basedir,drop_sim_number=drop_sim_number,
                             drop_tau_rescalings=True,z_max=z_max,
                             drop_temp_rescalings=True,skewers_label=skewers_label)
 
@@ -42,7 +42,7 @@ kmax_Mpc=8
 emu=gp_emulator.GPEmulator(basedir,p1d_label,skewers_label,z_max=z_max,
                                 verbose=False,paramList=paramList,train=True,
                                 asymmetric_kernel=True,rbf_only=True,
-                                emu_type="k_bin",passArxiv=arxiv,
+                                emu_type="k_bin",passarchive=archive,
                                 kmax_Mpc=kmax_Mpc)
 
 ## Set up likelihood object

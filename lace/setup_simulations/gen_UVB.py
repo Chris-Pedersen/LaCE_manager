@@ -397,7 +397,7 @@ def genQ2G_DeltaT(z,QHII,zcutH,QHeIII,zcutHe,
 
 
 ######################################################
-# A note on Eq. 11 in https://arxiv.org/abs/1607.04218:
+# A note on Eq. 11 in https://archive.org/abs/1607.04218:
 # Due to a poor description on my part this equation
 # is confusing. In fact, I am using the "regularized" or
 # "normalized" lower incomplete gamma function (and not

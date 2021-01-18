@@ -30,7 +30,7 @@ class FullTheory(object):
             print('using default values for emulator pivot point')
             self.emu_kp_Mpc=0.7
         else:
-            self.emu_kp_Mpc=self.emulator.arxiv.kp_Mpc
+            self.emu_kp_Mpc=self.emulator.archive.kp_Mpc
 
         # setup object to compute linear power for any cosmology
         if camb_model_fid:

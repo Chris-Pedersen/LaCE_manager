@@ -84,7 +84,7 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
 def get_mnu(pars):
     """Extract neutrino masses from CAMB object"""
 
-    # eq 12 in https://arxiv.org/pdf/astro-ph/0603494.pdf
+    # eq 12 in https://archive.org/pdf/astro-ph/0603494.pdf
     return pars.omnuh2*93.14
 
 

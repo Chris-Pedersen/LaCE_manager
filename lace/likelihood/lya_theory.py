@@ -28,7 +28,7 @@ class LyaTheory(object):
             print('using default values for emulator pivot point')
             emu_kp_Mpc=0.7
         else:
-            emu_kp_Mpc=self.emulator.arxiv.kp_Mpc
+            emu_kp_Mpc=self.emulator.archive.kp_Mpc
 
         # for now, used default pivot point for likelihood parameters
         like_z_star=3.0

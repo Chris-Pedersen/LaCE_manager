@@ -71,7 +71,7 @@ Executing command:
 ==================
 $CMD
 "
-eval $CMD'''%(name,output_files,output_files,time,postprocess_script,,options)
+eval $CMD'''%(name,output_files,output_files,time,postprocess_script,options)
     return submit_string
 
 ###################################################

@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import os
 import json
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 
 class SimplestEmulator(object):
     """Nearest-grid point emulator for flux P1D."""
@@ -10,18 +10,18 @@ class SimplestEmulator(object):
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
                 drop_tau_rescalings=False,drop_temp_rescalings=False,
                 keep_every_other_rescaling=False,
-                max_arxiv_size=None,undersample_z=1,verbose=False):
+                max_archive_size=None,undersample_z=1,verbose=False):
         """Setup emulator from base sim directory and label identifying skewer
             configuration (number, width)"""
 
         self.verbose=verbose
 
         # read all files with P1D measured in simulation suite
-        self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
+        self.archive=p1d_archive.archiveP1D(basedir,p1d_label,skewers_label,
                         drop_tau_rescalings=drop_tau_rescalings,
                         drop_temp_rescalings=drop_temp_rescalings,
                         keep_every_other_rescaling=keep_every_other_rescaling,
-                        max_arxiv_size=max_arxiv_size,
+                        max_archive_size=max_archive_size,
                         undersample_z=undersample_z,verbose=verbose)
 
         # define metric to compute distances between models
@@ -53,21 +53,21 @@ class SimplestEmulator(object):
 
 
     def get_distances(self,model):
-        """Compute distances from input model to all arxived models"""
+        """Compute distances from input model to all archiveed models"""
 
-        # loop over all models in arxiv
-        Nm=len(self.arxiv.data)
+        # loop over all models in archive
+        Nm=len(self.archive.data)
         distances=np.empty(Nm)
         for i in range(Nm):
-            distances[i]=self.get_distance(model,self.arxiv.data[i])
+            distances[i]=self.get_distance(model,self.archive.data[i])
 
         return distances
 
 
     def find_nearest_model(self,model):
-        """Given input model, find nearest model in arxiv"""
+        """Given input model, find nearest model in archive"""
 
-        # compute distance to all models in arxiv
+        # compute distance to all models in archive
         distances = self.get_distances(model)
         # identify nearest model
         nearest = np.argmin(distances)
@@ -76,16 +76,16 @@ class SimplestEmulator(object):
         
 
     def get_nearest_model(self,model):
-        """Given input model, return earest model in arxiv"""
+        """Given input model, return earest model in archive"""
 
         nearest = self.find_nearest_model(model)
-        if self.verbose: self.arxiv.print_entry(nearest)
+        if self.verbose: self.archive.print_entry(nearest)
 
-        return self.arxiv.data[nearest]
+        return self.archive.data[nearest]
 
 
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False):
-        """Return (k,p1d) for nearest model in arxiv"""
+        """Return (k,p1d) for nearest model in archive"""
 
         if self.verbose: print('asked to emulate model',model)
 

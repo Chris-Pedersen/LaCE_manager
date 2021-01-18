@@ -48,7 +48,7 @@ def write_p1d_script(script_name,simdir,snap_num,n_skewers,width_Mpc,
     output_files=simdir+'/slurm_p1d_'+str(snap_num)
 
     submit_string=get_job_script.get_job_script("calc_flux_p1d",
-                    "arxiv_flux_power.py",options,time,output_files)
+                    "archive_flux_power.py",options,time,output_files)
 
     submit_script = open(script_name,'w')
     for line in submit_string:

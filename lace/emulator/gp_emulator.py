@@ -6,22 +6,22 @@ import os
 import json
 from scipy.spatial import Delaunay
 from scipy.interpolate import interp1d
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 from lace.emulator import poly_p1d
 
 class GPEmulator:
     """
     Gaussian process emulator to emulate P1D from a simulation suite.
-    This will train on the data in an 'arxiv' object, and will return
+    This will train on the data in an 'archive' object, and will return
     a given P_1D(k) for the same k-bins used in training.
     GPEmulator.predict takes models in a dictionary format currently.
     """
     def __init__(self,basedir=None,p1d_label=None,skewers_label=None,
-                max_arxiv_size=None,verbose=False,kmax_Mpc=10.0,
+                max_archive_size=None,verbose=False,kmax_Mpc=10.0,
                 paramList=None,train=False,drop_tau_rescalings=False,
                 drop_temp_rescalings=False,keep_every_other_rescaling=False,
                 undersample_z=1,emu_type="k_bin",z_max=5,z_list=None,
-                passArxiv=None,set_noise_var=1e-3,asymmetric_kernel=False,
+                passarchive=None,set_noise_var=1e-3,asymmetric_kernel=False,
                 checkHulls=False,set_hyperparams=None,
                 paramLimits=None,rbf_only=False,
                 emu_per_k=False,
@@ -33,7 +33,7 @@ class GPEmulator:
         self.basedir=basedir
         self.emu_type=emu_type
         self.emu_noise=set_noise_var
-        self.max_arxiv_size=max_arxiv_size
+        self.max_archive_size=max_archive_size
         self.drop_tau_rescalings=drop_tau_rescalings
         self.drop_temp_rescalings=drop_temp_rescalings
         self.keep_every_other_rescaling=keep_every_other_rescaling
@@ -51,30 +51,30 @@ class GPEmulator:
         self.reduce_var_mf=reduce_var_mf ## Emulate P1D(k)*<F>^2.5
 
         # read all files with P1D measured in simulation suite
-        if passArxiv==None:
-            self.custom_arxiv=False
-            self.arxiv=p1d_arxiv.ArxivP1D(basedir,p1d_label,skewers_label,
-                        max_arxiv_size=self.max_arxiv_size,verbose=verbose,
+        if passarchive==None:
+            self.custom_archive=False
+            self.archive=p1d_archive.archiveP1D(basedir,p1d_label,skewers_label,
+                        max_archive_size=self.max_archive_size,verbose=verbose,
                         drop_tau_rescalings=drop_tau_rescalings,
                         drop_temp_rescalings=drop_temp_rescalings,z_max=self.z_max,
                         keep_every_other_rescaling=keep_every_other_rescaling,
                         undersample_z=undersample_z)
         else:
-            self.custom_arxiv=True
+            self.custom_archive=True
             if self.verbose:
-                print("Loading emulator using a specific arxiv, not the one set in basedir")
-            self.arxiv=passArxiv
+                print("Loading emulator using a specific archive, not the one set in basedir")
+            self.archive=passarchive
 
         ## Find max k bin
-        self.k_bin=np.max(np.where(self.arxiv.data[0]["k_Mpc"]<self.kmax_Mpc))+1
-        self.training_k_bins=self.arxiv.data[0]["k_Mpc"][1:self.k_bin]
+        self.k_bin=np.max(np.where(self.archive.data[0]["k_Mpc"]<self.kmax_Mpc))+1
+        self.training_k_bins=self.archive.data[0]["k_Mpc"][1:self.k_bin]
         ## If none, take all parameters
         if paramList==None:
         	self.paramList=['mF', 'sigT_Mpc', 'gamma', 'kF_Mpc', 'Delta2_p', 'n_p']
         else:
         	self.paramList=paramList
 
-        self._build_interp(self.arxiv,self.paramList)
+        self._build_interp(self.archive,self.paramList)
         self.trained=False
 
         if train==True:
@@ -89,31 +89,31 @@ class GPEmulator:
         self.emulators=None ## Flag that this is an individual emulator object
 
 
-    def _training_points_k_bin(self,arxiv):
+    def _training_points_k_bin(self,archive):
         ''' Method to get the Y training points in the form of the P1D
         at different k values '''
 
-        P1D_k=np.empty([len(self.arxiv.data),self.k_bin-1])
-        for aa in range(len(self.arxiv.data)):
-            P1D_k[aa]=self.arxiv.data[aa]['p1d_Mpc'][1:self.k_bin]
+        P1D_k=np.empty([len(self.archive.data),self.k_bin-1])
+        for aa in range(len(self.archive.data)):
+            P1D_k[aa]=self.archive.data[aa]['p1d_Mpc'][1:self.k_bin]
             if self.reduce_var_k:
                 P1D_k[aa]*=(1+self.training_k_bins)
             if self.reduce_var_z:
-                P1D_k[aa]*=1./((1+self.arxiv.data[aa]["z"])**3.8)
+                P1D_k[aa]*=1./((1+self.archive.data[aa]["z"])**3.8)
             if self.reduce_var_mf:
-                P1D_k[aa]*=((self.arxiv.data[aa]["mF"])**2)
+                P1D_k[aa]*=((self.archive.data[aa]["mF"])**2)
 
         return P1D_k
 
 
-    def _training_points_polyfit(self,arxiv):
+    def _training_points_polyfit(self,archive):
         ''' Method to get the Y training points in the form of polyfit 
         coefficients '''
 
-        self._fit_p1d_in_arxiv(4,self.kmax_Mpc)
-        coeffs=np.empty([len(self.arxiv.data),5]) ## Hardcoded to use 4th degree polynomial
-        for aa in range(len(self.arxiv.data)):
-            coeffs[aa]=self.arxiv.data[aa]['fit_p1d'] ## Collect P1D data for all k bins
+        self._fit_p1d_in_archive(4,self.kmax_Mpc)
+        coeffs=np.empty([len(self.archive.data),5]) ## Hardcoded to use 4th degree polynomial
+        for aa in range(len(self.archive.data)):
+            coeffs[aa]=self.archive.data[aa]['fit_p1d'] ## Collect P1D data for all k bins
 
         return coeffs
 
@@ -127,7 +127,7 @@ class GPEmulator:
         return params
 
 
-    def _buildTrainingSets(self,arxiv,paramList):
+    def _buildTrainingSets(self,archive,paramList):
         ''' Build the grids that contain the training parameters
         This is a nxm grid of X data (n for number of training points, m
         for number of parameters), and a length nxk set of Y  data, k being
@@ -135,48 +135,48 @@ class GPEmulator:
         coefficients for the polyfit emulator '''
 
         ## Grid that will contain all training params
-        params=np.empty([len(self.arxiv.data),len(paramList)])
+        params=np.empty([len(self.archive.data),len(paramList)])
 
         if self.emu_type=="k_bin":
-            trainingPoints=self._training_points_k_bin(arxiv)
+            trainingPoints=self._training_points_k_bin(archive)
         elif self.emu_type=="polyfit":
-            trainingPoints=self._training_points_polyfit(arxiv)
+            trainingPoints=self._training_points_polyfit(archive)
         else:
             print("Unknown emulator type, terminating")
             quit()
 
-        for aa in range(len(self.arxiv.data)):
+        for aa in range(len(self.archive.data)):
             for bb in range(len(paramList)):
-                params[aa][bb]=arxiv.data[aa][paramList[bb]] ## Populate parameter grid
+                params[aa][bb]=archive.data[aa][paramList[bb]] ## Populate parameter grid
 
         return params,trainingPoints
 
 
-    def _fit_p1d_in_arxiv(self,deg,kmax_Mpc):
-        """For each entry in arxiv, fit polynomial to log(p1d)"""
+    def _fit_p1d_in_archive(self,deg,kmax_Mpc):
+        """For each entry in archive, fit polynomial to log(p1d)"""
         
-        for entry in self.arxiv.data:
+        for entry in self.archive.data:
             k_Mpc = entry['k_Mpc']
             p1d_Mpc = entry['p1d_Mpc']
             fit_p1d = poly_p1d.PolyP1D(k_Mpc,p1d_Mpc,kmin_Mpc=1.e-3,
                     kmax_Mpc=kmax_Mpc,deg=deg)
-            entry['fit_p1d'] = fit_p1d.lnP_fit ## Add coeffs for each model to arxiv
+            entry['fit_p1d'] = fit_p1d.lnP_fit ## Add coeffs for each model to archive
 
 
-    def _build_interp(self,arxiv,paramList):
+    def _build_interp(self,archive,paramList):
         ''' Method to build an GP object from a spectra archive and list of parameters
         Currently the parameter rescaling is done by taking the min and max
         of the provided params, not by defining our own prior volume. Need to decide
         whether or not this is what we want. '''
 
-        self.X_param_grid,self.Ypoints=self._buildTrainingSets(arxiv,paramList)
+        self.X_param_grid,self.Ypoints=self._buildTrainingSets(archive,paramList)
 
         ## Get parameter limits for rescaling
         if self.paramLimits is None:
             self.paramLimits=self._get_param_limits(self.X_param_grid)
 
         ## Rescaling to unit volume
-        for cc in range(len(self.arxiv.data)):
+        for cc in range(len(self.archive.data)):
             self.X_param_grid[cc]=self._rescale_params(self.X_param_grid[cc],self.paramLimits)
         if self.verbose:
             print("Rescaled params to unity volume")
@@ -230,12 +230,12 @@ class GPEmulator:
         if self.emu_per_k:
             for gp in self.gp:
                 gp.initialize_parameter()
-                print("Training GP on %d points" % len(self.arxiv.data))
+                print("Training GP on %d points" % len(self.archive.data))
                 status = gp.optimize(messages=False)
                 print("Optimised")
         else:
             self.gp.initialize_parameter()
-            print("Training GP on %d points" % len(self.arxiv.data))
+            print("Training GP on %d points" % len(self.archive.data))
             status = self.gp.optimize(messages=False)
             print("Optimised")
 
@@ -392,7 +392,7 @@ class GPEmulator:
         
         model_dict={}
         for param in self.paramList:
-            model_dict[param]=self.arxiv.data[point_number][param]
+            model_dict[param]=self.archive.data[point_number][param]
         
         return model_dict
 
@@ -404,15 +404,15 @@ class GPEmulator:
         When an emulator is saved it will check the basedir
         for existing emulator saves.
         
-        We currently do not save emulators on custom arxivs
+        We currently do not save emulators on custom archives
         as it is impossible to know if the training points
         are all the same. Training points are currently
-        reassembled using the snapshot arxiv, and not
+        reassembled using the snapshot archive, and not
         saved alongside the emulator hyperparameters. '''
 
         ## Perform checks
-        if self.custom_arxiv or self.max_arxiv_size:
-            print("Cannot save emulators trained on custom arxivs")
+        if self.custom_archive or self.max_archive_size:
+            print("Cannot save emulators trained on custom archives")
             return
         if not self.trained:
             print("Cannot save an emulator that is not trained")
@@ -472,9 +472,9 @@ class GPEmulator:
 
         ## Perform same checks as when saving an emulator
         ## as save/load does not work with non-standard
-        ## data arxivs
+        ## data archives
 
-        if self.custom_arxiv or self.max_arxiv_size:
+        if self.custom_archive or self.max_archive_size:
             print("Cannot load emulators with non-standard training data")
             return
         if self.trained:
@@ -528,7 +528,7 @@ class GPEmulator:
 
         ## Load saved emulator dictionary
         repo=os.environ['LYA_EMU_REPO']
-        emulator_path=repo+self.arxiv.basedir+"/emulator.json"
+        emulator_path=repo+self.archive.basedir+"/emulator.json"
 
         with open(emulator_path,"r") as fp:
             emu_load=json.load(fp)
@@ -554,7 +554,7 @@ class GPEmulator:
         ## also reconstruct the training data
         if paramLimits is not None:
             self.paramLimits=paramLimits
-            self._build_interp(self.arxiv,self.paramList)
+            self._build_interp(self.archive,self.paramList)
         
         self.gp.update_model(False)
         self.gp.initialize_parameter()

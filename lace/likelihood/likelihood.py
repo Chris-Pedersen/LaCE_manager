@@ -425,7 +425,7 @@ class Likelihood(object):
         except:
             pass
         self.theory.emulator.verbose=False
-        self.theory.emulator.arxiv.verbose=False
+        self.theory.emulator.archive.verbose=False
 
 
     def go_loud(self):
@@ -438,7 +438,7 @@ class Likelihood(object):
         except:
             pass
         self.theory.emulator.verbose=True
-        self.theory.emulator.arxiv.verbose=True
+        self.theory.emulator.archive.verbose=True
 
 
     def get_simulation_suite_linP_params(self):
@@ -446,14 +446,14 @@ class Likelihood(object):
         in the training set of the emulator"""
 
         # simulation cube used in emulator
-        cube_data=self.theory.emulator.arxiv.cube_data
+        cube_data=self.theory.emulator.archive.cube_data
 
         # collect linP params for each simulation
         Delta2_stars=[]
         n_stars=[]
         for sim_num in range(cube_data["nsamples"]):
             # Don't include simulation used to generate mock data
-            if sim_num==self.theory.emulator.arxiv.drop_sim_number:
+            if sim_num==self.theory.emulator.archive.drop_sim_number:
                 continue
             else:
                 sim_linP_params=self.get_simulation_linP_params(sim_num)
@@ -471,7 +471,7 @@ class Likelihood(object):
         kp_kms = self.theory.cosmo.kp_kms
 
         # setup cosmology from GenIC file
-        sim_cosmo=self.theory.emulator.arxiv.get_simulation_cosmology(sim_num)
+        sim_cosmo=self.theory.emulator.archive.get_simulation_cosmology(sim_num)
 
         # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
@@ -536,10 +536,10 @@ class Likelihood(object):
     def overplot_emulator_calls(self,param_1,param_2,values=None,
                                 tau_scalings=True,temp_scalings=True):
         """For parameter pair (param1,param2), overplot emulator calls
-            with values stored in arxiv, color coded by redshift"""
+            with values stored in archive, color coded by redshift"""
 
         # mask post-process scalings (optional)
-        emu_data=self.theory.emulator.arxiv.data
+        emu_data=self.theory.emulator.archive.data
         Nemu=len(emu_data)
         if not tau_scalings:
             mask_tau=[x['scale_tau']==1.0 for x in emu_data]
@@ -551,7 +551,7 @@ class Likelihood(object):
         else:
             mask_temp=[True]*Nemu
 
-        # figure out values of param_1,param_2 in arxiv
+        # figure out values of param_1,param_2 in archive
         emu_1=np.array([emu_data[i][param_1] for i in range(Nemu) if (
                                                   mask_tau[i] & mask_temp[i])])
         emu_2=np.array([emu_data[i][param_2] for i in range(Nemu) if (

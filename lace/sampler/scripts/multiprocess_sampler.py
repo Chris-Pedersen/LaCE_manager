@@ -9,7 +9,7 @@ import time
 from lace.data import data_MPGADGET
 from lace.emulator import gp_emulator
 from lace.emulator import z_emulator
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 from lace.likelihood import likelihood
 from lace.sampler import emcee_sampler
 
@@ -101,7 +101,7 @@ data=data_MPGADGET.P1D_MPGADGET(sim_label=test_sim_number,
 zs=data.z
 
 ## Set up emulator training data
-archive=p1d_arxiv.ArxivP1D(basedir=args.basedir,
+archive=p1d_archive.archiveP1D(basedir=args.basedir,
                             drop_tau_rescalings=args.drop_tau_rescalings,z_max=args.z_max,
                             drop_sim_number=test_sim_number,nearest_tau=args.nearest_tau,
                             drop_temp_rescalings=args.drop_temp_rescalings,skewers_label=skewers_label,
@@ -110,7 +110,7 @@ archive=p1d_arxiv.ArxivP1D(basedir=args.basedir,
 ## Set up an emulator
 if args.z_emulator==False:
     emu=gp_emulator.GPEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
-                                    passArxiv=archive,
+                                    passarchive=archive,
                                     verbose=False,paramList=paramList,train=True,
                                     emu_type=args.emu_type, checkHulls=False,kmax_Mpc=kmax_Mpc,
                                     asymmetric_kernel=args.asym_kernel,rbf_only=args.asym_kernel,
@@ -120,7 +120,7 @@ if args.z_emulator==False:
 else:
     emu=z_emulator.ZEmulator(args.basedir,p1d_label,skewers_label,z_max=args.z_max,
                                     verbose=False,paramList=paramList,train=True,
-                                    emu_type=args.emu_type,passArxiv=archive,checkHulls=False,
+                                    emu_type=args.emu_type,passarchive=archive,checkHulls=False,
                                     kmax_Mpc=kmax_Mpc,
                                     drop_tau_rescalings=args.drop_tau_rescalings,
                                     drop_temp_rescalings=args.drop_temp_rescalings,

@@ -17,7 +17,7 @@ from lace.cosmo import fit_linP
 from lace.cosmo import camb_cosmo
 from lace.data import data_MPGADGET
 from lace.data import data_PD2013
-from lace.emulator import p1d_arxiv
+from lace.emulator import p1d_archive
 from lace.emulator import gp_emulator
 from lace.emulator import z_emulator
 from lace.likelihood import lya_theory
@@ -411,13 +411,13 @@ class EmceeSampler(object):
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
 
-        if self.verbose: print("Building arxiv")
+        if self.verbose: print("Building archive")
         try:
             kp=config["kp_Mpc"]
         except:
             kp=None
-        ## Set up the arxiv
-        archive=p1d_arxiv.ArxivP1D(basedir=config["basedir"],
+        ## Set up the archive
+        archive=p1d_archive.archiveP1D(basedir=config["basedir"],
                             drop_tau_rescalings=config["drop_tau_rescalings"],
                             drop_temp_rescalings=config["drop_temp_rescalings"],
                             nearest_tau=config["nearest_tau"],
@@ -440,7 +440,7 @@ class EmceeSampler(object):
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
                                 reduce_var_mf=reduce_var,
-                                passArxiv=archive,verbose=self.verbose)
+                                passarchive=archive,verbose=self.verbose)
         else:
             emulator=gp_emulator.GPEmulator(paramList=config["paramList"],
                                 train=True,
@@ -449,7 +449,7 @@ class EmceeSampler(object):
                                 asymmetric_kernel=config["asym_kernel"],
                                 rbf_only=config["asym_kernel"],
                                 reduce_var_mf=reduce_var,
-                                passArxiv=archive,verbose=self.verbose)
+                                passarchive=archive,verbose=self.verbose)
 
         ## Try/excepts are for backwards compatibility
         ## as old config files don't have these entries
@@ -569,16 +569,16 @@ class EmceeSampler(object):
 
         saveDict={}
 
-        ## Arxiv settings
-        saveDict["basedir"]=self.like.theory.emulator.arxiv.basedir
-        saveDict["skewers_label"]=self.like.theory.emulator.arxiv.skewers_label
-        saveDict["p1d_label"]=self.like.theory.emulator.arxiv.p1d_label
-        saveDict["drop_tau_rescalings"]=self.like.theory.emulator.arxiv.drop_tau_rescalings
-        saveDict["drop_temp_rescalings"]=self.like.theory.emulator.arxiv.drop_temp_rescalings
-        saveDict["nearest_tau"]=self.like.theory.emulator.arxiv.nearest_tau
-        saveDict["z_max"]=self.like.theory.emulator.arxiv.z_max
-        saveDict["undersample_cube"]=self.like.theory.emulator.arxiv.undersample_cube
-        saveDict["kp_Mpc"]=self.like.theory.emulator.arxiv.kp_Mpc
+        ## archive settings
+        saveDict["basedir"]=self.like.theory.emulator.archive.basedir
+        saveDict["skewers_label"]=self.like.theory.emulator.archive.skewers_label
+        saveDict["p1d_label"]=self.like.theory.emulator.archive.p1d_label
+        saveDict["drop_tau_rescalings"]=self.like.theory.emulator.archive.drop_tau_rescalings
+        saveDict["drop_temp_rescalings"]=self.like.theory.emulator.archive.drop_temp_rescalings
+        saveDict["nearest_tau"]=self.like.theory.emulator.archive.nearest_tau
+        saveDict["z_max"]=self.like.theory.emulator.archive.z_max
+        saveDict["undersample_cube"]=self.like.theory.emulator.archive.undersample_cube
+        saveDict["kp_Mpc"]=self.like.theory.emulator.archive.kp_Mpc
 
         ## Emulator settings
         saveDict["paramList"]=self.like.theory.emulator.paramList

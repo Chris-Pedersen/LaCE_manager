@@ -78,7 +78,7 @@ for sample in range(nsamples):
                                 scales_tau=scales_tau,
                                 kF_Mpc=kF_Mpc)
             # measure flux power for all tau scalings, for all temperature scalings
-            arxiv_p1d=snapshot.get_all_flux_power(pair_dir)
+            archive_p1d=snapshot.get_all_flux_power(pair_dir)
 
             # write all measured power in a JSON file
             snapshot.write_p1d_json(p1d_label=args.p1d_label)

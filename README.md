@@ -3,7 +3,11 @@ Lyman-alpha Cosmology Emulator. This code is a Gaussian process emulator for the
 of the Lyman-alpha forest, and was used to generate the results shown in
 https://arxiv.org/abs/2011.15127.
 
-Dependencies:
+## Installation
+
+Run `python setup.py install --user` after ensuring dependencies listed below are met.
+
+#### Dependencies:
 Python version 3.6 or later is necessary due to `CAMB` version dependencies.
 
 The following modules are required:

@@ -1,12 +1,12 @@
 import numpy as np
 import configargparse
 import os
-# our modules below
-import snapshot_admin
-import extract_skewers
-import measure_flux_power
-import read_gadget
 import json
+# our modules below
+from lace.postprocess import snapshot_admin
+from lace.postprocess import extract_skewers
+from lace.postprocess import measure_flux_power
+from lace.setup_simulations import read_gadget
 
 """
 Script will run the final step of the postprocessing, the calculation of the
@@ -24,7 +24,6 @@ parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separat
 parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--p1d_label', type=str, default=None, help='String identifying P1D measurement and / or tau scaling.',required=False)
 args = parser.parse_args()
-
 
 print(args.scales_tau)
 

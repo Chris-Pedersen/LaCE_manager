@@ -2,9 +2,12 @@ import os
 import sys
 import json
 import configargparse
-from shutil import copy
-import read_gadget
+from lace.setup_simulations import read_gadget
 from lace.postprocess import write_skewers_scripts as wss
+
+"""
+Script to run fake_spectra on all sims a specified LH suite
+"""
 
 # get options from command line
 parser = configargparse.ArgumentParser()

@@ -3,8 +3,13 @@ import sys
 import json
 import configargparse
 from shutil import copy
-from lace.postprocess setup_simulations import read_gadget
+from lace.setup_simulations import read_gadget
 from lace.postprocess import write_genpk_script as wgs
+
+"""
+Run Keir's modified GenPK on all sims in a specified
+LH suite
+"""
 
 # get options from command line
 parser = configargparse.ArgumentParser()

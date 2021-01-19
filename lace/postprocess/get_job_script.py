@@ -24,9 +24,9 @@ def get_hypatia_script(name,postprocess_script,options,time,output_files):
 #SBATCH -o %s.out
 #SBATCH -e %s.err
 #SBATCH --nodes=1
-#SBATCH --ntasks=40
+#SBATCH --ntasks=24
 #SBATCH --time=%s
-#SBATCH -p RCIF
+#SBATCH -p CORES24
 #! Number of nodes and tasks per node allocated by SLURM (do not change):
 numnodes=$SLURM_JOB_NUM_NODES
 numtasks=$SLURM_NTASKS
@@ -35,14 +35,14 @@ mpi_tasks_per_node=$(echo "$SLURM_TASKS_PER_NODE" | sed -e  's/^\([0-9][0-9]*\).
 module load python/3.6.4
 module load hdf5/1.10.1
 #! Full path to application executable: 
-lya_scripts="/home/chrisp/Projects/lace/post_process/scripts"
+lya_scripts="/home/chrisp/Codes/LaCE/lace/postprocess/single_sim_scripts"
 application="python3 $lya_scripts/%s"
 # setup options 
 options="%s"
 #! Work directory (i.e. where the job will run):
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the directory
                              # in which sbatch is run.
-export OMP_NUM_THREADS=40
+export OMP_NUM_THREADS=24
 np=$[${numnodes}*${mpi_tasks_per_node}]
 export I_MPI_PIN_DOMAIN=omp:compact # Domains are $OMP_NUM_THREADS cores in size
 export I_MPI_PIN_ORDER=scatter # Adjacent domains have minimal sharing of caches/sockets

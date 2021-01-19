@@ -5,6 +5,8 @@ https://arxiv.org/abs/2011.15127.
 
 ## Installation
 
+Set an environment variable `export LYA_EMU_REPO=/path/to/repo/LaCE`
+
 Run `python setup.py install --user` after ensuring dependencies listed below are met.
 
 #### Dependencies:

@@ -5,7 +5,7 @@ from lace.postprocess import write_skewers_scripts as wss
 Script to run fake_spectra on all snapshots for a given simulation
 """
 
-pair_dir="/share/rcifdata/chrisp/emulator_768_09122019/sim_pair_h"
+pair_dir="/share/rcifdata/chrisp/Aus20_Kathleens/P18"
 scales_T0='1.0'
 scales_gamma='1.0'
 n_skewers=500

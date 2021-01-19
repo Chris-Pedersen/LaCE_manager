@@ -7,7 +7,7 @@ as the fits are computationally fast """
 verbose=True
 show_plots=False
 
-pair_dir="/share/rcifdata/chrisp/emulator_768_09122019/sim_pair_h"
+pair_dir="/share/rcifdata/chrisp/Aus20_Kathleens/P18"
 
 kmax_Mpc = 15
 

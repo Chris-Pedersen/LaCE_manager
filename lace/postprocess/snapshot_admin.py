@@ -47,7 +47,7 @@ class SnapshotAdmin(object):
         genic_file=simdir+'/paramfile.genic'
         L_Mpc=read_genic.L_Mpc_from_paramfile(genic_file,verbose=True)
 
-        skewers_dir=simdir+"output/skewers/"
+        skewers_dir=simdir+"/output/skewers/"
         snap_num=self.data['snap_num']
 
         # will loop over all temperature models in snapshot

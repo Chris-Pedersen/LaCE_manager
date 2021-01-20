@@ -7,7 +7,7 @@ calculate the p1d and write an archive-format .json file to
 store the mock p1d and parameters for a given training point.
 """
 
-pair_dir="/share/rcifdata/chrisp/emulator_768_09122019/sim_pair_29"
+pair_dir="/share/rcifdata/chrisp/Aus20_Kathleens/P18"
 n_skewers = 500
 width_Mpc = 0.05
 zmax = 6.0

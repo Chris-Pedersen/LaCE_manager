@@ -1,13 +1,14 @@
-""" Extract skewers for a given snapshot, using different temperatures. """
-
 import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import argparse
-# our modules below
-import extract_skewers
-import read_gadget
 import json
+# our modules below
+from lace.postprocess import extract_skewers
+from lace.setup_simulations import read_gadget
+
+""" Extract skewers for a given snapshot, using different temperatures. """
+
 
 # get options from command line
 parser = argparse.ArgumentParser()

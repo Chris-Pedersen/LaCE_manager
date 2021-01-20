@@ -8,7 +8,7 @@ def flux_real_genpk_filename(simdir, snap_num):
 
 
 def compute_flux_real_power(simdir, snap_num,verbose=False,
-                genpk_full_path='/home/dc-font1/Codes/GenPK_Keir/gen-pk'):
+                genpk_full_path='/home/chrisp/Codes/GenPK_Keir/gen-pk'):
     """Measure power spectrum of exp(-tau_noRSD), using GenPk"""
 
     # will store measured "flux real" power here

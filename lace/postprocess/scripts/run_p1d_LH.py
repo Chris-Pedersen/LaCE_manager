@@ -2,9 +2,14 @@ import os
 import sys
 import json
 import configargparse
-from shutil import copy
-import read_gadget
+from lace.setup_simulations import read_gadget
 from lace.postprocess import write_p1d_script as wps
+
+"""
+For all sims in a LH suite, read the fake_spectra files,
+calculate the p1d and write an archive-format .json file to
+store the mock p1d and parameters for a given training point.
+"""
 
 # get options from command line
 parser = configargparse.ArgumentParser()

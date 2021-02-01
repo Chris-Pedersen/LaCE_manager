@@ -22,6 +22,12 @@ class TestSimulation(object):
                 -- "h", which corresponds to the simulation with h=0.74
                 -- "central", the central simulation of the initial LH,
                    which is used as the fiducial IGM model
+                -- "P18" which is a simulation using the same cosmology
+                   as the "central" sim, but running with a Puchwein2018
+                   treecool file
+                -- "diffSeed" which is the same simulation as "central",
+                   except using a different random seed in the ICs (this is
+                   still paired and fixed)
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
@@ -45,6 +51,10 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"h_sim"
         elif sim_label=="central":
             self.fulldir=repo+basedir+"central"
+        elif sim_label=="P18":
+            self.fulldir=repo+basedir+"P18_sim"
+        elif sim_label="diffSeed":
+            self.fulldir=repo+basedir+"diffSeed_sim"
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
 

@@ -12,8 +12,8 @@ class TestSimulation(object):
     either on the emulator directly in Mpc or on the sampler
     in velocity units """
 
-    def __init__(self,basedir,sim_label,skewers_label,
-            z_max,kmax_Mpc,kp_Mpc,pivot_scalar=0.05):
+    def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',
+            z_max=4.0,kmax_Mpc=8,kp_Mpc=0.7,pivot_scalar=0.05):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
             - sim_label can be either:
@@ -55,6 +55,10 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"P18_sim"
         elif sim_label=="diffSeed":
             self.fulldir=repo+basedir+"diffSeed_sim"
+        elif sim_label=="running":
+            self.fulldir=repo+basedir+"running_sim"
+        else:
+            print("Simulation not found")
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
 

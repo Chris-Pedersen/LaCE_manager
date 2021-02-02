@@ -53,7 +53,7 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"central"
         elif sim_label=="P18":
             self.fulldir=repo+basedir+"P18_sim"
-        elif sim_label="diffSeed":
+        elif sim_label=="diffSeed":
             self.fulldir=repo+basedir+"diffSeed_sim"
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p

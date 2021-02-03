@@ -28,6 +28,9 @@ class TestSimulation(object):
                 -- "diffSeed" which is the same simulation as "central",
                    except using a different random seed in the ICs (this is
                    still paired and fixed)
+                -- "running" is a test simulation with a small amount of 
+                   running of the spectral index
+                -- "curved" is a simulation with nonzero curvature parameter
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
@@ -57,6 +60,8 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"diffSeed_sim"
         elif sim_label=="running":
             self.fulldir=repo+basedir+"running_sim"
+        elif sim_label=="curved":
+            self.fulldir=repo+basedir+"curved_sim"
         else:
             print("Simulation not found")
             

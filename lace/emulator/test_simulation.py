@@ -12,8 +12,8 @@ class TestSimulation(object):
     either on the emulator directly in Mpc or on the sampler
     in velocity units """
 
-    def __init__(self,basedir,sim_label,skewers_label,
-            z_max,kmax_Mpc,kp_Mpc,pivot_scalar=0.05):
+    def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',
+            z_max=4.0,kmax_Mpc=8,kp_Mpc=0.7,pivot_scalar=0.05):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
             - sim_label can be either:
@@ -22,6 +22,15 @@ class TestSimulation(object):
                 -- "h", which corresponds to the simulation with h=0.74
                 -- "central", the central simulation of the initial LH,
                    which is used as the fiducial IGM model
+                -- "P18" which is a simulation using the same cosmology
+                   as the "central" sim, but running with a Puchwein2018
+                   treecool file
+                -- "diffSeed" which is the same simulation as "central",
+                   except using a different random seed in the ICs (this is
+                   still paired and fixed)
+                -- "running" is a test simulation with a small amount of 
+                   running of the spectral index
+                -- "curved" is a simulation with nonzero curvature parameter
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
@@ -45,6 +54,16 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"h_sim"
         elif sim_label=="central":
             self.fulldir=repo+basedir+"central"
+        elif sim_label=="P18":
+            self.fulldir=repo+basedir+"P18_sim"
+        elif sim_label=="diffSeed":
+            self.fulldir=repo+basedir+"diffSeed_sim"
+        elif sim_label=="running":
+            self.fulldir=repo+basedir+"running_sim"
+        elif sim_label=="curved":
+            self.fulldir=repo+basedir+"curved_sim"
+        else:
+            print("Simulation not found")
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
 

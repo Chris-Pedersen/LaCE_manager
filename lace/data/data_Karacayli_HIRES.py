@@ -7,22 +7,22 @@ class P1D_Karacayli_HIRES(base_p1d_data.BaseDataP1D):
     def __init__(self,diag_cov=True):
         """Read measured P1D from file"""
 
-        # folder storing P1D measurement
-        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        repo=os.environ['LYA_EMU_REPO']
-        basedir=repo+'/lace/data/data_files/Karacayli_HIRES/'
-
         # read redshifts, wavenumbers, power spectra and covariance matrices
-        z,k,Pk,cov=self._read_file(basedir,diag_cov)
+        z,k,Pk,cov=self._read_file(diag_cov)
 
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
 
         return
 
 
-    def _read_file(self,basedir,diag_cov):
+    def _read_file(self,diag_cov):
         """Read file containing mock P1D"""
-    
+
+        # folder storing P1D measurement
+        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
+        repo=os.environ['LYA_EMU_REPO']
+        basedir=repo+'/lace/data/data_files/Karacayli_HIRES/'
+
         # start by reading the file with measured band power
         p1d_file=basedir+'highres-mock-power-spectrum.txt'
         with open(p1d_file, 'r') as reader:

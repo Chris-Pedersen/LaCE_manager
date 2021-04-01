@@ -6,6 +6,8 @@ import camb
 from lace.data import base_p1d_data
 from lace.data import data_PD2013
 from lace.data import data_Chabanier2019
+from lace.data import data_Karacayli_DESI
+from lace.data import data_Karacayli_HIRES
 from lace.emulator import p1d_archive
 from lace.emulator import test_simulation
 from lace.setup_simulations import read_genic
@@ -73,6 +75,10 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             data_file=data_Chabanier2019.P1D_Chabanier2019(add_syst=add_syst)
         elif self.data_cov_label=="PD2013":
             data_file=data_PD2013.P1D_PD2013(add_syst=add_syst)
+        elif self.data_cov_label=="Karacayli_DESI":
+            data_file=data_Karacayli_DESI.P1D_Karacayli_DESI()
+        elif self.data_cov_label=="Karacayli_HIRES":
+            data_file=data_Karacayli_HIRES.P1D_Karacayli_HIRES()
         else:
             print("Unknown data_cov_label",self.data_cov_label)
             quit()

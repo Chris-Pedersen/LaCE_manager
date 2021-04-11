@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.interpolate import interp1d
 from lace.likelihood import likelihood_parameter
 import os
 
@@ -23,6 +24,8 @@ class ThermalModel(object):
         self.fid_z=fiducial[0]
         self.fid_gamma=fiducial[2] ## gamma(z)
         self.fid_sigT_kms=fiducial[3] ## sigT_kms(z)
+        self.fid_sigT_kms_interp=interp1d(self.fid_z,self.fid_sigT_kms,kind="cubic")
+        self.fid_gamma_interp=interp1d(self.fid_z,self.fid_gamma,kind="cubic")
 
         self.z_T=z_T
         if not ln_sigT_kms_coeff:
@@ -65,13 +68,13 @@ class ThermalModel(object):
 
     def get_sigT_kms(self,z):
         """sigT_kms at the input redshift"""
-        sigT_kms=self.power_law_scaling_sigT_kms(z)*self.fid_sigT_kms[np.argwhere(self.fid_z==z)[0][0]]
+        sigT_kms=self.power_law_scaling_sigT_kms(z)*self.fid_sigT_kms_interp(z)
         return sigT_kms
 
 
     def get_gamma(self,z):
         """gamma at the input redshift"""
-        gamma=self.power_law_scaling_gamma(z)*self.fid_gamma[np.argwhere(self.fid_z==z)[0][0]]
+        gamma=self.power_law_scaling_gamma(z)*self.fid_gamma_interp(z)
         return gamma
 
 

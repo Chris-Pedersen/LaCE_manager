@@ -12,7 +12,7 @@ class TestSimulation(object):
     either on the emulator directly in Mpc or on the sampler
     in velocity units """
 
-    def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',
+    def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',p1d_label="p1d",
             z_max=4.0,kmax_Mpc=8,kp_Mpc=0.7,pivot_scalar=0.05):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
@@ -31,6 +31,9 @@ class TestSimulation(object):
                 -- "running" is a test simulation with a small amount of 
                    running of the spectral index
                 -- "curved" is a simulation with nonzero curvature parameter
+                -- "diff_z" is the same simulation as the "central" sim,
+                   but with snapshots at the same redshifts as the Chabanier2019
+                   measurement
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
             - kmax_Mpc sets the highest k bin to store the P_1D for
@@ -62,13 +65,16 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"running_sim"
         elif sim_label=="curved":
             self.fulldir=repo+basedir+"curved_sim"
+        elif sim_label=="diff_z":
+            self.fulldir=repo+basedir+"diff_z"
+
         else:
             print("Simulation not found")
             
         self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
 
         self.skewers_label=skewers_label
-        self.p1d_label="p1d"
+        self.p1d_label=p1d_label
         
         self._read_json_files(z_max,kmax_Mpc,pivot_scalar=pivot_scalar)
 

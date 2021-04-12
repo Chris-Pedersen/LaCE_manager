@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.interpolate import interp1d
 from lace.likelihood import likelihood_parameter
 import os
 
@@ -22,6 +23,7 @@ class PressureModel(object):
         fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
         self.fid_z=fiducial[0]
         self.fid_kF=fiducial[4] ## kF_kms(z)
+        self.fid_kF_interp=interp1d(self.fid_z,self.fid_kF,kind="cubic")
 
 
         self.z_kF=z_kF
@@ -48,7 +50,7 @@ class PressureModel(object):
 
     def get_kF_kms(self,z):
         """kF_kms at the input redshift"""
-        kF_kms=self.power_law_scaling(z)*self.fid_kF[np.argwhere(self.fid_z==z)[0][0]]
+        kF_kms=self.power_law_scaling(z)*self.fid_kF_interp(z)
         return kF_kms
 
 

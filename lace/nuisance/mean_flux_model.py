@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.interpolate import interp1d
 from lace.likelihood import likelihood_parameter
 import os
 
@@ -28,6 +29,7 @@ class MeanFluxModel(object):
         fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
         self.fid_z=fiducial[0]
         self.fid_tau_eff=fiducial[1] ## tau_eff(z)
+        self.fid_tau_interp=interp1d(self.fid_z,self.fid_tau_eff,kind="cubic")
 
         self.z_tau=z_tau
         if not ln_tau_coeff:
@@ -53,7 +55,7 @@ class MeanFluxModel(object):
 
     def get_tau_eff(self,z):
         """Effective optical depth at the input redshift"""
-        tau_eff=self.power_law_scaling(z)*self.fid_tau_eff[np.argwhere(self.fid_z==z)[0][0]]
+        tau_eff=self.power_law_scaling(z)*self.fid_tau_interp(z)
         return tau_eff
 
 

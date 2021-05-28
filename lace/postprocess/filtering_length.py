@@ -12,35 +12,36 @@ def power_spectrum_model(k, A, n, kF):
     return A * (k ** n) * np.exp(-1. * ((k /kF) ** 2))
 
 
-def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,run_genpk=False,
+def fit_filtering_length(raw_dir,post_dir,
+                kmax_Mpc=None,verbose=False,run_genpk=False,
                 genpk_full_path='/home/dc-font1/Codes/GenPK_Keir/gen-pk',
                 write_json=True,show_plots=False,store_plots=False):
     """For each snapshot fit filtering length from measured "flux real" power"""
 
     # figure out snapshots in simulation
-    paramfile=simdir+'/paramfile.gadget'
+    paramfile=raw_dir+'/paramfile.gadget'
     if verbose: print('read GADGET config file',paramfile)
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     Nsnap=len(zs)
 
     # measured "flux real" power stored here
-    genpkdir=simdir+'/genpk/'
+    genpkdir=post_dir+'/genpk/'
     os.makedirs(genpkdir,exist_ok=True)
 
     # snapshot outputs are here
-    outdir=simdir+'/output/'
+    outdir=raw_dir+'/output/'
 
     # store filtering lengths here
     kF_Mpc=[]
 
     for num in range(Nsnap):
         # make sure that GenPk has been run for this snapshot
-        genpk_filename=flux_real_genpk.flux_real_genpk_filename(simdir,num)
+        genpk_filename=flux_real_genpk.flux_real_genpk_filename(post_dir,num)
         if not os.path.exists(genpk_filename):
             if verbose: print('genpk not ran yet',genpk_filename)
             if run_genpk:
-                flux_real_genpk.compute_flux_real_power(simdir,snap_num,num,
-                            verbose=False,genpk_full_path=genpk_full_path)
+                flux_real_genpk.compute_flux_real_power(raw_dir,post_dir,
+                        num,verbose=False,genpk_full_path=genpk_full_path)
         else:
             if verbose: print('genpk already ran',genpk_filename)
 
@@ -104,8 +105,9 @@ def fit_filtering_length(simdir, kmax_Mpc=None,verbose=False,run_genpk=False,
         plt.show()
 
     # store information in json file
-    json_filename=simdir+'/filtering_length.json'
-    kF_data = {'simdir':simdir, 'kF_Mpc':kF_Mpc, 'kmax_kF_Mpc':kmax_Mpc}
+    json_filename=post_dir+'/filtering_length.json'
+    kF_data = {'raw_dir':raw_dir, 'post_dir':post_dir,
+                'kF_Mpc':kF_Mpc, 'kmax_kF_Mpc':kmax_Mpc}
     kF_data['kF_zs']=zs.tolist()
 
     json_file = open(json_filename,"w")

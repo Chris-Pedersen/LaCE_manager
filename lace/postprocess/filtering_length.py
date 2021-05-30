@@ -45,10 +45,18 @@ def fit_filtering_length(raw_dir,post_dir,
         else:
             if verbose: print('genpk already ran',genpk_filename)
 
-        # snapshot redshift
+        # get extra information from snapshot
         z=zs[num]
-        # extra information from snapshot
-        snap=absn.AbstractSnapshotFactory(num,outdir,Tscale=1.0,gammascale=1.0)
+        try:
+            # code valid in Chris' fork of fake_spectra
+            snap=absn.AbstractSnapshotFactory(num,outdir,
+                        Tscale=1.0,gammascale=1.0)
+            print('successfully read snapshot using fork from Chris')
+        except:
+            # code valid in Simeon's fork of fake_spectra
+            snap=absn.AbstractSnapshotFactory(num,outdir)
+            print('successfully read snapshot using fork from Simeon')
+
         # normalized Hubble parameter h ~ 0.7)
         hubble = snap.get_header_attr("HubbleParam")
         # box size in kpc/h

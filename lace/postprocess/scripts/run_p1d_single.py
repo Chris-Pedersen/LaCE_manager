@@ -1,4 +1,3 @@
-from lace.setup_simulations import read_gadget
 from lace.postprocess import write_p1d_script as wps
 
 """

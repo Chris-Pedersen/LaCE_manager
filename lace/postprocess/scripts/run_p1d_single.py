@@ -17,16 +17,15 @@ p1d_label="p1d"
 verbose=True
 
 # directory with raw simulation outputs
-raw_dir='/data/desi/common/HydroData/Emulator/sims_256/'
+raw_dir='/data/desi/common/HydroData/Emulator/sims_256/sim_pair_0/'
 #raw_dir='/share/rcifdata/chrisp/Aus20_Kathleens/P18/'
 
 # directory with simulation post-procesings
-post_dir='/data/desi/common/HydroData/Emulator/test_256/'
+post_dir='/data/desi/common/HydroData/Emulator/test_256/sim_pair_0/'
 #post_dir='/share/rcifdata/chrisp/Aus20_Kathleens/P18/'
 
 for sim in ['sim_plus','sim_minus']:
-    sim_tag='/'+pair_tag+'/'+sim
-    wps.write_p1d_scripts_in_sim(raw_dir+sim_tag,post_dir+sim_tag,
+    wps.write_p1d_scripts_in_sim(raw_dir+'/'+sim,post_dir+'/'+sim,
             n_skewers=n_skewers,width_Mpc=width_Mpc,
             scales_tau=scales_tau,
             time=time,zmax=zmax,

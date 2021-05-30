@@ -14,16 +14,15 @@ run=True
 zmax=6
 
 # directory with raw simulation outputs
-raw_dir='/data/desi/common/HydroData/Emulator/sims_256/'
+raw_dir='/data/desi/common/HydroData/Emulator/sims_256/sim_pair_1/'
 #raw_dir='/share/rcifdata/chrisp/Aus20_Kathleens/P18/'
 
 # directory with simulation post-procesings
-post_dir='/data/desi/common/HydroData/Emulator/test_256/'
+post_dir='/data/desi/common/HydroData/Emulator/test_256/sim_pair_1/'
 #post_dir='/share/rcifdata/chrisp/Aus20_Kathleens/P18/'
 
 for sim in ['sim_plus','sim_minus']:
-    sim_tag='/'+pair_tag+'/'+sim
-    wss.write_skewer_scripts_in_sim(raw_dir+sim_tag,post_dir+sim_tag,
+    wss.write_skewer_scripts_in_sim(raw_dir+'/'+sim,post_dir+'/'+sim,
             n_skewers=n_skewers,width_Mpc=width_Mpc,
             scales_T0=scales_T0,scales_gamma=scales_gamma,
             time=time,zmax=zmax,

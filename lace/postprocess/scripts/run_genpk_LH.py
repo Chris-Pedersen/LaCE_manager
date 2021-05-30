@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import configargparse
-from shutil import copy
 from lace.setup_simulations import read_gadget
 from lace.postprocess import write_genpk_script as wgs
 

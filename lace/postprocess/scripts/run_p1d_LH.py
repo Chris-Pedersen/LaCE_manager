@@ -14,7 +14,10 @@ store the mock p1d and parameters for a given training point.
 # get options from command line
 parser = configargparse.ArgumentParser()
 parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
-parser.add_argument('--basedir', type=str, help='Base directory to simulation suite (crashes if it does not exist)', required=True)
+parser.add_argument('--raw_dir', type=str,
+                help='Base directory with raw simulation outputs (crashes if it does not exist)',required=True)
+parser.add_argument('--post_dir', type=str,
+                help='Base directory with simulation post-processings',required=True)
 parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers per side',required=False)
 parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separated list of optical depth scalings to use.',required=False)
@@ -35,10 +38,11 @@ print(parser.format_values())
 print("----------")
 
 verbose=args.verbose
-basedir=args.basedir
+raw_dir=args.raw_dir
+post_dir=args.post_dir
 
 # read information about the hypercube
-cube_json=basedir+'/latin_hypercube.json'
+cube_json=raw_dir+'/latin_hypercube.json'
 if not os.path.isfile(cube_json):
     raise ValueError('could not find hypercube '+cube_json)
 
@@ -53,15 +57,14 @@ nsamples=cube_data['nsamples']
 
 # for each sample, measure p1d for all skewers
 for sample in range(nsamples):
-    # full path to folder for this particular simulation pair
-    pair_dir=basedir+'/sim_pair_'+str(sample)
     if verbose:
-        print('writing scripts for pair in',pair_dir)
-
+        print('writing scripts for sample point',sample)
     for sim in ['sim_plus','sim_minus']:
-        wps.write_p1d_scripts_in_sim(simdir=pair_dir+'/'+sim,
+        # label identifying this sim (to be used in full path)
+        sim_tag='/sim_pair_{}/{}/'.format(sample,sim)
+        wps.write_p1d_scripts_in_sim(raw_dir=raw_dir+sim_tag,
+                post_dir=post_dir+sim_tag,
                 n_skewers=args.n_skewers,width_Mpc=args.width_Mpc,
                 scales_tau=args.scales_tau,
                 time=args.time,zmax=args.zmax,
                 verbose=verbose,p1d_label=args.p1d_label,run=args.run)
-

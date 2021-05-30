@@ -2,10 +2,10 @@ import numpy as np
 import fake_spectra.tempdens as tdr
 from lace.setup_simulations import read_gadget
 
-def compute_TDR(simdir,zmax=20):
-    """Measure temperature-density relation for all snapshots above zmax"""
+def compute_TDR(raw_dir,zmax=20):
+    """Measure temperature-density relation for all snapshots below zmax"""
 
-    paramfile=simdir+'/paramfile.gadget'
+    paramfile=raw_dir+'/paramfile.gadget'
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     Nsnap=len(zs)
 
@@ -17,7 +17,7 @@ def compute_TDR(simdir,zmax=20):
     for num in range(Nsnap):
         z=zs[num]
         if z < zmax:
-            T0,gamma=tdr.fit_td_rel_plot(num,simdir+'/output',plot=False)
+            T0,gamma=tdr.fit_td_rel_plot(num,raw_dir+'/output',plot=False)
             thermal_snap.append(num)
             thermal_z.append(z)
             thermal_T0.append(T0)

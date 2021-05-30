@@ -32,10 +32,10 @@ def get_snapshot_json_filename(num,n_skewers,width_Mpc):
     return filename 
 
 
-def dkms_dMpc_z(simdir,num):
+def dkms_dMpc_z(raw_dir,num):
     """Setup cosmology from Gadget config file, and compute dv/dX"""
 
-    paramfile=simdir+'/paramfile.gadget'
+    paramfile=raw_dir+'/paramfile.gadget'
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     z=zs[num]
     # read cosmology information from Gadget file
@@ -55,7 +55,7 @@ def thermal_broadening_Mpc(T_0,dkms_dMpc):
     return sigma_T_Mpc
 
 
-def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
+def rescale_write_skewers_z(raw_dir,post_dir,num,n_skewers=50,
             width_Mpc=0.1,scales_T0=None,scales_gamma=None):
     """Extract skewers for a given snapshot, for different temperatures."""
 
@@ -65,23 +65,22 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
     if scales_gamma is None:
         scales_gamma=[1.0]
 
-    # make sure output directory exists (will write skewers there)
-    if skewers_dir is None:
-        skewers_dir=simdir+'/output/skewers/'
-    os.makedirs(skewers_dir,exist_ok=True)
-
     # figure out redshift for this snapshot, and dkms/dMpc
-    dkms_dMpc, z = dkms_dMpc_z(simdir,num)
+    dkms_dMpc, z = dkms_dMpc_z(raw_dir,num)
     width_kms = width_Mpc * dkms_dMpc
 
     # figure out temperature-density before scalings
-    T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,simdir+'/output/',plot=False)
+    T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,raw_dir+'/output/',plot=False)
 
-    sim_info={'simdir':simdir, 'skewers_dir':skewers_dir,
+    sim_info={'raw_dir':raw_dir, 'post_dir':post_dir,
                 'z':z, 'snap_num':num, 'n_skewers':n_skewers, 
                 'width_Mpc':width_Mpc, 'width_kms':width_kms,
                 'T0_ini':T0_ini, 'gamma_ini':gamma_ini,
                 'scales_T0':scales_T0, 'scales_gamma':scales_gamma}
+
+    # make sure output directory exists (will write skewers there)
+    skewers_dir=post_dir+'/skewers/'
+    os.makedirs(skewers_dir,exist_ok=True)
 
     # will also store measured values
     sim_T0=[]
@@ -101,11 +100,11 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
 
             # avoid (if possible) to use set_T0, might break fake_spectra
             if (scale_T0==1.0) and (scale_gamma==1.0):
-                skewers=get_skewers_snapshot(simdir,skewers_dir,num,
+                skewers=get_skewers_snapshot(raw_dir,skewers_dir,num,
                             n_skewers=n_skewers,width_kms=width_kms,
                             skewers_filename=sk_filename)
             else:
-                skewers=get_skewers_snapshot(simdir,skewers_dir,num,
+                skewers=get_skewers_snapshot(raw_dir,skewers_dir,num,
                             n_skewers=n_skewers,width_kms=width_kms,
                             set_T0=T0,set_gamma=gamma,
                             skewers_filename=sk_filename)
@@ -142,7 +141,7 @@ def rescale_write_skewers_z(simdir,num,skewers_dir=None,n_skewers=50,
     return sim_info
 
 
-def get_skewers_snapshot(simdir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
+def get_skewers_snapshot(raw_dir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
                 set_T0=None,set_gamma=None,skewers_filename=None):
     """Extract skewers for a particular snapshot"""
 
@@ -161,11 +160,11 @@ def get_skewers_snapshot(simdir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
 
     # avoid (if possible) to use set_T0, not always present in fake_spectra
     if (set_T0 is None) and (set_gamma is None):
-        skewers = grid_spec.GriddedSpectra(snap_num,simdir+'/output/',
+        skewers = grid_spec.GriddedSpectra(snap_num,raw_dir+'/output/',
                 nspec=n_skewers,res=width_kms,savefile=skewers_filename,
                 savedir=skewers_dir,reload_file=True)
     else:
-        skewers = grid_spec.GriddedSpectra(snap_num,simdir+'/output/',
+        skewers = grid_spec.GriddedSpectra(snap_num,raw_dir+'/output/',
                 nspec=n_skewers,res=width_kms,savefile=skewers_filename,
                 savedir=skewers_dir,reload_file=True,
                 set_T0=set_T0,set_gamma=set_gamma)

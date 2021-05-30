@@ -34,20 +34,16 @@ class SnapshotAdmin(object):
             self.scales_tau=[1.0]
 
 
-    def get_all_flux_power(self,simdir=None):
+    def get_all_flux_power(self):
         """Loop over all skewers, and return flux power for each"""
 
-        if simdir is not None:
-            # get box size from GenIC file, to normalize power
-            if 'simdir' in self.data:
-                simdir = self.data['simdir']
-            elif 'basedir' in self.data:
-                simdir = self.data['basedir']
+        raw_dir=self.data['raw_dir']
+        post_dir=self.data['post_dir']
 
-        genic_file=simdir+'/paramfile.genic'
+        genic_file=raw_dir+'/paramfile.genic'
         L_Mpc=read_genic.L_Mpc_from_paramfile(genic_file,verbose=True)
 
-        skewers_dir=simdir+"/output/skewers/"
+        skewers_dir=post_dir+"/skewers/"
         snap_num=self.data['snap_num']
 
         # will loop over all temperature models in snapshot
@@ -64,7 +60,7 @@ class SnapshotAdmin(object):
             sim_scale_gamma=self.data['sim_scale_gamma'][isk]
 
             # read skewers from HDF5 file
-            skewers=grid_spec.GriddedSpectra(snap_num, simdir+'/output/',
+            skewers=grid_spec.GriddedSpectra(snap_num, raw_dir+'/output/',
                     savedir=skewers_dir, savefile=sk_file, reload_file=False)
 
             # loop over tau scalings
@@ -101,14 +97,14 @@ class SnapshotAdmin(object):
         return filename
 
 
-    def write_p1d_json(self,p1d_label='p1d'):
+    def write_p1d_json(self,p1d_label=None):
         """ Write JSON file with P1D measured in all post-processing"""
 
         if p1d_label is None:
             p1d_label='p1d'
 
-        filename=self.data['simdir']+'/'+self.get_p1d_json_filename(p1d_label)
-        print('will print P1d to file',filename)
+        filename=self.data['post_dir']+'/'+self.get_p1d_json_filename(p1d_label)
+        print('will print P1D to file',filename)
 
         # make sure we have already computed P1D
         if not self.p1d_data:

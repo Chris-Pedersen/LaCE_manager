@@ -7,7 +7,6 @@ calculate the p1d and write an archive-format .json file to
 store the mock p1d and parameters for a given training point.
 """
 
-pair_dir="/share/rcifdata/chrisp/Aus20_Kathleens/P18"
 n_skewers = 500
 width_Mpc = 0.05
 zmax = 6.0
@@ -17,8 +16,17 @@ run = True
 p1d_label="p1d"
 verbose=True
 
+# directory with raw simulation outputs
+raw_dir='/data/desi/common/HydroData/Emulator/sims_256/'
+#raw_dir='/share/rcifdata/chrisp/Aus20_Kathleens/P18/'
+
+# directory with simulation post-procesings
+post_dir='/data/desi/common/HydroData/Emulator/test_256/'
+#post_dir='/share/rcifdata/chrisp/Aus20_Kathleens/P18/'
+
 for sim in ['sim_plus','sim_minus']:
-    wps.write_p1d_scripts_in_sim(simdir=pair_dir+'/'+sim,
+    sim_tag='/'+pair_tag+'/'+sim
+    wps.write_p1d_scripts_in_sim(raw_dir+sim_tag,post_dir+sim_tag,
             n_skewers=n_skewers,width_Mpc=width_Mpc,
             scales_tau=scales_tau,
             time=time,zmax=zmax,

@@ -6,3 +6,6 @@ all_setup.sh
 */backend.h5
 lace.egg-info/
 notebooks/.ipynb_checkpoints/
+lace/__pycache__/
+lace/*/__pycache__/
+

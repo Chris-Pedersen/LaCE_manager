@@ -318,6 +318,40 @@ class GPEmulator:
         return out_pred,out_err
 
 
+    def emulate_p1d_dimensionless(self,model,k_kp,return_covar=False,z=None):
+        """Interface to work as a dimensionless emulator"""
+
+        # get pivot point used in the P1D archive
+        kp_Mpc=self.archive.kp_Mpc
+
+        # read dimensionless parameters received
+        kF_kp=model['kF_kp']
+        kT_kp=model['kT_kp']
+
+        # convert them to dimensional parameters needed by the emulator
+        kF_Mpc=kF_kp*kp_Mpc
+        model['kF_Mpc']=kF_Mpc
+        # this conversion is fairly arbitrary, we just need consistency
+        kT_Mpc=kT_kp*kp_Mpc
+        sigT_Mpc=1.0/kT_Mpc
+        model['sigT_Mpc']=sigT_Mpc
+
+        # convert also the wavenumbers to 1/Mpc
+        k_Mpc=k_kp*kp_Mpc
+
+        # ask the emulator for the traditional prediction
+        if return_covar:
+            p1d_Mpc,cov_Mpc=self.emulate_p1d_Mpc(model=model,
+                                            k_Mpc=k_Mpc,return_covar=True,z=z)
+            # make dimensionless again
+            return p1d_Mpc*kp_Mpc,cov_Mpc*(kp_Mpc**2)
+        else:
+            p1d_Mpc=self.emulate_p1d_Mpc(model=model,
+                                            k_Mpc=k_Mpc,return_covar=False,z=z)
+            # make dimensionless again
+            return p1d_Mpc*kp_Mpc
+
+
     def emulate_p1d_Mpc(self,model,k_Mpc,return_covar=False,z=None):
         '''
         Method to return the trained P(k) for an arbitrary set of k bins

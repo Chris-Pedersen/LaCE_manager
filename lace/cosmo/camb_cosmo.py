@@ -15,12 +15,14 @@ camb_fit_kmax_Mpc=1.5
 camb_extra_kmax=1.001
 
 def get_cosmology(H0=67.0, mnu=0.0, omch2=0.12, ombh2=0.022, omk=0.0,
-            As=2.1e-09, ns=0.965, nrun=0.0,pivot_scalar=0.05):
+            As=2.1e-09, ns=0.965, nrun=0.0,pivot_scalar=0.05,w=-1):
     """Given set of cosmological parameters, return CAMB cosmology object."""
 
     pars = camb.CAMBparams()
     # set background cosmology
     pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, omk=omk, mnu=mnu)
+    # set DE
+    pars.set_dark_energy(w=w)
     # set primordial power
     pars.InitPower.set_params(As=As, ns=ns, nrun=nrun,pivot_scalar=pivot_scalar)
 
@@ -61,6 +63,11 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # update cosmology object
     pars.set_cosmology(H0=H0, cosmomc_theta=cosmomc_theta, ombh2=ombh2,
             omch2=omch2, omk=omk, mnu=mnu, tau=tau)
+    
+    # set DE
+    if 'w' in params: w=params['w']
+    else: w=cosmo_fid.DarkEnergy.w
+    pars.set_dark_energy(w=w)
 
     # collect primorial power parameters
     if 'As' in params:

@@ -492,9 +492,6 @@ class Likelihood(object):
 
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
-
-        emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
-
         if self.verbose: print('got P1D from emulator')
 
         # plot only few redshifts for clarity

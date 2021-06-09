@@ -11,24 +11,30 @@ class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
     def __init__(self,zs,emulator,cosmo_fid=None,verbose=False,
-                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None):
+                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
+                    use_dimensionless=False):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
             - emulator: object to interpolate simulated p1d
             - cosmo_fid: CAMB object with the fiducial cosmology (optional)
-            - verbose: print information, useful to debug."""
+            - verbose: print information, useful to debug
+            - use_dimensionless: interact with dimensionless emulator."""
 
         self.verbose=verbose
         self.zs=zs
         self.emulator=emulator
+        self.use_dimensionless=use_dimensionless
 
-        # specify pivot point to be used in emulator calls
-        if self.emulator is None:
-            print('using default values for emulator pivot point')
-            emu_kp_Mpc=0.7
+        if self.use_dimensionless:
+            emu_kp_Mpc=None
         else:
-            emu_kp_Mpc=self.emulator.archive.kp_Mpc
+            # specify pivot point to be used in emulator calls
+            if self.emulator is None:
+                print('using default values for emulator pivot point')
+                emu_kp_Mpc=0.7
+            else:
+                emu_kp_Mpc=self.emulator.archive.kp_Mpc
 
         # for now, used default pivot point for likelihood parameters
         like_z_star=3.0
@@ -68,29 +74,37 @@ class LyaTheory(object):
 
         # compute linear power parameters at all redshifts
         # (recons_cosmo already knows the pivot point emu_kp_Mpc)
-        linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
+        linP_emu_params=self.cosmo.get_linP_emu_params(linP_model)
 
         # loop over redshifts and store emulator calls
         emu_calls=[]
         Nz=len(self.zs)
         for iz,z in enumerate(self.zs):
-            # emulator parameters for linear power, at this redshift (in Mpc)
-            model=linP_Mpc_params[iz]
+            # emulator parameters for linear power, at this redshift
+            model=linP_emu_params[iz]
             # emulator parameters for nuisance models, at this redshift
             model['mF']=mf_model.get_mean_flux(z)
             model['gamma']=T_model.get_gamma(z)
             sigT_kms=T_model.get_sigT_kms(z)
-            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
-            model['sigT_Mpc']=sigT_kms/dkms_dMpc
             kF_kms=kF_model.get_kF_kms(z)
-            model['kF_Mpc']=kF_kms*dkms_dMpc
+            if self.use_dimensionless:
+                # get pivot point at z, in velocity units (using g_star)
+                kp_kms=self.cosmo.reconstruct_kp_kms_iz(iz,linP_model)
+                kT_kms=1.0/sigT_kms
+                model['kT_kp']=kT_kms/kp_kms
+                model['kF_kp']=kF_kms/kp_kms
+            else:
+                dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
+                model['sigT_Mpc']=sigT_kms/dkms_dMpc
+                model['kF_Mpc']=kF_kms*dkms_dMpc
             if self.verbose: print(iz,z,'model',model)
             emu_calls.append(model)
 
         return emu_calls
 
 
-    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,camb_evaluation=None):
+    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,
+            camb_evaluation=None):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
             It might also return a covariance from the emulator."""
@@ -101,8 +115,7 @@ class LyaTheory(object):
         # figure out emulator calls, one per redshift
         emu_calls=self.get_emulator_calls(like_params=like_params)
 
-        # setup linear power using list of likelihood parameters
-        # we will need this to reconstruct H(z)
+        # we will need linP_model to reconstruct H(z)
         linP_model=self.cosmo.get_linP_model(like_params=like_params)
 
         # loop over redshifts and compute P1D
@@ -113,30 +126,53 @@ class LyaTheory(object):
         for iz,z in enumerate(self.zs):
             # will call emulator for this model
             model=emu_calls[iz]
-            # emulate p1d
-            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
 
-            k_Mpc = k_kms * dkms_dMpc
-            if return_covar:
-                p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        return_covar=True,
-                                                        z=z)
-            else:
-                p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        return_covar=False,
-                                                        z=z)
-            if p1d_Mpc is None:
-                if self.verbose: print('emulator did not provide P1D')
-                p1d_kms.append(None)
+            if self.use_dimensionless:
+                # estimate pivot point (in km/s) at z (using g_star)
+                kp_kms_z=self.cosmo.reconstruct_kp_kms_iz(iz,linP_model)
+                k_kp=k_kms/kp_kms_z
                 if return_covar:
-                    covars.append(None)
-            else:
-                p1d_kms.append(p1d_Mpc * dkms_dMpc)
-                if return_covar:
-                    if cov_Mpc is None:
+                    p1d_kp,cov_kp=self.emulator.emulate_p1d_dimensionless(
+                                            model,k_kp,return_covar=True,z=z)
+                else:
+                    p1d_kp=self.emulator.emulate_p1d_dimensionless(model,
+                                            k_kp,return_covar=False,z=z)
+                # check if we got corrupted emulation
+                if p1d_kp is None:
+                    if self.verbose: print('emulator did not provide P1D')
+                    p1d_kms.append(None)
+                    if return_covar:
                         covars.append(None)
-                    else:
-                        covars.append(cov_Mpc * dkms_dMpc**2)
+                else:
+                    p1d_kms.append(p1d_kp / kp_kms_z)
+                    if return_covar:
+                        if cov_kp is None:
+                            covars.append(None)
+                        else:
+                            covars.append(cov_kp / kp_kms_z**2)
+            else:
+                # will use emulator defined in Mpc units
+                dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
+                k_Mpc = k_kms * dkms_dMpc
+                if return_covar:
+                    p1d_Mpc,cov_Mpc=self.emulator.emulate_p1d_Mpc(model,k_Mpc,
+                                                        return_covar=True,z=z)
+                else:
+                    p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
+                                                        return_covar=False,z=z)
+                # check if we got corrupted emulation
+                if p1d_Mpc is None:
+                    if self.verbose: print('emulator did not provide P1D')
+                    p1d_kms.append(None)
+                    if return_covar:
+                        covars.append(None)
+                else:
+                    p1d_kms.append(p1d_Mpc * dkms_dMpc)
+                    if return_covar:
+                        if cov_Mpc is None:
+                            covars.append(None)
+                        else:
+                            covars.append(cov_Mpc * dkms_dMpc**2)
 
         if return_covar:
             return p1d_kms,covars

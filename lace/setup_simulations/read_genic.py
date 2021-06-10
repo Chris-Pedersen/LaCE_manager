@@ -60,10 +60,6 @@ def _check_genic_config(config):
         raise ValueError("Can not specify input redshift")
     if config['Sigma8'] > 0.:
         raise ValueError("Can not specify Sigma8.")
-    if config['Omega_fld'] > 0:
-        raise ValueError("Omega_fld>0 not supported.")
-    if not (config['w0_fld'] == -1.0):
-        raise ValueError("w0_fld != -1 not supported.")
     if not (config['wa_fld'] == 0.0):
         raise ValueError("wa_fld != 0 not supported.")
     if config['MWDM_Therm'] > 0:
@@ -118,6 +114,7 @@ def _build_cosmology_params_camb(config):
     params['As'] = config["PrimordialAmp"]
     params['ns'] = config['PrimordialIndex']
     params['nrun'] = config['PrimordialRunning']
+    params['w'] = config['w0_fld']
 
     return params
 

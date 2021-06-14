@@ -65,6 +65,23 @@ print("----------")
 ## so no elegant solution to passing a prior volume right now
 ## these are still saved with the sampler so no book-keeping issues though
 
+## Example for sampling CMB parameters:
+free_param_limits=[[0.0102,0.0106],
+                [1.1e-09, 3.19e-09],
+                [0.89, 1.05],
+                [0.018, 0.026],
+                [0.1,0.13]
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4]]
+
+
+''' ## Some template limits below
 ## for reference, the default primordial limits I have been using are
 ## (for a pivot_scalar of 0.7)
 ## [[1.1e-09, 3.19e-09], [0.89, 1.05],
@@ -79,6 +96,7 @@ free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
                     [-0.4, 0.4]]
+'''
 
 skewers_label=args.skewers_label
 p1d_label=None

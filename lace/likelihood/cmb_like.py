@@ -68,5 +68,15 @@ class CMBLikelihood(object):
         test_values=np.array([ombh2,omch2,cosmomc_theta,As,ns])
         diff=self.mock_values-test_values
 
-        return -0.5.*np.dot(np.dot(self.icov_cmb,diff),diff)
-        
+        return -0.5*np.dot(np.dot(self.icov_cmb,diff),diff)
+
+
+    def return_CMB_only(nsamp=100000):
+        """ Return the CMB likelihood distribution """
+
+        data = np.random.multivariate_normal(self.mock_values,
+                            self.cov_cmb, size=nsamp)
+        ## have to convert As back to units that the rest of the code uses
+        data[:,3]*=1e-9
+
+        return data

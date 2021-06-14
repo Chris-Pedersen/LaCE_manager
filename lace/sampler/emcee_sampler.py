@@ -781,7 +781,8 @@ param_dict={
             "As":"$A_s$",
             "ns":"$n_s$",
             "ombh2":"$\omega_b$",
-            "omch2":"$\omega_c$"
+            "omch2":"$\omega_c$",
+            "cosmomc_theta":"$100\\theta_{MC}$"
             }
 
 
@@ -818,7 +819,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
         if len(sampler.truth)>len(truth_dict):
             truth_dict=sampler.truth
     
-    c.configure(diagonal_tick_labels=False, tick_font_size=10,
+    c.configure(diagonal_tick_labels=False, tick_font_size=15,
                 label_font_size=25, max_ticks=4)
     if plot_params==None:
         fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
@@ -828,7 +829,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
         plot_param_strings=[]
         for par in plot_params:
             plot_param_strings.append(param_dict[par])
-        fig = c.plotter.plot(figsize=(15,15),
+        fig = c.plotter.plot(figsize=(10,10),
                 parameters=plot_param_strings,truth=truth_dict)
     if save_string:
         fig.savefig("%s" % save_string)

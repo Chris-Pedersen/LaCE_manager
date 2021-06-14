@@ -13,6 +13,7 @@ from lace.likelihood import CAMB_model
 from lace.setup_simulations import read_genic
 from lace.setup_simulations import sim_params_cosmo
 from lace.setup_simulations import sim_params_space
+from lace.likelihood import cmb_like
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -24,7 +25,8 @@ class Likelihood(object):
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=False,
-                    pivot_scalar=0.05):
+                    pivot_scalar=0.05,
+                    include_CMB=False):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
@@ -42,6 +44,7 @@ class Likelihood(object):
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
         self.emu_cov_factor=emu_cov_factor
+        self.include_CMB=include_CMB
 
         if data:
             self.data=data
@@ -67,6 +70,7 @@ class Likelihood(object):
                     print('using compressed theory')
                 elif full:
                     print('using full theory')
+                    assert ("H0" in free_param_names and "cosmomc_theta" in free_param_names)==False, "Cannot vary both H0 and theta_MC"
                 else:
                     print('not varying cosmo params',free_param_names)
 
@@ -87,13 +91,18 @@ class Likelihood(object):
             else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar)
+                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
                         camb_model_fid=camb_model_sim,verbose=self.verbose,
-                        pivot_scalar=pivot_scalar)
+                        pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
                 assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
                 if not full:
                     print("No cosmology parameters are varied")
+                if include_CMB==True:
+                    ## Set up a CMB likelihood object, using the simulation mock
+                    ## cosmology as the central values
+                    self.cmb_like=cmb_like.CMBLikelihood(camb_model_sim.cosmo)
+
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)
@@ -194,6 +203,41 @@ class Likelihood(object):
             like_params.append(par)
 
         return like_params
+
+
+    def cosmology_params_from_sampling_point(self,values):
+        """ For a given point in sampling space, return a list of "CMB"
+        cosmology params """
+
+        like_params=self.parameters_from_sampling_point(values)
+
+        ## Dictionary of cosmology parameters
+        cosmo_dict={}
+
+        for like_param in like_params:
+            if like_param.name=="ombh2":
+                cosmo_dict["ombh2"]=like_param.value
+            elif like_param.name=="omch2":
+                cosmo_dict["omch2"]=like_param.value
+            elif like_param.name=="cosmomc_theta":
+                cosmo_dict["cosmomc_theta"]=like_param.value
+            elif like_param.name=="As":
+                cosmo_dict["As"]=like_param.value
+            elif like_param.name=="ns":
+                cosmo_dict["ns"]=like_param.value
+
+        assert len(cosmo_dict)>0, "No CMB cosmology parameters found in sampling space"
+
+        return cosmo_dict
+
+
+    def get_cmb_like(self,values):
+        """ For a given point in sampling space, return the CMB likelihood """
+        cosmo_dic=self.cosmology_params_from_sampling_point(values)
+
+        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,self.theory.camb_model_fid.cosmo)
+
+        return cmb_like
 
 
     def get_p1d_kms(self,k_kms=None,values=None,return_covar=False,camb_evaluation=None):
@@ -328,8 +372,11 @@ class Likelihood(object):
         if min(values) < 0.0:
             return -np.inf
 
-        # Add Gaussian prior around fiducial parameter values
-        if self.prior_Gauss_rms is None:
+        ## If we are including CMB information, use this as the prior
+        if self.include_CMB==True:
+            return self.get_cmb_like(values)
+        ## Otherwise add Gaussian prior around fiducial parameter values
+        elif self.prior_Gauss_rms is None:
             return 0
         else:
             rms=self.prior_Gauss_rms

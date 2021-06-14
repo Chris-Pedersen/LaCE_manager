@@ -13,7 +13,7 @@ class FullTheory(object):
 
     def __init__(self,zs,emulator=None,camb_model_fid=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    pivot_scalar=0.05):
+                    pivot_scalar=0.05,theta_MC=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -37,7 +37,7 @@ class FullTheory(object):
             self.camb_model_fid=camb_model_fid
         else:
             self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs,
-                            pivot_scalar=pivot_scalar)
+                            pivot_scalar=pivot_scalar,thetaMC=theta_MC)
 
         # setup fiducial IGM models
         if mf_model_fid:

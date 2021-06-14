@@ -13,7 +13,9 @@ from lace.emulator import p1d_archive
 from lace.likelihood import likelihood
 from lace.sampler import emcee_sampler
 
-""" Example script to run an emcee chain """
+""" Example script to run an emcee chain. The timeout flag at
+sampler.run_sampler() will set a max time limit to save the chain
+before a job hits the walltime limit """
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
@@ -173,7 +175,7 @@ def log_prob(theta):
 
 start = time.time()
 sampler.like.go_silent()
-sampler.run_sampler(args.burn_in,args.nsteps,log_prob,parallel=args.parallel)
+sampler.run_sampler(args.burn_in,args.nsteps,log_prob,parallel=args.parallel,timeout=47.)
 end = time.time()
 multi_time = end - start
 print("Sampling took {0:.1f} seconds".format(multi_time))

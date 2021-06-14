@@ -44,6 +44,7 @@ parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the 
 parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
 parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
+parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -133,7 +134,8 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 			                verbose=False,
                             prior_Gauss_rms=prior,
                             emu_cov_factor=args.emu_cov_factor,
-                            pivot_scalar=args.pivot_scalar)
+                            pivot_scalar=args.pivot_scalar,
+                            include_CMB=args.include_CMB)
 
 ## Pass likelihood to sampler
 sampler = emcee_sampler.EmceeSampler(like=like,

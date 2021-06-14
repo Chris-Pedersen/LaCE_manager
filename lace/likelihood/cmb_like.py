@@ -27,11 +27,23 @@ class CMBLikelihood(object):
         self.cosmo=cosmo
         self.results=camb_cosmo.get_camb_results(self.cosmo)
         self.icov_cmb=np.linalg.inv(self.cov_cmb)
+
+        ## In the same units as the CMB covariance
         self.mock_values=np.array([self.cosmo.ombh2,
                             self.cosmo.omch2,
-                            self.results.cosmomc_theta(),
+                            self.results.cosmomc_theta()*100,
                             self.cosmo.InitPower.As*1e9,
                             self.cosmo.InitPower.ns])
+
+        ## With As and cosmomc_theta in the same units as the rest of the code
+        self.true_values=np.array([self.cosmo.ombh2,
+                            self.cosmo.omch2,
+                            self.results.cosmomc_theta(),
+                            self.cosmo.InitPower.As,
+                            self.cosmo.InitPower.ns])
+
+        ## List of parameters in LaTeX form
+        self.param_list=["$\omega_b$","$\omega_c$","$\\theta_{MC}$","$A_s$","$n_s$"]
 
 
     def get_cmb_like(self,cosmo_dic,cosmo_fid):
@@ -52,10 +64,10 @@ class CMBLikelihood(object):
         else:
             omch2=cosmo_fid.omch2
         if "cosmomc_theta" in cosmo_dic:
-            cosmomc_theta=cosmo_dic["cosmomc_theta"]
+            cosmomc_theta=cosmo_dic["cosmomc_theta"]*100
         else:
             cosmo_fid_results=camb_cosmo.get_camb_results(cosmo_fid)
-            cosmomc_theta=cosmo_fid_results.cosmomc_theta()
+            cosmomc_theta=cosmo_fid_results.cosmomc_theta()*100
         if "As" in cosmo_dic:
             As=cosmo_dic["As"]*1e9
         else:
@@ -71,12 +83,14 @@ class CMBLikelihood(object):
         return -0.5*np.dot(np.dot(self.icov_cmb,diff),diff)
 
 
-    def return_CMB_only(nsamp=100000):
+    def return_CMB_only(self,nsamp=100000):
         """ Return the CMB likelihood distribution """
 
         data = np.random.multivariate_normal(self.mock_values,
                             self.cov_cmb, size=nsamp)
         ## have to convert As back to units that the rest of the code uses
         data[:,3]*=1e-9
+        ## have to convert As back to units that the rest of the code uses
+        data[:,2]*=0.01
 
         return data

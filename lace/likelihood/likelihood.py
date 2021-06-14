@@ -101,7 +101,7 @@ class Likelihood(object):
                 if include_CMB==True:
                     ## Set up a CMB likelihood object, using the simulation mock
                     ## cosmology as the central values
-                    self.cmb_like=cmb_like.CMBLikelihood(camb_model_sim.cosmo)
+                    self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
 
         # setup parameters

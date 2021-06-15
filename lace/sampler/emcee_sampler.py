@@ -620,6 +620,7 @@ class EmceeSampler(object):
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
         saveDict["include_CMB"]=self.like.include_CMB
+        saveDict["use_compression"]=self.like.use_compression
 
         ## If we are sampling primordial power, save the pivot scale
         ## used to define As, ns

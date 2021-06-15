@@ -52,6 +52,7 @@ class Likelihood(object):
         self.prior_Gauss_rms=prior_Gauss_rms
         self.emu_cov_factor=emu_cov_factor
         self.include_CMB=include_CMB
+        self.use_compression=use_compression
 
         if data:
             self.data=data

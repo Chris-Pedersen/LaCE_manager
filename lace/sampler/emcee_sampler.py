@@ -104,6 +104,7 @@ class EmceeSampler(object):
         likelihood parameters for plotting purposes """
 
         test_sim_cosmo=self.like.data.mock_sim.sim_cosmo
+        test_results=camb_cosmo.get_camb_results(test_sim_cosmo)
         self.truth={}
 
         ## Are we using full theory or compressed theory
@@ -116,6 +117,7 @@ class EmceeSampler(object):
             all_truth["ns"]=test_sim_cosmo.InitPower.ns
             all_truth["H0"]=test_sim_cosmo.H0
             all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
+            all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
         else:
             ## Get true fit params
             ## use pivot k from the theory's recons_cosmo
@@ -490,15 +492,19 @@ class EmceeSampler(object):
         except:
             free_param_limits=None
 
+        try:
+            include_CMB=config["include_CMB"]
+        except:
+            include_CMB=False
 
-    
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
-                            pivot_scalar=pivot_scalar)
+                            pivot_scalar=pivot_scalar,
+                            include_CMB=include_CMB)
 
         if self.verbose: print("Load sampler data")
         ## Load chains
@@ -613,6 +619,7 @@ class EmceeSampler(object):
         saveDict["data_sim_number"]=self.like.data.sim_label
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
+        saveDict["include_CMB"]=self.like.include_CMB
 
         ## If we are sampling primordial power, save the pivot scale
         ## used to define As, ns
@@ -696,19 +703,36 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self):
+    def plot_corner(self,cmb_prior=False,save_string=None):
         """ Make corner plot in ChainConsumer """
 
         c=ChainConsumer()
         chain,lnprob=self.get_chain(cube=False)
-        c.add_chain(chain,parameters=self.paramstrings)
+
+        if cmb_prior==True:
+            mean_cmb = self.like.cmb_like.true_values
+            data_cmb = self.like.cmb_like.return_CMB_only()
+            c.add_chain(data_cmb,parameters=self.like.cmb_like.param_list,
+                                name="CMB Likelihood")
+        c.add_chain(chain,parameters=self.paramstrings,name="Chains")
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
                     label_font_size=25, max_ticks=4)
-        fig = c.plotter.plot(figsize=(15,15),truth=self.truth)
+
+        if cmb_prior==True:
+            ## Only plot the parameters that are varied in the chain
+            ## not priors for parameters that aren't being varied
+            plot_param_strings=[]
+            for par in self.like.get_free_parameter_list():
+                plot_param_strings.append(param_dict[par])
+            fig = c.plotter.plot(figsize=(12,12),
+                    parameters=plot_param_strings,truth=self.truth)
+        else:
+            fig = c.plotter.plot(figsize=(12,12),truth=self.truth)
 
         if self.save_directory is not None:
             fig.savefig(self.save_directory+"/corner.pdf")
+        
         else:
             fig.show()
 
@@ -781,14 +805,15 @@ param_dict={
             "As":"$A_s$",
             "ns":"$n_s$",
             "ombh2":"$\omega_b$",
-            "omch2":"$\omega_c$"
+            "omch2":"$\omega_c$",
+            "cosmomc_theta":"$\\theta_{MC}$"
             }
 
 
 ## List of all possibly free cosmology params for the truth array
 ## for chainconsumer plots
 cosmo_params=["Delta2_star","n_star","alpha_star",
-                "f_star","g_star",
+                "f_star","g_star","cosmomc_theta",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
 
@@ -818,7 +843,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
         if len(sampler.truth)>len(truth_dict):
             truth_dict=sampler.truth
     
-    c.configure(diagonal_tick_labels=False, tick_font_size=10,
+    c.configure(diagonal_tick_labels=False, tick_font_size=15,
                 label_font_size=25, max_ticks=4)
     if plot_params==None:
         fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
@@ -828,7 +853,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
         plot_param_strings=[]
         for par in plot_params:
             plot_param_strings.append(param_dict[par])
-        fig = c.plotter.plot(figsize=(15,15),
+        fig = c.plotter.plot(figsize=(10,10),
                 parameters=plot_param_strings,truth=truth_dict)
     if save_string:
         fig.savefig("%s" % save_string)

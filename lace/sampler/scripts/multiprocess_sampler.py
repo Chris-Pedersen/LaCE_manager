@@ -13,7 +13,9 @@ from lace.emulator import p1d_archive
 from lace.likelihood import likelihood
 from lace.sampler import emcee_sampler
 
-""" Example script to run an emcee chain """
+""" Example script to run an emcee chain. The timeout flag at
+sampler.run_sampler() will set a max time limit to save the chain
+before a job hits the walltime limit """
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
@@ -44,6 +46,7 @@ parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the 
 parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
 parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
+parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -64,6 +67,23 @@ print("----------")
 ## so no elegant solution to passing a prior volume right now
 ## these are still saved with the sampler so no book-keeping issues though
 
+## Example for sampling CMB parameters:
+free_param_limits=[[0.0102,0.0106],
+                [1.1e-09, 3.19e-09],
+                [0.89, 1.05],
+                [0.018, 0.026],
+                [0.1,0.13]
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4],
+                [-0.4, 0.4]]
+
+
+''' ## Some template limits below
 ## for reference, the default primordial limits I have been using are
 ## (for a pivot_scalar of 0.7)
 ## [[1.1e-09, 3.19e-09], [0.89, 1.05],
@@ -78,6 +98,7 @@ free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
                     [-0.4, 0.4]]
+'''
 
 skewers_label=args.skewers_label
 p1d_label=None
@@ -133,7 +154,8 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 			                verbose=False,
                             prior_Gauss_rms=prior,
                             emu_cov_factor=args.emu_cov_factor,
-                            pivot_scalar=args.pivot_scalar)
+                            pivot_scalar=args.pivot_scalar,
+                            include_CMB=args.include_CMB)
 
 ## Pass likelihood to sampler
 sampler = emcee_sampler.EmceeSampler(like=like,
@@ -153,7 +175,7 @@ def log_prob(theta):
 
 start = time.time()
 sampler.like.go_silent()
-sampler.run_sampler(args.burn_in,args.nsteps,log_prob,parallel=args.parallel)
+sampler.run_sampler(args.burn_in,args.nsteps,log_prob,parallel=args.parallel,timeout=47.)
 end = time.time()
 multi_time = end - start
 print("Sampling took {0:.1f} seconds".format(multi_time))

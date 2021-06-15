@@ -133,14 +133,16 @@ def fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=None):
     return P_fit
 
 
-def parameterize_cosmology_kms(cosmo,z_star,kp_kms,use_camb_fz=False):
+def parameterize_cosmology_kms(cosmo,results,z_star,kp_kms,use_camb_fz=False):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp_kms.
         - use_camb_fz: get f from f sigma_8 / sigma_8."""
 
     # call get_results first, to avoid calling it twice
     zs=[z_star]
-    camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,fast_camb=True)
+    camb_results=results
+    if camb_results==None:
+        camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,fast_camb=True)
 
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms

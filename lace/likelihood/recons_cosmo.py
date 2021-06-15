@@ -322,6 +322,17 @@ class ReconstructedCosmology(object):
         return Hz
 
 
+    def reconstruct_M_of_zs(self,linP_model):
+        """ Reconstruct a list of M(z)=H(z)/(1+z) for all zs """
+
+        M_of_zs=[]
+
+        for iz,z in enumerate(self.zs):
+            M_of_zs.append(self.reconstruct_Hubble_iz(iz,linP_model)/(1+z))
+
+        return M_of_zs
+
+
     def reconstruct_f_p_iz(self,iz,linP_model):
         """ Use fiducial cosmology and f_star to reconstruct logarithmic
             growth rate f (around kp_Mpc)"""

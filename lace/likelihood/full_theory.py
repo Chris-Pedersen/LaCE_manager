@@ -5,6 +5,8 @@ from lace.nuisance import mean_flux_model
 from lace.nuisance import thermal_model
 from lace.nuisance import pressure_model
 from lace.likelihood import CAMB_model
+from lace.likelihood import linear_power_model
+from lace.likelihood import recons_cosmo
 
 class FullTheory(object):
     """Translator between the likelihood object and the emulator. This object
@@ -13,17 +15,22 @@ class FullTheory(object):
 
     def __init__(self,zs,emulator=None,camb_model_fid=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    pivot_scalar=0.05,theta_MC=True):
+                    pivot_scalar=0.05,theta_MC=True,use_compression=False):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
             - emulator: object to interpolate simulated p1d
             - cosmo_fid: CAMB object with the fiducial cosmology (optional)
-            - verbose: print information, useful to debug."""
+            - verbose: print information, useful to debug.
+            - pivot_scalar sets the pivot scale used to define primordial
+              power spectrum parameters
+            - use_compression: if True, will go through the compressed
+              parameters when generating emulator calls for each cosmology """
 
         self.verbose=verbose
         self.zs=zs
         self.emulator=emulator
+        self.use_compression=use_compression
 
         # setup object to compute linear power for any cosmology
         if self.emulator is None:
@@ -52,6 +59,15 @@ class FullTheory(object):
             self.kF_model_fid = kF_model_fid
         else:
             self.kF_model_fid = pressure_model.PressureModel()
+
+        ## if we are using compression, need a recons_cosmo object
+        if self.use_compression==True:
+            ## For now we hardcode z_star and kp_kms, since
+            ## these are also hardcoded in lya_theory.py
+            self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
+                emu_kp_Mpc=self.emu_kp_Mpc,
+                like_z_star=3.0,like_kp_kms=0.009,
+                cosmo_fid=self.camb_model_fid.cosmo,verbose=self.verbose)
 
 
     def same_background(self,like_params):
@@ -142,6 +158,15 @@ class FullTheory(object):
             if self.verbose: print('recycle transfer function')
             linP_Mpc_params=self.get_linP_Mpc_params_from_fid(like_params)
             M_of_zs=self.camb_model_fid.get_M_of_zs()
+        ## Check if we want to find the emulator calls using compressed
+        ## parameters
+        elif self.use_compression==True:
+            camb_model=self.camb_model_fid.get_new_model(like_params)
+            linP_model=linear_power_model.LinearPowerModel(cosmo=camb_model.cosmo,
+                                    results=camb_model.get_camb_results())
+            linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
+            M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
+        ## Otherwise calculate the emulator calls directly with no compression
         else:
             # setup a new CAMB_model from like_params
             if self.verbose: print('create new CAMB_model')

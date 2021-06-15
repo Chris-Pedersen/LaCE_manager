@@ -68,7 +68,7 @@ print("----------")
 ## these are still saved with the sampler so no book-keeping issues though
 
 ## Example for sampling CMB parameters:
-free_param_limits=[[0.0102,0.0106],
+free_param_limits=[[0.0099,0.0109],
                 [1.1e-09, 3.19e-09],
                 [0.89, 1.05],
                 [0.018, 0.026],

@@ -44,7 +44,6 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # collect background parameters
     elif 'cosmomc_theta' in params: ## If theta is provided, override H0
         cosmomc_theta=params['cosmomc_theta']
-        print(cosmomc_theta)
         H0=None
     elif 'H0' in params:
         H0=params['H0']

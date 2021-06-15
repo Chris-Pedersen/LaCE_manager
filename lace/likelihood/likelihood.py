@@ -359,6 +359,12 @@ class Likelihood(object):
     def log_prob(self,values):
         """Return log likelihood plus log priors"""
 
+        # Always force parameter to be within range (for now)
+        if max(values) > 1.0:
+            return -np.inf
+        if min(values) < 0.0:
+            return -np.inf
+
         # compute log_prior
         log_prior=self.get_log_prior(values)
 

@@ -153,11 +153,6 @@ class FullTheory(object):
             linP_Mpc_params=camb_model.get_linP_Mpc_params(
                     kp_Mpc=self.emu_kp_Mpc)
             M_of_zs=camb_model.get_M_of_zs()
-        elif self.same_background(like_params):
-            # recycle background and transfer functions from fiducial cosmo
-            if self.verbose: print('recycle transfer function')
-            linP_Mpc_params=self.get_linP_Mpc_params_from_fid(like_params)
-            M_of_zs=self.camb_model_fid.get_M_of_zs()
         ## Check if we want to find the emulator calls using compressed
         ## parameters
         elif self.use_compression==True:
@@ -167,6 +162,11 @@ class FullTheory(object):
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
         ## Otherwise calculate the emulator calls directly with no compression
+        elif self.same_background(like_params):
+            # recycle background and transfer functions from fiducial cosmo
+            if self.verbose: print('recycle transfer function')
+            linP_Mpc_params=self.get_linP_Mpc_params_from_fid(like_params)
+            M_of_zs=self.camb_model_fid.get_M_of_zs()
         else:
             # setup a new CAMB_model from like_params
             if self.verbose: print('create new CAMB_model')

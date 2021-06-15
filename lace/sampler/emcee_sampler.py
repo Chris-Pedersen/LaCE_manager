@@ -703,18 +703,18 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cmb_prior=False):
+    def plot_corner(self,cmb_prior=False,save_string=None):
         """ Make corner plot in ChainConsumer """
 
         c=ChainConsumer()
         chain,lnprob=self.get_chain(cube=False)
-        c.add_chain(chain,parameters=self.paramstrings,name="Chains")
 
         if cmb_prior==True:
             mean_cmb = self.like.cmb_like.true_values
             data_cmb = self.like.cmb_like.return_CMB_only()
             c.add_chain(data_cmb,parameters=self.like.cmb_like.param_list,
                                 name="CMB Likelihood")
+        c.add_chain(chain,parameters=self.paramstrings,name="Chains")
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
                     label_font_size=25, max_ticks=4)
@@ -732,6 +732,7 @@ class EmceeSampler(object):
 
         if self.save_directory is not None:
             fig.savefig(self.save_directory+"/corner.pdf")
+        
         else:
             fig.show()
 

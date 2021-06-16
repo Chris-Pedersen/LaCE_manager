@@ -30,8 +30,7 @@ class EmceeSampler(object):
     def __init__(self,like=None,emulator=None,free_param_names=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
                         subfolder=None,rootdir=None,
-                        save_chain=True,progress=False,
-                        save_blobs=True):
+                        save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain.
             rootdir allows user to search for saved chains in a different location
@@ -224,6 +223,7 @@ class EmceeSampler(object):
         ## Save chains
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         return 
 
@@ -281,6 +281,7 @@ class EmceeSampler(object):
 
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
         
         return
 
@@ -360,9 +361,14 @@ class EmceeSampler(object):
         if not self.chain_from_file is None:
             chain=self.chain_from_file['chain']
             lnprob=self.chain_from_file['lnprob']
+            if 'blobs' in self.chain_from_file:
+                blobs=self.chain_from_file['blobs']
+            else:
+                blobs=None
         else:
             chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
             lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
+            blobs=self.blobs
 
         if cube == False:
             cube_values=chain
@@ -370,7 +376,7 @@ class EmceeSampler(object):
                                 cube_values[:,ip]) for ip in range(self.ndim)]
             chain=np.array(list_values).transpose()
 
-        return chain,lnprob
+        return chain,lnprob,blobs
 
 
     def plot_autocorrelation_time(self):
@@ -514,6 +520,8 @@ class EmceeSampler(object):
         self.chain_from_file={}
         self.chain_from_file["chain"]=np.asarray(config["flatchain"])
         self.chain_from_file["lnprob"]=np.asarray(config["lnprob"])
+        if 'blobs' in config:
+            self.chain_from_file["blobs"]=np.asarray(config["blobs"])
 
         if self.verbose:
             print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
@@ -563,7 +571,7 @@ class EmceeSampler(object):
         to a more easily readable .txt file """
         
         ## What keys don't we want to include in the info file
-        dontPrint=["lnprob","flatchain","autocorr"]
+        dontPrint=["lnprob","flatchain","blobs","autocorr"]
 
         with open(self.save_directory+'/info.txt', 'w') as f:
             for item in saveDict.keys():
@@ -647,6 +655,7 @@ class EmceeSampler(object):
         saveDict["burn_in"]=self.burnin_nsteps
         saveDict["nwalkers"]=self.nwalkers
         saveDict["lnprob"]=self.lnprob.tolist()
+        saveDict["blobs"]=self.blobs.tolist()
         saveDict["flatchain"]=self.chain.tolist()
         saveDict["autocorr"]=self.autocorr.tolist()
 
@@ -687,7 +696,7 @@ class EmceeSampler(object):
             cube=True"""
 
         # get chain (from sampler or from file)
-        chain,lnprob=self.get_chain()
+        chain,lnprob,blobs=self.get_chain()
         plt.figure()
 
         for ip in range(self.ndim):
@@ -711,7 +720,7 @@ class EmceeSampler(object):
         """ Make corner plot in ChainConsumer """
 
         c=ChainConsumer()
-        chain,lnprob=self.get_chain(cube=False)
+        chain,lnprob,blobs=self.get_chain(cube=False)
 
         if cmb_prior==True:
             mean_cmb = self.like.cmb_like.true_values
@@ -750,7 +759,7 @@ class EmceeSampler(object):
         """
 
         ## Get best fit values for each parameter
-        chain,lnprob=self.get_chain()
+        chain,lnprob,blobs=self.get_chain()
         plt.figure()
         mean_value=[]
         for parameter_distribution in np.swapaxes(chain,0,1):
@@ -839,7 +848,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     for aa,chain_file in enumerate(chain_files):
         sampler=EmceeSampler(read_chain_file=chain_file,
                                 subfolder=subfolder,rootdir=rootdir)
-        chain,lnprob=sampler.get_chain(cube=False)
+        chain,lnprob,blobs=sampler.get_chain(cube=False)
         c.add_chain(chain,parameters=sampler.paramstrings,name=labels[aa])
         
         ## Do not check whether truth results are the same for now

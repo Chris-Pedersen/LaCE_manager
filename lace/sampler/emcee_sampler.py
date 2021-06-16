@@ -43,7 +43,6 @@ class EmceeSampler(object):
         # WHEN WOULD YOU LIKE TO HAVE A SAMPLER WITHOUT AN EMULATOR?
 
         self.verbose=verbose
-        self.store_distances=False
         self.progress=progress
 
         if read_chain_file:
@@ -90,13 +89,6 @@ class EmceeSampler(object):
             self.paramstrings.append(param_dict[param.name])
 
         self.set_truth()
-
-        ## This was used to store the Euclidean distance
-        ## of each emulator call to the nearest training
-        ## point, might be redundant now
-        self.distances=[]
-        for aa in range(len(self.like.data.z)):
-            self.distances.append([])
 
 
     def set_truth(self):
@@ -322,32 +314,6 @@ class EmceeSampler(object):
                             loc=mean, size=n_samples)
 
         return values
-
-
-    def log_prob(self,values):
-        """Function that will actually be called by emcee"""
-
-        test_log_prob=self.like.log_prob(values=values)
-        if np.isnan(test_log_prob):
-            if self.verbose:
-                print('parameter values outside hull',values)
-                return -np.inf
-        if self.store_distances:
-            self.add_euclidean_distances(values)
-
-        return test_log_prob        
-
-
-    def add_euclidean_distances(self,values):
-        """ For a given set of likelihood parameters
-        find the Euclidean distances to the nearest
-        training point for each emulator call """
-
-        emu_calls=self.like.theory.get_emulator_calls(self.like.parameters_from_sampling_point(values))
-        for aa,call in enumerate(emu_calls):
-            self.distances[aa].append(self.like.theory.emulator.get_nearest_distance(call,z=self.like.data.z[aa]))
-
-        return 
 
 
     def go_silent(self):

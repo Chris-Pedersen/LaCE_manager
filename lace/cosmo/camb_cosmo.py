@@ -200,8 +200,7 @@ def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
 def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum in units of h/Mpc. Other inputs:
-        - camb_results: if provided, use that to speed things up. NB that
-          zs is only used to generate a new camb_results.
+        - camb_results: if provided, use that to speed things up.
         - fluid: specify transfer function to use (8=CDM+baryons). """
 
     if camb_results is None:

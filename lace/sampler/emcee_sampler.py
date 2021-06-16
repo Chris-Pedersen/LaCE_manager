@@ -155,8 +155,10 @@ class EmceeSampler(object):
         if parallel==False:
             ## Get initial walkers
             p0=self.get_initial_walkers()
+            if log_func is None:
+                log_func=self.like.log_prob
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    self.like.log_prob,
+                                                    log_func,
                                                     backend=self.backend)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                     progress=self.progress,):

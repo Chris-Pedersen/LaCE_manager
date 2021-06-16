@@ -148,7 +148,7 @@ class EmceeSampler(object):
             ## Get initial walkers
             p0=self.get_initial_walkers()
             if log_func is None:
-                log_func=self.like.log_prob
+                log_func=self.like.log_prob_and_blobs()
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
                                                     log_func,
                                                     backend=self.backend)
@@ -223,7 +223,7 @@ class EmceeSampler(object):
     def resume_sampler(self,max_steps,log_func=None,timeout=None,force_timeout=False):
         """ Use the emcee backend to restart a chain from the last iteration
             - max_steps is the maximum number of steps for this run
-            - log_func is sampler.like.log_prob, can't use self. objects
+            - log_func should be sampler.like.log_prob_and_blobs
               with pool apparently
             - timeout is the amount of time to run in hours before wrapping
               the job up. This is used to make sure timeouts on compute nodes

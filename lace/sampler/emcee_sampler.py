@@ -30,7 +30,8 @@ class EmceeSampler(object):
     def __init__(self,like=None,emulator=None,free_param_names=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
                         subfolder=None,rootdir=None,
-                        save_chain=True,progress=False):
+                        save_chain=True,progress=False,
+                        save_blobs=True):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain.
             rootdir allows user to search for saved chains in a different location

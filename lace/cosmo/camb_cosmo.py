@@ -200,7 +200,8 @@ def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
 def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):
     """Given a CAMB cosmology, and a set of redshifts, compute the linear
         power spectrum in units of h/Mpc. Other inputs:
-        - camb_results: if provided, use that to speed things up.
+        - camb_results: if provided, use that to speed things up. NB that
+          zs is only used to generate a new camb_results.
         - fluid: specify transfer function to use (8=CDM+baryons). """
 
     if camb_results is None:
@@ -219,7 +220,20 @@ def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):
             var2=fluid,npoints=camb_npoints,
             minkh=kmin_hMpc,maxkh=kmax_hMpc)
 
-    return kh, zs_out, Ph
+    ## So we need to make sure that every element in zs is contained in
+    ## zs out
+    check_zs =  all(item in zs_out for item in zs)
+    assert check_zs==True, "You have asked for redshifts outside of the provided camb_results"
+
+    ## Assuming this is ok, now we construct a list of the linear power at the
+    ## zs we have been asked for, regardless of what comes out of
+    ## camb_results
+    P_out=np.empty((len(zs),len(kh)))
+    for aa,zz in enumerate(zs):
+        P_out[aa,:]=Ph[zs_out.index(zz)]
+    #return kh, zs_out, Ph
+    return kh, zs, P_out
+    
 
 
 def get_linP_Mpc(pars,zs,camb_results=None,fluid=camb_fluid):

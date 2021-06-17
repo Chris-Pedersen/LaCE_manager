@@ -90,6 +90,9 @@ class EmceeSampler(object):
 
         self.set_truth()
 
+        # Figure out what extra information will be provided as blobs
+        self.blobs_dtype = self.like.theory.get_blobs_dtype()
+
 
     def set_truth(self):
         """ Set up dictionary with true values of cosmological
@@ -148,10 +151,11 @@ class EmceeSampler(object):
             ## Get initial walkers
             p0=self.get_initial_walkers()
             if log_func is None:
-                log_func=self.like.log_prob_and_blobs()
+                log_func=self.like.log_prob_and_blobs
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    log_func,
-                                                    backend=self.backend)
+                                                log_func,
+                                                backend=self.backend,
+                                                blobs_dtype=self.blobs_dtype)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                     progress=self.progress,):
                 # Only check convergence every 100 steps
@@ -179,9 +183,10 @@ class EmceeSampler(object):
             p0=self.get_initial_walkers()
             with Pool() as pool:
                 sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                        log_func,
-                                                        pool=pool,
-                                                        backend=self.backend)
+                                                log_func,
+                                                pool=pool,
+                                                backend=self.backend,
+                                                blobs_dtype=self.blobs_dtype)
                 if timeout:
                     time_end=time.time() + 3600*timeout
                 for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
@@ -239,7 +244,8 @@ class EmceeSampler(object):
                                          self.backend.shape[1],
                                         log_func,
                                         pool=pool,
-                                        backend=self.backend)
+                                        backend=self.backend,
+                                        blobs_dtype=self.blobs_dtype)
             if timeout:
                 time_end=time.time() + 3600*timeout
             start_step=self.backend.iteration

@@ -220,7 +220,6 @@ class FullTheory(object):
 
         if camb_model is None:
             Nblob=len(self.get_blobs_dtype())
-            print('will return dummy blob of size',Nblob)
             if Nblob==1:
                 return np.nan
             else:
@@ -230,7 +229,6 @@ class FullTheory(object):
                                     cosmo=camb_model.cosmo,
                                     results=camb_model.get_camb_results())
             params=linP_model.get_params()
-            print('will return params blob',params)
             return params['Delta2_star'],params['n_star'], \
                     params['alpha_star'],params['f_star'], \
                     params['g_star'],camb_model.cosmo.H0

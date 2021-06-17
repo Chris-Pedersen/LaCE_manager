@@ -67,7 +67,7 @@ class FullTheory(object):
             self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=self.emu_kp_Mpc,
                 like_z_star=3.0,like_kp_kms=0.009,
-                cosmo_fid=self.camb_model_fid.cosmo,verbose=self.verbose)
+                cosmo_fid=None,verbose=self.verbose)
 
 
     def same_background(self,like_params):
@@ -157,8 +157,9 @@ class FullTheory(object):
         ## parameters
         elif self.use_compression==True:
             camb_model=self.camb_model_fid.get_new_model(like_params)
+            results=camb_cosmo.get_camb_results(camb_model.cosmo,zs=self.zs,fast_camb=True)
             linP_model=linear_power_model.LinearPowerModel(cosmo=camb_model.cosmo,
-                                    results=camb_model.get_camb_results())
+                                    results=results)
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
         ## Otherwise calculate the emulator calls directly with no compression
@@ -174,7 +175,6 @@ class FullTheory(object):
             linP_Mpc_params=camb_model.get_linP_Mpc_params(
                     kp_Mpc=self.emu_kp_Mpc)
             M_of_zs=camb_model.get_M_of_zs()
-
 
         # loop over redshifts and store emulator calls
         emu_calls=[]

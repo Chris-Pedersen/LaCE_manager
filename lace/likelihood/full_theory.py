@@ -157,9 +157,8 @@ class FullTheory(object):
         ## parameters
         elif self.use_compression==True:
             camb_model=self.camb_model_fid.get_new_model(like_params)
-            results=camb_cosmo.get_camb_results(camb_model.cosmo,zs=self.zs,fast_camb=True)
             linP_model=linear_power_model.LinearPowerModel(cosmo=camb_model.cosmo,
-                                    results=results)
+                                    results=camb_model.get_camb_results())
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
         ## Otherwise calculate the emulator calls directly with no compression

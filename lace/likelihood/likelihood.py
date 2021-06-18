@@ -539,7 +539,8 @@ class Likelihood(object):
 
         # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
-                cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+                cosmo=sim_cosmo,camb_results=None,
+                z_star=z_star,kp_kms=kp_kms)
 
         return sim_linP_params
 

@@ -15,7 +15,8 @@ class FullTheory(object):
 
     def __init__(self,zs,emulator=None,camb_model_fid=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    pivot_scalar=0.05,theta_MC=True,use_compression=False):
+                    pivot_scalar=0.05,theta_MC=True,use_compression=False,
+                    use_camb_fz=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -31,6 +32,7 @@ class FullTheory(object):
         self.zs=zs
         self.emulator=emulator
         self.use_compression=use_compression
+        self.use_camb_fz=use_camb_fz
 
         # setup object to compute linear power for any cosmology
         if self.emulator is None:
@@ -44,7 +46,7 @@ class FullTheory(object):
             self.camb_model_fid=camb_model_fid
         else:
             self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs,
-                            pivot_scalar=pivot_scalar,thetaMC=theta_MC)
+                            pivot_scalar=pivot_scalar,theta_MC=theta_MC)
 
         # setup fiducial IGM models
         if mf_model_fid:
@@ -67,7 +69,9 @@ class FullTheory(object):
             self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=self.emu_kp_Mpc,
                 like_z_star=3.0,like_kp_kms=0.009,
-                cosmo_fid=None,verbose=self.verbose)
+                camb_model_fid=self.camb_model_fid,
+                use_camb_fz=self.use_camb_fz,
+                verbose=self.verbose)
 
 
     def same_background(self,like_params):
@@ -76,19 +80,8 @@ class FullTheory(object):
 
         # look for parameters that would change background
         for par in like_params:
-            if par.name == 'ombh2':
-                if not np.isclose(par.value,self.camb_model_fid.cosmo.ombh2):
-                    return False
-            if par.name == 'omch2':
-                if not np.isclose(par.value,self.camb_model_fid.cosmo.omch2):
-                    return False
-            if par.name == 'H0':
-                if not np.isclose(par.value,self.camb_model_fid.cosmo.H0):
-                    return False
-            if par.name == 'mnu':
-                if not np.isclose(par.value,camb_cosmo.get_mnu(
-                            self.camb_model_fid.cosmo)):
-                    return False
+            if par.name in ['ombh2','omch2','H0','mnu','cosmomc_theta']:
+                return False
 
         return True
 
@@ -157,8 +150,10 @@ class FullTheory(object):
         ## parameters
         elif self.use_compression==True:
             camb_model=self.camb_model_fid.get_new_model(like_params)
-            linP_model=linear_power_model.LinearPowerModel(cosmo=camb_model.cosmo,
-                                    results=camb_model.get_camb_results())
+            linP_model=linear_power_model.LinearPowerModel(
+                        cosmo=camb_model.cosmo,
+                        camb_results=camb_model.get_camb_results(),
+                        use_camb_fz=self.use_camb_fz)
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
         ## Otherwise calculate the emulator calls directly with no compression

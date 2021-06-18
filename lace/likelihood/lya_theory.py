@@ -11,7 +11,8 @@ class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
     def __init__(self,zs,emulator,cosmo_fid=None,verbose=False,
-                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None):
+                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
+                    use_camb_fz=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -38,7 +39,7 @@ class LyaTheory(object):
         self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=emu_kp_Mpc,
                 like_z_star=like_z_star,like_kp_kms=like_kp_kms,
-                cosmo_fid=cosmo_fid,verbose=verbose)
+                cosmo_fid=cosmo_fid,use_camb_fz=use_camb_fz,verbose=verbose)
 
         # setup fiducial IGM models
         if mf_model_fid:

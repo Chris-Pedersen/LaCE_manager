@@ -158,43 +158,24 @@ def get_camb_results(pars,zs=None,fast_camb=False):
     return camb.get_results(pars)
 
 
-def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
-    """Given a cosmology and a set of redshifts, compute log growth rate.
-        By default, uses velocity variance. Other inputs:
-        - camb_results: if provided, use that to speed things up.
-        - use_approx: use Om(z)**0.55 instead. """
+def get_f_of_z(pars,camb_results,z):
+    """Given pre-computed CAMB results, compute log growth rate at z"""
 
-    if camb_results is None:
-        # if you want to use fast_camb, you should pass camb_results
-        camb_results = get_camb_results(pars,zs=zs,fast_camb=False)
+    # surprisingly, there is no option to specify the fluid (CDM+baryons?)
+    transfer=camb_results.get_matter_transfer_data()
+    # these seem to be in reverse order (see below)
+    s8=transfer.sigma_8
+    # note there is a bug in the CAMB documentation
+    f_s8sq=transfer.sigma2_vdelta_8
+    # compute logarithmic growth rate
+    fz=f_s8sq/s8**2
 
-    if use_approx:
-        # use f(z) = Om(z)**0.55
-        fz=np.empty_like(zs)
-        for iz in range(len(zs)):
-            z=zs[iz]
-            Omz=camb_results.get_Omega(var='cdm',z=z)
-            Omz+=camb_results.get_Omega(var='baryon',z=z)
-            fz[iz]=Omz**0.55
-    else:
-        # surprisingly, there is no option to specify the fluid (CDM+baryons?)
-        transfer = camb_results.get_matter_transfer_data()
-        # these seem to be in reverse order (see below)
-        s8 = transfer.sigma_8
-        # note there is a bug in the CAMB documentation
-        f_s8sq = transfer.sigma2_vdelta_8
-        # compute logarithmic growth rate
-        fz = f_s8sq / s8**2
-
-        # sort redshifts (input zs should go from low-z to high-z)
-        if len(zs)>1:
-            assert zs[1] > zs[0]
-            if s8[1] > s8[0]:
-                # reverse order of numpy array
-                fz = fz[::-1]
-
-    # return computed values of f(z)
-    return fz
+    # return f(z) for input redshift
+    zs=list(camb_results.transfer_redshifts)
+    if z not in zs:
+        raise ValueError('redshift {} not pre-computed'.format(z))
+    iz=zs.index(z)
+    return fz[iz]
 
 
 def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):

@@ -13,14 +13,15 @@ class FullTheory(object):
     will map from a set of CAMB parameters directly to emulator calls, without
     going through our Delta^2_\star parametrisation """
 
-    def __init__(self,zs,emulator=None,camb_model_fid=None,verbose=False,
+    def __init__(self,zs,emulator=None,true_camb_model=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    pivot_scalar=0.05,theta_MC=True,use_compression=False):
+                    pivot_scalar=0.05,theta_MC=True,use_compression=False,
+                    use_camb_fz=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
             - emulator: object to interpolate simulated p1d
-            - cosmo_fid: CAMB object with the fiducial cosmology (optional)
+            - true_camb_model: pass truth while testing / debugging
             - verbose: print information, useful to debug.
             - pivot_scalar sets the pivot scale used to define primordial
               power spectrum parameters
@@ -31,6 +32,7 @@ class FullTheory(object):
         self.zs=zs
         self.emulator=emulator
         self.use_compression=use_compression
+        self.use_camb_fz=use_camb_fz
 
         # setup object to compute linear power for any cosmology
         if self.emulator is None:
@@ -40,11 +42,11 @@ class FullTheory(object):
             self.emu_kp_Mpc=self.emulator.archive.kp_Mpc
 
         # setup object to compute linear power for any cosmology
-        if camb_model_fid:
-            self.camb_model_fid=camb_model_fid
+        if true_camb_model:
+            self.true_camb_model=true_camb_model
         else:
-            self.camb_model_fid=CAMB_model.CAMBModel(zs=self.zs,
-                            pivot_scalar=pivot_scalar,thetaMC=theta_MC)
+            self.true_camb_model=CAMB_model.CAMBModel(zs=self.zs,
+                            pivot_scalar=pivot_scalar,theta_MC=theta_MC)
 
         # setup fiducial IGM models
         if mf_model_fid:
@@ -67,7 +69,10 @@ class FullTheory(object):
             self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=self.emu_kp_Mpc,
                 like_z_star=3.0,like_kp_kms=0.009,
-                cosmo_fid=None,verbose=self.verbose)
+                cosmo_fid=None,
+#camb_model_fid=self.true_camb_model,
+                use_camb_fz=self.use_camb_fz,
+                verbose=self.verbose)
 
 
     def same_background(self,like_params):
@@ -76,19 +81,8 @@ class FullTheory(object):
 
         # look for parameters that would change background
         for par in like_params:
-            if par.name == 'ombh2':
-                if not np.isclose(par.value,self.camb_model_fid.cosmo.ombh2):
-                    return False
-            if par.name == 'omch2':
-                if not np.isclose(par.value,self.camb_model_fid.cosmo.omch2):
-                    return False
-            if par.name == 'H0':
-                if not np.isclose(par.value,self.camb_model_fid.cosmo.H0):
-                    return False
-            if par.name == 'mnu':
-                if not np.isclose(par.value,camb_cosmo.get_mnu(
-                            self.camb_model_fid.cosmo)):
-                    return False
+            if par.name in ['ombh2','omch2','H0','mnu','cosmomc_theta']:
+                return False
 
         return True
 
@@ -104,7 +98,7 @@ class FullTheory(object):
         assert 'nrun' not in [par.name for par in like_params]
 
         # get linP_Mpc_params from fiducial model (should be very fast)
-        linP_Mpc_params=self.camb_model_fid.get_linP_Mpc_params(
+        linP_Mpc_params=self.true_camb_model.get_linP_Mpc_params(
                 kp_Mpc=self.emu_kp_Mpc)
         if self.verbose: print('got linP_Mpc_params for fiducial model')
 
@@ -113,14 +107,14 @@ class FullTheory(object):
         delta_ns=0.0
         for par in like_params:
             if par.name == 'As':
-                fid_As = self.camb_model_fid.cosmo.InitPower.As
+                fid_As = self.true_camb_model.cosmo.InitPower.As
                 ratio_As = par.value / fid_As
             if par.name == 'ns':
-                fid_ns = self.camb_model_fid.cosmo.InitPower.ns
+                fid_ns = self.true_camb_model.cosmo.InitPower.ns
                 delta_ns = par.value - fid_ns
 
         # compute ratio of amplitudes at emulator pivot point
-        kp_camb = self.camb_model_fid.cosmo.InitPower.pivot_scalar
+        kp_camb = self.true_camb_model.cosmo.InitPower.pivot_scalar
         ratio_Delta2_p = ratio_As * (self.emu_kp_Mpc/kp_camb)**delta_ns
 
         # update values of linP_params at emulator pivot point, at each z
@@ -156,9 +150,11 @@ class FullTheory(object):
         ## Check if we want to find the emulator calls using compressed
         ## parameters
         elif self.use_compression==True:
-            camb_model=self.camb_model_fid.get_new_model(like_params)
-            linP_model=linear_power_model.LinearPowerModel(cosmo=camb_model.cosmo,
-                                    results=camb_model.get_camb_results())
+            camb_model=self.true_camb_model.get_new_model(like_params)
+            linP_model=linear_power_model.LinearPowerModel(
+                        cosmo=camb_model.cosmo,
+                        camb_results=camb_model.get_camb_results(),
+                        use_camb_fz=self.use_camb_fz)
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
         ## Otherwise calculate the emulator calls directly with no compression
@@ -166,11 +162,11 @@ class FullTheory(object):
             # recycle background and transfer functions from fiducial cosmo
             if self.verbose: print('recycle transfer function')
             linP_Mpc_params=self.get_linP_Mpc_params_from_fid(like_params)
-            M_of_zs=self.camb_model_fid.get_M_of_zs()
+            M_of_zs=self.true_camb_model.get_M_of_zs()
         else:
             # setup a new CAMB_model from like_params
             if self.verbose: print('create new CAMB_model')
-            camb_model=self.camb_model_fid.get_new_model(like_params)
+            camb_model=self.true_camb_model.get_new_model(like_params)
             linP_Mpc_params=camb_model.get_linP_Mpc_params(
                     kp_Mpc=self.emu_kp_Mpc)
             M_of_zs=camb_model.get_M_of_zs()
@@ -251,7 +247,7 @@ class FullTheory(object):
         """Return parameters in models, even if not free parameters"""
 
         # get parameters from CAMB model
-        params=self.camb_model_fid.get_likelihood_parameters()
+        params=self.true_camb_model.get_likelihood_parameters()
 
         # get parameters from nuisance models
         for par in self.mf_model_fid.get_parameters():

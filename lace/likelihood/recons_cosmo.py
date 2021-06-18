@@ -43,8 +43,10 @@ class ReconstructedCosmology(object):
 
         # compute linear power model for fiducial cosmology
         self.linP_model_fid=linear_power_model.LinearPowerModel(
-                cosmo=self.cosmo_fid,z_star=like_z_star,
-                kp_kms=like_kp_kms,use_camb_fz=self.use_camb_fz)
+                cosmo=self.cosmo_fid,
+                camb_results=self.camb_results_fid,
+                z_star=like_z_star,kp_kms=like_kp_kms,
+                use_camb_fz=self.use_camb_fz)
         if self.verbose: print('setup linP model for fiducial cosmology')
 
         # store pivot point for convenience

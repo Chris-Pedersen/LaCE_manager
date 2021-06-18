@@ -109,11 +109,11 @@ class Likelihood(object):
 
                 if not full:
                     print("No cosmology parameters are varied")
-                if include_CMB==True:
-                    ## Set up a CMB likelihood object, using the simulation mock
-                    ## cosmology as the central values
-                    self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
+        if self.include_CMB==True:
+            ## Set up a CMB likelihood object, using the simulation mock
+            ## cosmology as the central values
+            self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)

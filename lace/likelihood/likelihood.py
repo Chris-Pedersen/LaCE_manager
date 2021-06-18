@@ -244,9 +244,15 @@ class Likelihood(object):
 
     def get_cmb_like(self,values):
         """ For a given point in sampling space, return the CMB likelihood """
+
+        # get cosmology parameters from sampling points
         cosmo_dic=self.cosmology_params_from_sampling_point(values)
 
-        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,self.theory.camb_model_fid.cosmo)
+        # (pretty ugly way to) get true cosmology from full_theory object
+        true_cosmo=self.theory.true_camb_model.cosmo
+
+        # compute CMB likelihood by comparing both cosmologies
+        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,true_cosmo)
 
         return cmb_like
 

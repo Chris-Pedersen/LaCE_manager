@@ -70,7 +70,6 @@ class FullTheory(object):
                 emu_kp_Mpc=self.emu_kp_Mpc,
                 like_z_star=3.0,like_kp_kms=0.009,
                 cosmo_fid=None,
-#camb_model_fid=self.true_camb_model,
                 use_camb_fz=self.use_camb_fz,
                 verbose=self.verbose)
 

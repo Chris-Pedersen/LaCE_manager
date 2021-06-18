@@ -626,8 +626,8 @@ class EmceeSampler(object):
 
         ## If we are sampling primordial power, save the pivot scale
         ## used to define As, ns
-        if hasattr(self.like.theory,"camb_model_fid"):
-            pivot_scalar=self.like.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+        if hasattr(self.like.theory,"true_camb_model"):
+            pivot_scalar=self.like.theory.true_camb_model.cosmo.InitPower.pivot_scalar
         else:
             pivot_scalar=0.05
         saveDict["pivot_scalar"]=pivot_scalar

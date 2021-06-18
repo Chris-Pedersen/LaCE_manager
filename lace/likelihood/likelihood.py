@@ -101,11 +101,11 @@ class Likelihood(object):
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
                         cosmo=sim_cosmo,pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                        camb_model_fid=camb_model_sim,verbose=self.verbose,
+                        true_camb_model=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names),
                         use_compression=use_compression)
-                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
 
                 if not full:
                     print("No cosmology parameters are varied")

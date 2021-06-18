@@ -109,11 +109,11 @@ class Likelihood(object):
 
                 if not full:
                     print("No cosmology parameters are varied")
-                if include_CMB==True:
-                    ## Set up a CMB likelihood object, using the simulation mock
-                    ## cosmology as the central values
-                    self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
+        if self.include_CMB==True:
+            ## Set up a CMB likelihood object, using the simulation mock
+            ## cosmology as the central values
+            self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)
@@ -539,7 +539,8 @@ class Likelihood(object):
 
         # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
-                cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+                cosmo=sim_cosmo,camb_results=None,
+                z_star=z_star,kp_kms=kp_kms)
 
         return sim_linP_params
 

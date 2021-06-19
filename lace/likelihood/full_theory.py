@@ -78,7 +78,7 @@ class FullTheory(object):
                 verbose=self.verbose)
 
 
-    def same_background(self,like_params):
+    def fixed_background(self,like_params):
         """Check if any of the input likelihood parameters would change
             the background expansion of the fiducial cosmology"""
 
@@ -90,12 +90,12 @@ class FullTheory(object):
         return True
 
 
-    def get_linP_Mpc_params_from_fid(self,like_params):
-        """Recycle linP_Mpc_params from fiducial model, when only varying
+    def get_linP_Mpc_params_from_truth(self,like_params):
+        """Recycle linP_Mpc_params from true model, when only varying
             primordial power spectrum (As, ns, nrun)"""
 
         # make sure you are not changing the background expansion
-        assert self.same_background(like_params)
+        assert self.fixed_background(like_params)
 
         # for now, crash if changing running (should be easy to add)
         assert 'nrun' not in [par.name for par in like_params]
@@ -166,13 +166,13 @@ class FullTheory(object):
             if return_blob:
                 blob=self.get_blob(camb_model=camb_model)
         ## Otherwise calculate the emulator calls directly with no compression
-        elif self.same_background(like_params):
-            # recycle background and transfer functions from fiducial cosmo
+        elif self.fixed_background(like_params):
+            # use background and transfer functions from true cosmology
             if self.verbose: print('recycle transfer function')
-            linP_Mpc_params=self.get_linP_Mpc_params_from_fid(like_params)
+            linP_Mpc_params=self.get_linP_Mpc_params_from_truth(like_params)
             M_of_zs=self.true_camb_model.get_M_of_zs()
             if return_blob:
-                raise ValueError('implement blob for same background runs')
+                raise ValueError('implement blob for fixed background runs')
         else:
             # setup a new CAMB_model from like_params
             if self.verbose: print('create new CAMB_model')

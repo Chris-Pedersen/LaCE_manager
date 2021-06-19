@@ -101,19 +101,19 @@ class Likelihood(object):
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
                         cosmo=sim_cosmo,pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                        camb_model_fid=camb_model_sim,verbose=self.verbose,
+                        true_camb_model=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names),
                         use_compression=use_compression)
-                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
 
                 if not full:
                     print("No cosmology parameters are varied")
-                if include_CMB==True:
-                    ## Set up a CMB likelihood object, using the simulation mock
-                    ## cosmology as the central values
-                    self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
+        if self.include_CMB==True:
+            ## Set up a CMB likelihood object, using the simulation mock
+            ## cosmology as the central values
+            self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)
@@ -244,9 +244,15 @@ class Likelihood(object):
 
     def get_cmb_like(self,values):
         """ For a given point in sampling space, return the CMB likelihood """
+
+        # get cosmology parameters from sampling points
         cosmo_dic=self.cosmology_params_from_sampling_point(values)
 
-        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,self.theory.camb_model_fid.cosmo)
+        # (pretty ugly way to) get true cosmology from full_theory object
+        true_cosmo=self.theory.true_camb_model.cosmo
+
+        # compute CMB likelihood by comparing both cosmologies
+        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,true_cosmo)
 
         return cmb_like
 
@@ -582,7 +588,8 @@ class Likelihood(object):
 
         # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
-                cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+                cosmo=sim_cosmo,camb_results=None,
+                z_star=z_star,kp_kms=kp_kms)
 
         return sim_linP_params
 

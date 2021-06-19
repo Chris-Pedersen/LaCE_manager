@@ -116,9 +116,11 @@ class EmceeSampler(object):
         else:
             ## Get true fit params
             ## use pivot k from the theory's recons_cosmo
-            all_truth=fit_linP.parameterize_cosmology_kms(test_sim_cosmo,
-                        self.like.theory.cosmo.z_star,
-                        self.like.theory.cosmo.kp_kms)
+            all_truth=fit_linP.parameterize_cosmology_kms(
+                        cosmo=test_sim_cosmo,
+                        camb_results=test_results,
+                        z_star=self.like.theory.cosmo.z_star,
+                        kp_kms=self.like.theory.cosmo.kp_kms)
 
         ## Take only free parameters, and store values
         ## along with LaTeX strings
@@ -607,8 +609,8 @@ class EmceeSampler(object):
 
         ## If we are sampling primordial power, save the pivot scale
         ## used to define As, ns
-        if hasattr(self.like.theory,"camb_model_fid"):
-            pivot_scalar=self.like.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+        if hasattr(self.like.theory,"true_camb_model"):
+            pivot_scalar=self.like.theory.true_camb_model.cosmo.InitPower.pivot_scalar
         else:
             pivot_scalar=0.05
         saveDict["pivot_scalar"]=pivot_scalar

@@ -110,11 +110,11 @@ class IminuitMinimizer(object):
             val_y = par_y.value_from_cube(val_y)
             sig_y = sig_y * (par_y.max_value - par_y.min_value)
             # multiply As by 10^9 for now, otherwise ellipse crashes
-            if pname_x is 'As':
+            if pname_x == 'As':
                 val_x *= 1e9
                 sig_x *= 1e9
                 pname_x += ' x 1e9'
-            if pname_y is 'As':
+            if pname_y == 'As':
                 val_y *= 1e9
                 sig_y *= 1e9
                 pname_y += ' x 1e9'

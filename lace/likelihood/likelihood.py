@@ -365,6 +365,11 @@ class Likelihood(object):
     def log_prob(self,values):
         """Return log likelihood plus log priors"""
 
+        # check for NaNs in input values
+        if np.isnan(np.sum(values)):
+            print('NaN values =',values)
+            return -np.inf
+
         # Always force parameter to be within range (for now)
         if max(values) > 1.0:
             return -np.inf

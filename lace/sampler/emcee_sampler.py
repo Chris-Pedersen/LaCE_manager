@@ -101,6 +101,12 @@ class EmceeSampler(object):
         test_results=camb_cosmo.get_camb_results(test_sim_cosmo)
         self.truth={}
 
+        linP_truth=fit_linP.parameterize_cosmology_kms(
+                        cosmo=test_sim_cosmo,
+                        camb_results=test_results,
+                        z_star=3.0, ## Hardcoding for now!!!
+                        kp_kms=0.009)
+
         ## Are we using full theory or compressed theory
         if hasattr(self.like.theory,"emu_kp_Mpc"):
             ## Get all possible likelihood params
@@ -112,21 +118,27 @@ class EmceeSampler(object):
             all_truth["H0"]=test_sim_cosmo.H0
             all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
             all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
+            ## Store truth for compressed parameters in case we want to
+            ## plot them as derived parameters
+            all_truth["Delta2_star"]=linP_truth["Delta2_star"]
+            all_truth["n_star"]=linP_truth["n_star"]
+            all_truth["alpha_star"]=linP_truth["alpha_star"]
+            all_truth["f_star"]=linP_truth["f_star"]
+            all_truth["g_star"]=linP_truth["g_star"]
+            ## Store truth for all parameters, whether free or not
+            ## in the full_theory case
+            for param in cosmo_params:
+                param_string=param_dict[param]
+                self.truth[param_string]=all_truth[param]
         else:
-            ## Get true fit params
-            ## use pivot k from the theory's recons_cosmo
-            all_truth=fit_linP.parameterize_cosmology_kms(
-                        cosmo=test_sim_cosmo,
-                        camb_results=test_results,
-                        z_star=self.like.theory.cosmo.z_star,
-                        kp_kms=self.like.theory.cosmo.kp_kms)
-
-        ## Take only free parameters, and store values
-        ## along with LaTeX strings
-        for param in self.like.free_params:
-            if param.name in cosmo_params:
-                param_string=param_dict[param.name]
-                self.truth[param_string]=all_truth[param.name]
+            ## True compressed parameters
+            all_truth=linP_truth
+            ## Take only free parameters, and store values
+            ## along with LaTeX strings
+            for param in self.like.free_params:
+                if param.name in cosmo_params:
+                    param_string=param_dict[param.name]
+                    self.truth[param_string]=all_truth[param.name]
 
         return
 
@@ -766,6 +778,7 @@ param_dict={
             "n_p":"$n_p$",
             "Delta2_star":"$\Delta^2_\star$",
             "n_star":"$n_\star$",
+            "alpha_star":"$\\alpha_\star$",
             "g_star":"$g_\star$",
             "f_star":"$f_\star$",
             "ln_tau_0":"$\mathrm{ln}\,\\tau_0$",

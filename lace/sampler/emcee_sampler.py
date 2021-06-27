@@ -476,11 +476,9 @@ class EmceeSampler(object):
 
         if self.verbose: print("Load sampler data")
 
-        if os.path.isfile(self.save_directory+"/backend.h5"):
-            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
-        else:
-            self.backend=None
-            print("No backend found - will be able to plot chains but not run sampler")
+        ## Verify we have a backend, and load it
+        assert os.path.isfile(self.save_directory+"/backend.h5"), "Backend not found, can't load chains"
+        self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
 
         ## Load chains - build a sampler object to access the backend
         sampler=emcee.EnsembleSampler(self.backend.shape[0],

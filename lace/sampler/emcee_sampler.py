@@ -63,7 +63,6 @@ class EmceeSampler(object):
                                 free_param_names=free_param_names,verbose=False)
             # number of free parameters to sample
             self.ndim=len(self.like.free_params)
-            self.chain_from_file=None
 
             self.save_directory=None
             if save_chain:
@@ -332,17 +331,9 @@ class EmceeSampler(object):
     def get_chain(self,cube=True):
         """Figure out whether chain has been read from file, or computed"""
 
-        if not self.chain_from_file is None:
-            chain=self.chain_from_file['chain']
-            lnprob=self.chain_from_file['lnprob']
-            if 'blobs' in self.chain_from_file:
-                blobs=self.chain_from_file['blobs']
-            else:
-                blobs=None
-        else:
-            chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
-            lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
-            blobs=self.blobs
+        chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
+        lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        blobs=self.blobs
 
         if cube == False:
             cube_values=chain
@@ -386,12 +377,6 @@ class EmceeSampler(object):
             self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
         else:
             self.save_directory=chain_location+"/chain_"+str(chain_number)
-
-        if os.path.isfile(self.save_directory+"/backend.h5"):
-            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
-        else:
-            self.backend=None
-            print("No backend found - will be able to plot chains but not run sampler")
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
@@ -490,15 +475,24 @@ class EmceeSampler(object):
                             include_CMB=include_CMB)
 
         if self.verbose: print("Load sampler data")
-        ## Load chains
-        self.chain_from_file={}
-        self.chain_from_file["chain"]=np.asarray(config["flatchain"])
-        self.chain_from_file["lnprob"]=np.asarray(config["lnprob"])
-        if 'blobs' in config:
-            self.chain_from_file["blobs"]=np.asarray(config["blobs"])
 
-        if self.verbose:
-            print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
+        if os.path.isfile(self.save_directory+"/backend.h5"):
+            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+        else:
+            self.backend=None
+            print("No backend found - will be able to plot chains but not run sampler")
+
+        ## Load chains - build a sampler object to access the backend
+        sampler=emcee.EnsembleSampler(self.backend.shape[0],
+                                        self.backend.shape[1],
+                                        self.like.log_prob_and_blobs,
+                                        backend=self.backend)
+
+        self.burnin_nsteps=config["burn_in"]
+
+        self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
+        self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
@@ -628,9 +622,6 @@ class EmceeSampler(object):
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps
         saveDict["nwalkers"]=self.nwalkers
-        saveDict["lnprob"]=self.lnprob.tolist()
-        saveDict["blobs"]=self.blobs.tolist()
-        saveDict["flatchain"]=self.chain.tolist()
         saveDict["autocorr"]=self.autocorr.tolist()
 
         ## Save dictionary to json file in the

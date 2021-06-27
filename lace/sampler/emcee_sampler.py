@@ -376,6 +376,39 @@ class EmceeSampler(object):
 
         return
 
+    def get_all_params(self):
+        """ Get a merged array of both sampled and derived parameters
+            returns a 2D array of all parameters, and an ordered list of
+            the LaTeX strings for each """
+        
+        chain,lnprob,blobs=self.get_chain(cube=False)
+
+        if len(blobs[0])==6:
+            ## If blobs are length 6, we are using a full_theory chain.
+            ## Build an array of chain + blobs, as chainconsumer
+            ## doesn't know about the difference between sampled and derived
+            ## parameters
+
+            ## Array for blobs:
+            blobs_full=np.hstack((np.vstack(blobs["Delta2_star"]),
+                        np.vstack(blobs["n_star"]),
+                        np.vstack(blobs["f_star"]),
+                        np.vstack(blobs["g_star"]),
+                        np.vstack(blobs["alpha_star"]),
+                        np.vstack(blobs["H0"])))
+
+            ## Array for all parameters
+            all_params=np.hstack((chain,blobs_full))
+
+            ## Ordered strings for all parameters
+            all_strings=self.paramstrings+blob_strings
+
+        else:
+             ## If we're not using a full_theory object, ignore blobs
+             all_params=chain
+             all_strings=self.paramstrings
+
+        return all_params, all_strings
 
     def read_chain_from_file(self,chain_number,rootdir,subfolder):
         """Read chain from file, and check parameters"""
@@ -691,21 +724,35 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cmb_prior=False,save_string=None):
-        """ Make corner plot in ChainConsumer """
+    def plot_corner(self,plot_params=None,cmb_prior=False):
+        """ Make corner plot in ChainConsumer
+         - plot_params: Pass a list of parameters to plot (in LaTeX form),
+                        or leave as None to
+                        plot all (including derived) """
 
         c=ChainConsumer()
-        chain,lnprob,blobs=self.get_chain(cube=False)
+
+        params_plot, strings_plot=self.get_all_params()
 
         if cmb_prior==True:
             mean_cmb = self.like.cmb_like.true_values
             data_cmb = self.like.cmb_like.return_CMB_only()
             c.add_chain(data_cmb,parameters=self.like.cmb_like.param_list,
                                 name="CMB Likelihood")
-        c.add_chain(chain,parameters=self.paramstrings,name="Chains")
+        
+        c.add_chain(params_plot,parameters=strings_plot,name="Chains")
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
                     label_font_size=25, max_ticks=4)
+
+        ## Decide which parameters to plot
+        if plot_params==None:
+            ## Plot all parameters
+            params_to_plot=strings_plot
+        else:
+            ## Plot params passed as argument
+            params_to_plot=plot_params
+
 
         if cmb_prior==True:
             ## Only plot the parameters that are varied in the chain
@@ -716,7 +763,8 @@ class EmceeSampler(object):
             fig = c.plotter.plot(figsize=(12,12),
                     parameters=plot_param_strings,truth=self.truth)
         else:
-            fig = c.plotter.plot(figsize=(12,12),truth=self.truth)
+            fig = c.plotter.plot(figsize=(12,12),
+                    parameters=params_to_plot,truth=self.truth)
 
         if self.save_directory is not None:
             fig.savefig(self.save_directory+"/corner.pdf")
@@ -805,6 +853,8 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "f_star","g_star","cosmomc_theta",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
+## list of strings for blobs
+blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
                     rootdir=None,subfolder=None):
@@ -824,8 +874,8 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     for aa,chain_file in enumerate(chain_files):
         sampler=EmceeSampler(read_chain_file=chain_file,
                                 subfolder=subfolder,rootdir=rootdir)
-        chain,lnprob,blobs=sampler.get_chain(cube=False)
-        c.add_chain(chain,parameters=sampler.paramstrings,name=labels[aa])
+        params,strings=sampler.get_all_params()
+        c.add_chain(params,parameters=strings,name=labels[aa])
         
         ## Do not check whether truth results are the same for now
         ## Take the longest truth dictionary for disjoint chains

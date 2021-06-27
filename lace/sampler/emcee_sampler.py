@@ -63,7 +63,6 @@ class EmceeSampler(object):
                                 free_param_names=free_param_names,verbose=False)
             # number of free parameters to sample
             self.ndim=len(self.like.free_params)
-            self.chain_from_file=None
 
             self.save_directory=None
             if save_chain:
@@ -102,12 +101,6 @@ class EmceeSampler(object):
         test_results=camb_cosmo.get_camb_results(test_sim_cosmo)
         self.truth={}
 
-        linP_truth=fit_linP.parameterize_cosmology_kms(
-                        cosmo=test_sim_cosmo,
-                        camb_results=test_results,
-                        z_star=3.0, ## Hardcoding for now!!!
-                        kp_kms=0.009)
-
         ## Are we using full theory or compressed theory
         if hasattr(self.like.theory,"emu_kp_Mpc"):
             ## Get all possible likelihood params
@@ -119,27 +112,21 @@ class EmceeSampler(object):
             all_truth["H0"]=test_sim_cosmo.H0
             all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
             all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
-            ## Store truth for compressed parameters in case we want to
-            ## plot them as derived parameters
-            all_truth["Delta2_star"]=linP_truth["Delta2_star"]
-            all_truth["n_star"]=linP_truth["n_star"]
-            all_truth["alpha_star"]=linP_truth["alpha_star"]
-            all_truth["f_star"]=linP_truth["f_star"]
-            all_truth["g_star"]=linP_truth["g_star"]
-            ## Store truth for all parameters, whether free or not
-            ## in the full_theory case
-            for param in cosmo_params:
-                param_string=param_dict[param]
-                self.truth[param_string]=all_truth[param]
         else:
-            ## True compressed parameters
-            all_truth=linP_truth
-            ## Take only free parameters, and store values
-            ## along with LaTeX strings
-            for param in self.like.free_params:
-                if param.name in cosmo_params:
-                    param_string=param_dict[param.name]
-                    self.truth[param_string]=all_truth[param.name]
+            ## Get true fit params
+            ## use pivot k from the theory's recons_cosmo
+            all_truth=fit_linP.parameterize_cosmology_kms(
+                        cosmo=test_sim_cosmo,
+                        camb_results=test_results,
+                        z_star=self.like.theory.cosmo.z_star,
+                        kp_kms=self.like.theory.cosmo.kp_kms)
+
+        ## Take only free parameters, and store values
+        ## along with LaTeX strings
+        for param in self.like.free_params:
+            if param.name in cosmo_params:
+                param_string=param_dict[param.name]
+                self.truth[param_string]=all_truth[param.name]
 
         return
 
@@ -344,17 +331,9 @@ class EmceeSampler(object):
     def get_chain(self,cube=True):
         """Figure out whether chain has been read from file, or computed"""
 
-        if not self.chain_from_file is None:
-            chain=self.chain_from_file['chain']
-            lnprob=self.chain_from_file['lnprob']
-            if 'blobs' in self.chain_from_file:
-                blobs=self.chain_from_file['blobs']
-            else:
-                blobs=None
-        else:
-            chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
-            lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
-            blobs=self.blobs
+        chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
+        lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        blobs=self.blobs
 
         if cube == False:
             cube_values=chain
@@ -398,12 +377,6 @@ class EmceeSampler(object):
             self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
         else:
             self.save_directory=chain_location+"/chain_"+str(chain_number)
-
-        if os.path.isfile(self.save_directory+"/backend.h5"):
-            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
-        else:
-            self.backend=None
-            print("No backend found - will be able to plot chains but not run sampler")
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
@@ -502,15 +475,22 @@ class EmceeSampler(object):
                             include_CMB=include_CMB)
 
         if self.verbose: print("Load sampler data")
-        ## Load chains
-        self.chain_from_file={}
-        self.chain_from_file["chain"]=np.asarray(config["flatchain"])
-        self.chain_from_file["lnprob"]=np.asarray(config["lnprob"])
-        if 'blobs' in config:
-            self.chain_from_file["blobs"]=np.asarray(config["blobs"])
 
-        if self.verbose:
-            print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
+        ## Verify we have a backend, and load it
+        assert os.path.isfile(self.save_directory+"/backend.h5"), "Backend not found, can't load chains"
+        self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+
+        ## Load chains - build a sampler object to access the backend
+        sampler=emcee.EnsembleSampler(self.backend.shape[0],
+                                        self.backend.shape[1],
+                                        self.like.log_prob_and_blobs,
+                                        backend=self.backend)
+
+        self.burnin_nsteps=config["burn_in"]
+
+        self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
+        self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
@@ -640,9 +620,6 @@ class EmceeSampler(object):
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps
         saveDict["nwalkers"]=self.nwalkers
-        saveDict["lnprob"]=self.lnprob.tolist()
-        saveDict["blobs"]=self.blobs.tolist()
-        saveDict["flatchain"]=self.chain.tolist()
         saveDict["autocorr"]=self.autocorr.tolist()
 
         ## Save dictionary to json file in the
@@ -789,7 +766,6 @@ param_dict={
             "n_p":"$n_p$",
             "Delta2_star":"$\Delta^2_\star$",
             "n_star":"$n_\star$",
-            "alpha_star":"$\\alpha_\star$",
             "g_star":"$g_\star$",
             "f_star":"$f_\star$",
             "ln_tau_0":"$\mathrm{ln}\,\\tau_0$",
@@ -815,7 +791,6 @@ param_dict={
 cosmo_params=["Delta2_star","n_star","alpha_star",
                 "f_star","g_star","cosmomc_theta",
                 "H0","mnu","As","ns","ombh2","omch2"]
-
 
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,

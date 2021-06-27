@@ -376,6 +376,7 @@ class EmceeSampler(object):
 
         return
 
+
     def get_all_params(self):
         """ Get a merged array of both sampled and derived parameters
             returns a 2D array of all parameters, and an ordered list of
@@ -383,7 +384,16 @@ class EmceeSampler(object):
         
         chain,lnprob,blobs=self.get_chain(cube=False)
 
-        if len(blobs[0])==6:
+        if blobs==None:
+             ## Old chains will have no blobs
+             all_params=chain
+             all_strings=self.paramstrings
+        elif len(blobs[0])<6:
+            ## For now this will represent a lya_theory chain
+            ## so we ignore derived parameters for the time being
+             all_params=chain
+             all_strings=self.paramstrings
+        elif len(blobs[0])==6:
             ## If blobs are length 6, we are using a full_theory chain.
             ## Build an array of chain + blobs, as chainconsumer
             ## doesn't know about the difference between sampled and derived
@@ -402,13 +412,13 @@ class EmceeSampler(object):
 
             ## Ordered strings for all parameters
             all_strings=self.paramstrings+blob_strings
-
         else:
-             ## If we're not using a full_theory object, ignore blobs
-             all_params=chain
-             all_strings=self.paramstrings
+            print("Unkown blob configuration, just returning sampled params")
+            all_params=chain
+            all_strings=self.paramstrings
 
         return all_params, all_strings
+
 
     def read_chain_from_file(self,chain_number,rootdir,subfolder):
         """Read chain from file, and check parameters"""

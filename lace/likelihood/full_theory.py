@@ -66,6 +66,10 @@ class FullTheory(object):
         if self.use_compression==True:
             ## For now we hardcode z_star and kp_kms, since
             ## these are also hardcoded in lya_theory.py
+
+# Chris, I would use a different name, to make clear what "cosmo" means
+# Maybe something like cosmo_fid_compression would be clearer
+
             self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=self.emu_kp_Mpc,
                 like_z_star=3.0,like_kp_kms=0.009,
@@ -74,7 +78,7 @@ class FullTheory(object):
                 verbose=self.verbose)
 
 
-    def same_background(self,like_params):
+    def fixed_background(self,like_params):
         """Check if any of the input likelihood parameters would change
             the background expansion of the fiducial cosmology"""
 
@@ -86,12 +90,12 @@ class FullTheory(object):
         return True
 
 
-    def get_linP_Mpc_params_from_fid(self,like_params):
-        """Recycle linP_Mpc_params from fiducial model, when only varying
+    def get_linP_Mpc_params_from_truth(self,like_params):
+        """Recycle linP_Mpc_params from true model, when only varying
             primordial power spectrum (As, ns, nrun)"""
 
         # make sure you are not changing the background expansion
-        assert self.same_background(like_params)
+        assert self.fixed_background(like_params)
 
         # for now, crash if changing running (should be easy to add)
         assert 'nrun' not in [par.name for par in like_params]
@@ -125,12 +129,13 @@ class FullTheory(object):
 
 
     def get_emulator_calls(self,like_params=[],return_M_of_z=True,
-            camb_evaluation=None):
+            camb_evaluation=None,return_blob=False):
         """Compute models that will be emulated, one per redshift bin.
-            like_params identify likelihood parameters to use.
-            camb_evaluation is an optional CAMB model, to use when
+            - like_params identify likelihood parameters to use.
+            - camb_evaluation is an optional CAMB model, to use when
             doing importance sampling (in which case like_params should
-            not have cosmo parameters)."""
+            not have cosmo parameters)
+            - return_blob will return extra information about the call."""
 
         # setup IMG models using list of likelihood parameters
         igm_models=self.get_igm_models(like_params)
@@ -146,6 +151,8 @@ class FullTheory(object):
             linP_Mpc_params=camb_model.get_linP_Mpc_params(
                     kp_Mpc=self.emu_kp_Mpc)
             M_of_zs=camb_model.get_M_of_zs()
+            if return_blob:
+                blob=self.get_blob(camb_model=camb_model)
         ## Check if we want to find the emulator calls using compressed
         ## parameters
         elif self.use_compression==True:
@@ -156,12 +163,16 @@ class FullTheory(object):
                         use_camb_fz=self.use_camb_fz)
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
+            if return_blob:
+                blob=self.get_blob(camb_model=camb_model)
         ## Otherwise calculate the emulator calls directly with no compression
-        elif self.same_background(like_params):
-            # recycle background and transfer functions from fiducial cosmo
+        elif self.fixed_background(like_params):
+            # use background and transfer functions from true cosmology
             if self.verbose: print('recycle transfer function')
-            linP_Mpc_params=self.get_linP_Mpc_params_from_fid(like_params)
+            linP_Mpc_params=self.get_linP_Mpc_params_from_truth(like_params)
             M_of_zs=self.true_camb_model.get_M_of_zs()
+            if return_blob:
+                raise ValueError('implement blob for fixed background runs')
         else:
             # setup a new CAMB_model from like_params
             if self.verbose: print('create new CAMB_model')
@@ -169,6 +180,8 @@ class FullTheory(object):
             linP_Mpc_params=camb_model.get_linP_Mpc_params(
                     kp_Mpc=self.emu_kp_Mpc)
             M_of_zs=camb_model.get_M_of_zs()
+            if return_blob:
+                blob=self.get_blob(camb_model=camb_model)
 
         # loop over redshifts and store emulator calls
         emu_calls=[]
@@ -187,23 +200,68 @@ class FullTheory(object):
             emu_calls.append(model)
 
         if return_M_of_z==True:
-            return emu_calls,M_of_zs
+            if return_blob:
+                return emu_calls,M_of_zs,blob
+            else:
+                return emu_calls,M_of_zs
         else:
-            return emu_calls
+            if return_blob:
+                return emu_calls,blob
+            else:
+                return emu_calls
+
+
+    def get_blobs_dtype(self):
+        """Return the format of the extra information (blobs) returned
+            by get_p1d_kms and used in emcee_sampler. """
+
+        blobs_dtype = [('Delta2_star', float),('n_star', float),
+                        ('alpha_star', float),('f_star', float),
+                        ('g_star', float),('H0',float)]
+        return blobs_dtype
+
+
+    def get_blob(self,camb_model=None):
+        """Return extra information (blob) for the emcee_sampler. """
+
+        if camb_model is None:
+            Nblob=len(self.get_blobs_dtype())
+            if Nblob==1:
+                return np.nan
+            else:
+                out=np.nan,*([np.nan]*(Nblob-1))
+                return out
+        else:
+            linP_model=linear_power_model.LinearPowerModel(
+                                    cosmo=camb_model.cosmo,
+                                    camb_results=camb_model.get_camb_results())
+            params=linP_model.get_params()
+            return params['Delta2_star'],params['n_star'], \
+                    params['alpha_star'],params['f_star'], \
+                    params['g_star'],camb_model.cosmo.H0
 
 
     def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,
-            camb_evaluation=None):
+                    camb_evaluation=None,return_blob=False):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
-            It might also return a covariance from the emulator."""
+            It might also return a covariance from the emulator,
+            or a blob with extra information for the emcee_sampler."""
 
         if self.emulator is None:
             raise ValueError('no emulator provided')
 
         # figure out emulator calls, one per redshift
-        emu_calls,M_of_z=self.get_emulator_calls(like_params=like_params,
-                return_M_of_z=True,camb_evaluation=camb_evaluation)
+        if return_blob:
+            emu_calls,M_of_z,blob=self.get_emulator_calls(
+                    like_params=like_params,
+                    return_M_of_z=True,return_blob=True,
+                    camb_evaluation=camb_evaluation)
+        else:
+            emu_calls,M_of_z=self.get_emulator_calls(
+                    like_params=like_params,
+                    return_M_of_z=True,return_blob=False,
+                    camb_evaluation=camb_evaluation)
 
         # loop over redshifts and compute P1D
         p1d_kms=[]
@@ -236,10 +294,17 @@ class FullTheory(object):
                     else:
                         covars.append(cov_Mpc * M_of_z[iz]**2)
 
+        # decide what to return, and return it
         if return_covar:
-            return p1d_kms,covars
+            if return_blob:
+                return p1d_kms,covars,blob
+            else:
+                return p1d_kms,covars
         else:
-            return p1d_kms
+            if return_blob:
+                return p1d_kms,blob
+            else:
+                return p1d_kms
 
 
     def get_parameters(self):

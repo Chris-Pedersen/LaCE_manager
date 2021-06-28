@@ -4,3 +4,5 @@ dist/*
 all_setup.sh
 */files_setup.txt
 */backend.h5
+notebooks/.ipynb_checkpoints/
+notebooks/development/.ipynb_checkpoints/

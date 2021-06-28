@@ -43,7 +43,6 @@ class EmceeSampler(object):
         # WHEN WOULD YOU LIKE TO HAVE A SAMPLER WITHOUT AN EMULATOR?
 
         self.verbose=verbose
-        self.store_distances=False
         self.progress=progress
 
         if read_chain_file:
@@ -64,7 +63,6 @@ class EmceeSampler(object):
                                 free_param_names=free_param_names,verbose=False)
             # number of free parameters to sample
             self.ndim=len(self.like.free_params)
-            self.chain_from_file=None
 
             self.save_directory=None
             if save_chain:
@@ -91,12 +89,8 @@ class EmceeSampler(object):
 
         self.set_truth()
 
-        ## This was used to store the Euclidean distance
-        ## of each emulator call to the nearest training
-        ## point, might be redundant now
-        self.distances=[]
-        for aa in range(len(self.like.data.z)):
-            self.distances.append([])
+        # Figure out what extra information will be provided as blobs
+        self.blobs_dtype = self.like.theory.get_blobs_dtype()
 
 
     def set_truth(self):
@@ -106,6 +100,12 @@ class EmceeSampler(object):
         test_sim_cosmo=self.like.data.mock_sim.sim_cosmo
         test_results=camb_cosmo.get_camb_results(test_sim_cosmo)
         self.truth={}
+
+        linP_truth=fit_linP.parameterize_cosmology_kms(
+                        cosmo=test_sim_cosmo,
+                        camb_results=test_results,
+                        z_star=3.0, ## Hardcoding for now!!!
+                        kp_kms=0.009)
 
         ## Are we using full theory or compressed theory
         if hasattr(self.like.theory,"emu_kp_Mpc"):
@@ -118,21 +118,27 @@ class EmceeSampler(object):
             all_truth["H0"]=test_sim_cosmo.H0
             all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
             all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
+            ## Store truth for compressed parameters in case we want to
+            ## plot them as derived parameters
+            all_truth["Delta2_star"]=linP_truth["Delta2_star"]
+            all_truth["n_star"]=linP_truth["n_star"]
+            all_truth["alpha_star"]=linP_truth["alpha_star"]
+            all_truth["f_star"]=linP_truth["f_star"]
+            all_truth["g_star"]=linP_truth["g_star"]
+            ## Store truth for all parameters, whether free or not
+            ## in the full_theory case
+            for param in cosmo_params:
+                param_string=param_dict[param]
+                self.truth[param_string]=all_truth[param]
         else:
-            ## Get true fit params
-            ## use pivot k from the theory's recons_cosmo
-            all_truth=fit_linP.parameterize_cosmology_kms(
-                        cosmo=test_sim_cosmo,
-                        camb_results=test_results,
-                        z_star=self.like.theory.cosmo.z_star,
-                        kp_kms=self.like.theory.cosmo.kp_kms)
-
-        ## Take only free parameters, and store values
-        ## along with LaTeX strings
-        for param in self.like.free_params:
-            if param.name in cosmo_params:
-                param_string=param_dict[param.name]
-                self.truth[param_string]=all_truth[param.name]
+            ## True compressed parameters
+            all_truth=linP_truth
+            ## Take only free parameters, and store values
+            ## along with LaTeX strings
+            for param in self.like.free_params:
+                if param.name in cosmo_params:
+                    param_string=param_dict[param.name]
+                    self.truth[param_string]=all_truth[param.name]
 
         return
 
@@ -157,9 +163,12 @@ class EmceeSampler(object):
         if parallel==False:
             ## Get initial walkers
             p0=self.get_initial_walkers()
+            if log_func is None:
+                log_func=self.like.log_prob_and_blobs
             sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                    self.like.log_prob,
-                                                    backend=self.backend)
+                                                log_func,
+                                                backend=self.backend,
+                                                blobs_dtype=self.blobs_dtype)
             for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
                                     progress=self.progress,):
                 # Only check convergence every 100 steps
@@ -187,9 +196,10 @@ class EmceeSampler(object):
             p0=self.get_initial_walkers()
             with Pool() as pool:
                 sampler=emcee.EnsembleSampler(self.nwalkers,self.ndim,
-                                                        log_func,
-                                                        pool=pool,
-                                                        backend=self.backend)
+                                                log_func,
+                                                pool=pool,
+                                                backend=self.backend,
+                                                blobs_dtype=self.blobs_dtype)
                 if timeout:
                     time_end=time.time() + 3600*timeout
                 for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
@@ -223,6 +233,7 @@ class EmceeSampler(object):
         ## Save chains
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         return 
 
@@ -230,7 +241,7 @@ class EmceeSampler(object):
     def resume_sampler(self,max_steps,log_func=None,timeout=None,force_timeout=False):
         """ Use the emcee backend to restart a chain from the last iteration
             - max_steps is the maximum number of steps for this run
-            - log_func is sampler.like.log_prob, can't use self. objects
+            - log_func should be sampler.like.log_prob_and_blobs
               with pool apparently
             - timeout is the amount of time to run in hours before wrapping
               the job up. This is used to make sure timeouts on compute nodes
@@ -246,7 +257,8 @@ class EmceeSampler(object):
                                          self.backend.shape[1],
                                         log_func,
                                         pool=pool,
-                                        backend=self.backend)
+                                        backend=self.backend,
+                                        blobs_dtype=self.blobs_dtype)
             if timeout:
                 time_end=time.time() + 3600*timeout
             start_step=self.backend.iteration
@@ -280,6 +292,7 @@ class EmceeSampler(object):
 
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
         
         return
 
@@ -322,32 +335,6 @@ class EmceeSampler(object):
         return values
 
 
-    def log_prob(self,values):
-        """Function that will actually be called by emcee"""
-
-        test_log_prob=self.like.log_prob(values=values)
-        if np.isnan(test_log_prob):
-            if self.verbose:
-                print('parameter values outside hull',values)
-                return -np.inf
-        if self.store_distances:
-            self.add_euclidean_distances(values)
-
-        return test_log_prob        
-
-
-    def add_euclidean_distances(self,values):
-        """ For a given set of likelihood parameters
-        find the Euclidean distances to the nearest
-        training point for each emulator call """
-
-        emu_calls=self.like.theory.get_emulator_calls(self.like.parameters_from_sampling_point(values))
-        for aa,call in enumerate(emu_calls):
-            self.distances[aa].append(self.like.theory.emulator.get_nearest_distance(call,z=self.like.data.z[aa]))
-
-        return 
-
-
     def go_silent(self):
         self.verbose=False
         self.like.go_silent()
@@ -356,12 +343,9 @@ class EmceeSampler(object):
     def get_chain(self,cube=True):
         """Figure out whether chain has been read from file, or computed"""
 
-        if not self.chain_from_file is None:
-            chain=self.chain_from_file['chain']
-            lnprob=self.chain_from_file['lnprob']
-        else:
-            chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
-            lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
+        lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        blobs=self.blobs
 
         if cube == False:
             cube_values=chain
@@ -369,7 +353,7 @@ class EmceeSampler(object):
                                 cube_values[:,ip]) for ip in range(self.ndim)]
             chain=np.array(list_values).transpose()
 
-        return chain,lnprob
+        return chain,lnprob,blobs
 
 
     def plot_autocorrelation_time(self):
@@ -393,6 +377,49 @@ class EmceeSampler(object):
         return
 
 
+    def get_all_params(self):
+        """ Get a merged array of both sampled and derived parameters
+            returns a 2D array of all parameters, and an ordered list of
+            the LaTeX strings for each """
+        
+        chain,lnprob,blobs=self.get_chain(cube=False)
+
+        if blobs==None:
+             ## Old chains will have no blobs
+             all_params=chain
+             all_strings=self.paramstrings
+        elif len(blobs[0])<6:
+            ## For now this will represent a lya_theory chain
+            ## so we ignore derived parameters for the time being
+             all_params=chain
+             all_strings=self.paramstrings
+        elif len(blobs[0])==6:
+            ## If blobs are length 6, we are using a full_theory chain.
+            ## Build an array of chain + blobs, as chainconsumer
+            ## doesn't know about the difference between sampled and derived
+            ## parameters
+
+            ## Array for blobs:
+            blobs_full=np.hstack((np.vstack(blobs["Delta2_star"]),
+                        np.vstack(blobs["n_star"]),
+                        np.vstack(blobs["f_star"]),
+                        np.vstack(blobs["g_star"]),
+                        np.vstack(blobs["alpha_star"]),
+                        np.vstack(blobs["H0"])))
+
+            ## Array for all parameters
+            all_params=np.hstack((chain,blobs_full))
+
+            ## Ordered strings for all parameters
+            all_strings=self.paramstrings+blob_strings
+        else:
+            print("Unkown blob configuration, just returning sampled params")
+            all_params=chain
+            all_strings=self.paramstrings
+
+        return all_params, all_strings
+
+
     def read_chain_from_file(self,chain_number,rootdir,subfolder):
         """Read chain from file, and check parameters"""
         
@@ -405,12 +432,6 @@ class EmceeSampler(object):
             self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
         else:
             self.save_directory=chain_location+"/chain_"+str(chain_number)
-
-        if os.path.isfile(self.save_directory+"/backend.h5"):
-            self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
-        else:
-            self.backend=None
-            print("No backend found - will be able to plot chains but not run sampler")
 
         with open(self.save_directory+"/config.json") as json_file:  
             config = json.load(json_file)
@@ -509,13 +530,22 @@ class EmceeSampler(object):
                             include_CMB=include_CMB)
 
         if self.verbose: print("Load sampler data")
-        ## Load chains
-        self.chain_from_file={}
-        self.chain_from_file["chain"]=np.asarray(config["flatchain"])
-        self.chain_from_file["lnprob"]=np.asarray(config["lnprob"])
 
-        if self.verbose:
-            print("Chain shape is ", np.shape(self.chain_from_file["chain"]))
+        ## Verify we have a backend, and load it
+        assert os.path.isfile(self.save_directory+"/backend.h5"), "Backend not found, can't load chains"
+        self.backend=emcee.backends.HDFBackend(self.save_directory+"/backend.h5")
+
+        ## Load chains - build a sampler object to access the backend
+        sampler=emcee.EnsembleSampler(self.backend.shape[0],
+                                        self.backend.shape[1],
+                                        self.like.log_prob_and_blobs,
+                                        backend=self.backend)
+
+        self.burnin_nsteps=config["burn_in"]
+
+        self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
+        self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
+        self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
@@ -562,7 +592,7 @@ class EmceeSampler(object):
         to a more easily readable .txt file """
         
         ## What keys don't we want to include in the info file
-        dontPrint=["lnprob","flatchain","autocorr"]
+        dontPrint=["lnprob","flatchain","blobs","autocorr"]
 
         with open(self.save_directory+'/info.txt', 'w') as f:
             for item in saveDict.keys():
@@ -645,8 +675,6 @@ class EmceeSampler(object):
         ## Sampler stuff
         saveDict["burn_in"]=self.burnin_nsteps
         saveDict["nwalkers"]=self.nwalkers
-        saveDict["lnprob"]=self.lnprob.tolist()
-        saveDict["flatchain"]=self.chain.tolist()
         saveDict["autocorr"]=self.autocorr.tolist()
 
         ## Save dictionary to json file in the
@@ -686,7 +714,7 @@ class EmceeSampler(object):
             cube=True"""
 
         # get chain (from sampler or from file)
-        chain,lnprob=self.get_chain()
+        chain,lnprob,blobs=self.get_chain()
         plt.figure()
 
         for ip in range(self.ndim):
@@ -706,21 +734,35 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,cmb_prior=False,save_string=None):
-        """ Make corner plot in ChainConsumer """
+    def plot_corner(self,plot_params=None,cmb_prior=False):
+        """ Make corner plot in ChainConsumer
+         - plot_params: Pass a list of parameters to plot (in LaTeX form),
+                        or leave as None to
+                        plot all (including derived) """
 
         c=ChainConsumer()
-        chain,lnprob=self.get_chain(cube=False)
+
+        params_plot, strings_plot=self.get_all_params()
 
         if cmb_prior==True:
             mean_cmb = self.like.cmb_like.true_values
             data_cmb = self.like.cmb_like.return_CMB_only()
             c.add_chain(data_cmb,parameters=self.like.cmb_like.param_list,
                                 name="CMB Likelihood")
-        c.add_chain(chain,parameters=self.paramstrings,name="Chains")
+        
+        c.add_chain(params_plot,parameters=strings_plot,name="Chains")
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
                     label_font_size=25, max_ticks=4)
+
+        ## Decide which parameters to plot
+        if plot_params==None:
+            ## Plot all parameters
+            params_to_plot=strings_plot
+        else:
+            ## Plot params passed as argument
+            params_to_plot=plot_params
+
 
         if cmb_prior==True:
             ## Only plot the parameters that are varied in the chain
@@ -731,7 +773,8 @@ class EmceeSampler(object):
             fig = c.plotter.plot(figsize=(12,12),
                     parameters=plot_param_strings,truth=self.truth)
         else:
-            fig = c.plotter.plot(figsize=(12,12),truth=self.truth)
+            fig = c.plotter.plot(figsize=(12,12),
+                    parameters=params_to_plot,truth=self.truth)
 
         if self.save_directory is not None:
             fig.savefig(self.save_directory+"/corner.pdf")
@@ -749,7 +792,7 @@ class EmceeSampler(object):
         """
 
         ## Get best fit values for each parameter
-        chain,lnprob=self.get_chain()
+        chain,lnprob,blobs=self.get_chain()
         plt.figure()
         mean_value=[]
         for parameter_distribution in np.swapaxes(chain,0,1):
@@ -793,6 +836,7 @@ param_dict={
             "n_p":"$n_p$",
             "Delta2_star":"$\Delta^2_\star$",
             "n_star":"$n_\star$",
+            "alpha_star":"$\\alpha_\star$",
             "g_star":"$g_\star$",
             "f_star":"$f_\star$",
             "ln_tau_0":"$\mathrm{ln}\,\\tau_0$",
@@ -819,6 +863,8 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
                 "f_star","g_star","cosmomc_theta",
                 "H0","mnu","As","ns","ombh2","omch2"]
 
+## list of strings for blobs
+blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
                     rootdir=None,subfolder=None):
@@ -838,8 +884,8 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     for aa,chain_file in enumerate(chain_files):
         sampler=EmceeSampler(read_chain_file=chain_file,
                                 subfolder=subfolder,rootdir=rootdir)
-        chain,lnprob=sampler.get_chain(cube=False)
-        c.add_chain(chain,parameters=sampler.paramstrings,name=labels[aa])
+        params,strings=sampler.get_all_params()
+        c.add_chain(params,parameters=strings,name=labels[aa])
         
         ## Do not check whether truth results are the same for now
         ## Take the longest truth dictionary for disjoint chains

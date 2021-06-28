@@ -169,7 +169,6 @@ class FullTheory(object):
         ## Check if we want to find the emulator calls using compressed
         ## parameters
         elif self.use_compression!=0:
-            print("using comp")
             camb_model=self.true_camb_model.get_new_model(like_params)
             linP_model=linear_power_model.LinearPowerModel(
                         cosmo=camb_model.cosmo,
@@ -180,7 +179,6 @@ class FullTheory(object):
 
             ## Check if we want to use fiducial g_star, f_star
             if self.use_compression==2:
-                print("comp mode 2")
                 linP_model.linP_params["f_star"]=self.fid_linP_params["f_star"]
                 linP_model.linP_params["g_star"]=self.fid_linP_params["g_star"]
 

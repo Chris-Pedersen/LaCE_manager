@@ -424,7 +424,8 @@ class Likelihood(object):
 
         lnprob,blob=self.compute_log_prob(values,return_blob=True)
         # unpack tuple
-        return lnprob,*blob
+        out=lnprob,*blob
+        return out
 
 
     def get_log_prior(self,values):

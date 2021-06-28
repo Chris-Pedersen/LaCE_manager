@@ -229,7 +229,8 @@ class FullTheory(object):
             if Nblob==1:
                 return np.nan
             else:
-                return np.nan,*([np.nan]*(Nblob-1))
+                out=np.nan,*([np.nan]*(Nblob-1))
+                return out
         else:
             linP_model=linear_power_model.LinearPowerModel(
                                     cosmo=camb_model.cosmo,

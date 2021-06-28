@@ -114,7 +114,8 @@ class LyaTheory(object):
             if Nblob==1:
                 return np.nan
             else:
-                return np.nan,*([np.nan]*(Nblob-1))
+                out=np.nan,*([np.nan]*(Nblob-1))
+                return out
         else:
             params=linP_model.get_params()
             return params['Delta2_star'],params['n_star'], \

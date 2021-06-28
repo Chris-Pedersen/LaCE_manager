@@ -27,7 +27,7 @@ class Likelihood(object):
                     use_sim_cosmo=False,
                     pivot_scalar=0.05,
                     include_CMB=False,
-                    use_compression=False):
+                    use_compression=0):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
@@ -42,10 +42,9 @@ class Likelihood(object):
               power spectrum in the case of using a full_theory object
             - include_CMB will use the CMB Gaussian likelihood approximation
               from Planck as a prior on each cosmological parameter
-            - use_compression: in the case of using a full_theory object, this
-              will use the compressed parameters for each cosmological model
-              to obtain emulator calls (will only do anything when used in conjunction
-              with CMB-cosmology parameters) """
+            - use_compression: 0 for no compression
+                               1 to compress into 4 parameters
+                               2 to compress into just 2 """
 
 
         self.verbose=verbose

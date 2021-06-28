@@ -15,7 +15,7 @@ class FullTheory(object):
 
     def __init__(self,zs,emulator=None,true_camb_model=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    pivot_scalar=0.05,theta_MC=True,use_compression=False,
+                    pivot_scalar=0.05,theta_MC=True,use_compression=0,
                     use_camb_fz=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
@@ -25,8 +25,13 @@ class FullTheory(object):
             - verbose: print information, useful to debug.
             - pivot_scalar sets the pivot scale used to define primordial
               power spectrum parameters
-            - use_compression: if True, will go through the compressed
-              parameters when generating emulator calls for each cosmology """
+            - use_compression: Three options, 0,1,2
+                    if set to 0, will bypass compression
+                    if set to 1, will compress into Delta2_star, n_star,
+                                f_star and g_star
+                    if set to 2, will compress into Delta2_star and n_star,
+                                and use a fiducial g_star and f_star
+                                in the reconstruction  """
 
         self.verbose=verbose
         self.zs=zs
@@ -63,7 +68,7 @@ class FullTheory(object):
             self.kF_model_fid = pressure_model.PressureModel()
 
         ## if we are using compression, need a recons_cosmo object
-        if self.use_compression==True:
+        if self.use_compression!=0:
             ## For now we hardcode z_star and kp_kms, since
             ## these are also hardcoded in lya_theory.py
 
@@ -76,6 +81,14 @@ class FullTheory(object):
                 cosmo_fid=None,
                 use_camb_fz=self.use_camb_fz,
                 verbose=self.verbose)
+            ## Get fiducial values for linP params,
+            ## for alpha_star, f_star, g_star
+            cosmo_fid=camb_cosmo.get_cosmology()
+            linP_model=linear_power_model.LinearPowerModel(
+                        cosmo=cosmo_fid,
+                        camb_results=None,
+                        use_camb_fz=self.use_camb_fz)
+            self.fid_linP_params=linP_model.linP_params
 
 
     def fixed_background(self,like_params):
@@ -155,12 +168,20 @@ class FullTheory(object):
                 blob=self.get_blob(camb_model=camb_model)
         ## Check if we want to find the emulator calls using compressed
         ## parameters
-        elif self.use_compression==True:
+        elif self.use_compression!=0:
             camb_model=self.true_camb_model.get_new_model(like_params)
             linP_model=linear_power_model.LinearPowerModel(
                         cosmo=camb_model.cosmo,
                         camb_results=camb_model.get_camb_results(),
                         use_camb_fz=self.use_camb_fz)
+            ## Set alpha_star to fiducial
+            linP_model.linP_params["alpha_star"]=self.fid_linP_params["alpha_star"]
+
+            ## Check if we want to use fiducial g_star, f_star
+            if self.use_compression==2:
+                linP_model.linP_params["f_star"]=self.fid_linP_params["f_star"]
+                linP_model.linP_params["g_star"]=self.fid_linP_params["g_star"]
+
             linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
             M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
             if return_blob:

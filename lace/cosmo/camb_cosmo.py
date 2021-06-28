@@ -37,10 +37,13 @@ def get_cosmology_from_dictionary(params,cosmo_fid=None):
     # use default values for those not provided
     if cosmo_fid is None:
         cosmo_fid=get_cosmology()
-
     # collect background parameters
     if 'theta' in params: ## If theta is provided, override H0
         cosmomc_theta=params['theta']/100
+        H0=None
+    # collect background parameters
+    elif 'cosmomc_theta' in params: ## If theta is provided, override H0
+        cosmomc_theta=params['cosmomc_theta']
         H0=None
     elif 'H0' in params:
         H0=params['H0']
@@ -155,43 +158,24 @@ def get_camb_results(pars,zs=None,fast_camb=False):
     return camb.get_results(pars)
 
 
-def get_f_of_z(pars,zs,camb_results=None,use_approx=False):
-    """Given a cosmology and a set of redshifts, compute log growth rate.
-        By default, uses velocity variance. Other inputs:
-        - camb_results: if provided, use that to speed things up.
-        - use_approx: use Om(z)**0.55 instead. """
+def get_f_of_z(pars,camb_results,z):
+    """Given pre-computed CAMB results, compute log growth rate at z"""
 
-    if camb_results is None:
-        # if you want to use fast_camb, you should pass camb_results
-        camb_results = get_camb_results(pars,zs=zs,fast_camb=False)
+    # surprisingly, there is no option to specify the fluid (CDM+baryons?)
+    transfer=camb_results.get_matter_transfer_data()
+    # these seem to be in reverse order (see below)
+    s8=transfer.sigma_8
+    # note there is a bug in the CAMB documentation
+    f_s8sq=transfer.sigma2_vdelta_8
+    # compute logarithmic growth rate
+    fz=f_s8sq/s8**2
 
-    if use_approx:
-        # use f(z) = Om(z)**0.55
-        fz=np.empty_like(zs)
-        for iz in range(len(zs)):
-            z=zs[iz]
-            Omz=camb_results.get_Omega(var='cdm',z=z)
-            Omz+=camb_results.get_Omega(var='baryon',z=z)
-            fz[iz]=Omz**0.55
-    else:
-        # surprisingly, there is no option to specify the fluid (CDM+baryons?)
-        transfer = camb_results.get_matter_transfer_data()
-        # these seem to be in reverse order (see below)
-        s8 = transfer.sigma_8
-        # note there is a bug in the CAMB documentation
-        f_s8sq = transfer.sigma2_vdelta_8
-        # compute logarithmic growth rate
-        fz = f_s8sq / s8**2
-
-        # sort redshifts (input zs should go from low-z to high-z)
-        if len(zs)>1:
-            assert zs[1] > zs[0]
-            if s8[1] > s8[0]:
-                # reverse order of numpy array
-                fz = fz[::-1]
-
-    # return computed values of f(z)
-    return fz
+    # return f(z) for input redshift
+    zs=list(camb_results.transfer_redshifts)
+    if z not in zs:
+        raise ValueError('redshift {} not pre-computed'.format(z))
+    iz=zs.index(z)
+    return fz[iz]
 
 
 def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):
@@ -216,7 +200,20 @@ def get_linP_hMpc(pars,zs,camb_results=None,fluid=camb_fluid):
             var2=fluid,npoints=camb_npoints,
             minkh=kmin_hMpc,maxkh=kmax_hMpc)
 
-    return kh, zs_out, Ph
+    ## So we need to make sure that every element in zs is contained in
+    ## zs out
+    check_zs =  all(item in zs_out for item in zs)
+    assert check_zs==True, "You have asked for redshifts outside of the provided camb_results"
+
+    ## Assuming this is ok, now we construct a list of the linear power at the
+    ## zs we have been asked for, regardless of what comes out of
+    ## camb_results
+    P_out=np.empty((len(zs),len(kh)))
+    for aa,zz in enumerate(zs):
+        P_out[aa,:]=Ph[zs_out.index(zz)]
+    #return kh, zs_out, Ph
+    return kh, zs, P_out
+    
 
 
 def get_linP_Mpc(pars,zs,camb_results=None,fluid=camb_fluid):

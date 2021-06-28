@@ -10,13 +10,14 @@ class ReconstructedCosmology(object):
         reconstruct a cosmology object."""
 
     def __init__(self,zs,emu_kp_Mpc,like_z_star,like_kp_kms,
-            cosmo_fid=None,verbose=False):
+            cosmo_fid=None,use_camb_fz=True,verbose=False):
         """Setup object to reconstruct cosmology from linear power parameters.
             - zs: redshifts where we want predictions (call emulator)
             - emu_kp_Mpc: pivot point in Mpc used in the emulator
             - like_z_star: central redshift in likelihood parameterization
             - like_kp_kms: pivot point in likelihood parameterization (s/km)
             - cosmo_fid: CAMB object describing fiducial cosmology
+            - use_camb_fz: use CAMB to compute f_star (faster)
             - verbose: print information for debugging."""
 
         self.verbose=verbose
@@ -24,6 +25,8 @@ class ReconstructedCosmology(object):
         self.zs=zs
         # store pivot point used in emulator to define linear parameters
         self.emu_kp_Mpc=emu_kp_Mpc
+        # use CAMB to compute f_star
+        self.use_camb_fz=use_camb_fz
 
         # fiducial cosmology
         if cosmo_fid:
@@ -40,7 +43,10 @@ class ReconstructedCosmology(object):
 
         # compute linear power model for fiducial cosmology
         self.linP_model_fid=linear_power_model.LinearPowerModel(
-                cosmo=self.cosmo_fid,z_star=like_z_star,kp_kms=like_kp_kms)
+                cosmo=self.cosmo_fid,
+                camb_results=self.camb_results_fid,
+                z_star=like_z_star,kp_kms=like_kp_kms,
+                use_camb_fz=self.use_camb_fz)
         if self.verbose: print('setup linP model for fiducial cosmology')
 
         # store pivot point for convenience
@@ -86,7 +92,12 @@ class ReconstructedCosmology(object):
 
         self.f_p_fid=[]
         for z in self.zs:
-            f_p = fit_linP.compute_fz(self.cosmo_fid,z=z,kp_Mpc=self.emu_kp_Mpc)
+            if self.use_camb_fz:
+                f_p=camb_cosmo.get_f_of_z(self.cosmo_fid,
+                            self.camb_results_fid,z)
+            else:
+                f_p=fit_linP.compute_fz(self.cosmo_fid,z=z,
+                            kp_Mpc=self.emu_kp_Mpc)
             self.f_p_fid.append(f_p)
 
         return
@@ -322,6 +333,17 @@ class ReconstructedCosmology(object):
         return Hz
 
 
+    def reconstruct_M_of_zs(self,linP_model):
+        """ Reconstruct a list of M(z)=H(z)/(1+z) for all zs """
+
+        M_of_zs=[]
+
+        for iz,z in enumerate(self.zs):
+            M_of_zs.append(self.reconstruct_Hubble_iz(iz,linP_model)/(1+z))
+
+        return M_of_zs
+
+
     def reconstruct_f_p_iz(self,iz,linP_model):
         """ Use fiducial cosmology and f_star to reconstruct logarithmic
             growth rate f (around kp_Mpc)"""
@@ -347,8 +369,12 @@ class ReconstructedCosmology(object):
 
         # compute f in fiducial cosmology
         if not f_p_fid:
-            f_p_fid=fit_linP.compute_fz(self.cosmo_fid,z=z,
-                    kp_Mpc=self.emu_kp_Mpc)
+            if self.use_camb_fz:
+                f_p_fid=camb_cosmo.get_f_of_z(self.cosmo_fid,
+                            self.camb_results_fid,z)
+            else:
+                f_p_fid=fit_linP.compute_fz(self.cosmo_fid,z=z,
+                            kp_Mpc=self.emu_kp_Mpc)
         # correct using difference in f_star
         f_star=linP_model.get_f_star()
         f_star_fid=self.linP_model_fid.get_f_star()
@@ -365,7 +391,8 @@ class ReconstructedCosmology(object):
         fid_params=self.linP_model_fid.get_params()
         # I'm pretty sure we can set this up from fiducial cosmology directly
         linP_model = linear_power_model.LinearPowerModel(params=fid_params,
-                                    z_star=self.z_star,kp_kms=self.kp_kms)
+                                    z_star=self.z_star,kp_kms=self.kp_kms,
+                                    use_camb_fz=self.use_camb_fz)
         # update model with likelihood parameters
         linP_model.update_parameters(like_params)
 

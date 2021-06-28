@@ -47,6 +47,7 @@ parser.add_argument('--data_year', help='Which version of the data covmats and k
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
 parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
 parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
+parser.add_argument('--use_compression',type=int, help='Go through compression parameters?')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -68,11 +69,11 @@ print("----------")
 ## these are still saved with the sampler so no book-keeping issues though
 
 ## Example for sampling CMB parameters:
-free_param_limits=[[0.0102,0.0106],
+free_param_limits=[[0.0099,0.0109],
                 [1.1e-09, 3.19e-09],
                 [0.89, 1.05],
                 [0.018, 0.026],
-                [0.1,0.13]
+                [0.1,0.13],
                 [-0.4, 0.4],
                 [-0.4, 0.4],
                 [-0.4, 0.4],
@@ -155,7 +156,9 @@ like=likelihood.Likelihood(data=data,emulator=emu,
                             prior_Gauss_rms=prior,
                             emu_cov_factor=args.emu_cov_factor,
                             pivot_scalar=args.pivot_scalar,
-                            include_CMB=args.include_CMB)
+                            include_CMB=args.include_CMB,
+                            use_compression=args.use_compression)
+
 
 ## Pass likelihood to sampler
 sampler = emcee_sampler.EmceeSampler(like=like,

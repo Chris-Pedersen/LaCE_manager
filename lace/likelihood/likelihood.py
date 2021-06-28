@@ -26,7 +26,8 @@ class Likelihood(object):
                     kmin_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=False,
                     pivot_scalar=0.05,
-                    include_CMB=False):
+                    include_CMB=False,
+                    use_compression=0):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
@@ -38,13 +39,19 @@ class Likelihood(object):
               parameters from the fiducial simulation, and use these
               as a fiducial model
             - pivot_scalar sets the pivot scale used for the primordial
-              power spectrum in the case of using a full_theory object """
+              power spectrum in the case of using a full_theory object
+            - include_CMB will use the CMB Gaussian likelihood approximation
+              from Planck as a prior on each cosmological parameter
+            - use_compression: 0 for no compression
+                               1 to compress into 4 parameters
+                               2 to compress into just 2 """
 
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
         self.emu_cov_factor=emu_cov_factor
         self.include_CMB=include_CMB
+        self.use_compression=use_compression
 
         if data:
             self.data=data
@@ -93,16 +100,19 @@ class Likelihood(object):
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
                         cosmo=sim_cosmo,pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
-                        camb_model_fid=camb_model_sim,verbose=self.verbose,
-                        pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
-                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.camb_model_fid.cosmo.InitPower.pivot_scalar
+                        true_camb_model=camb_model_sim,verbose=self.verbose,
+                        pivot_scalar=pivot_scalar,
+                        theta_MC=("cosmomc_theta" in free_param_names),
+                        use_compression=use_compression)
+                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
+
                 if not full:
                     print("No cosmology parameters are varied")
-                if include_CMB==True:
-                    ## Set up a CMB likelihood object, using the simulation mock
-                    ## cosmology as the central values
-                    self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
+        if self.include_CMB==True:
+            ## Set up a CMB likelihood object, using the simulation mock
+            ## cosmology as the central values
+            self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo)
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)
@@ -233,14 +243,21 @@ class Likelihood(object):
 
     def get_cmb_like(self,values):
         """ For a given point in sampling space, return the CMB likelihood """
+
+        # get cosmology parameters from sampling points
         cosmo_dic=self.cosmology_params_from_sampling_point(values)
 
-        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,self.theory.camb_model_fid.cosmo)
+        # (pretty ugly way to) get true cosmology from full_theory object
+        true_cosmo=self.theory.true_camb_model.cosmo
+
+        # compute CMB likelihood by comparing both cosmologies
+        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,true_cosmo)
 
         return cmb_like
 
 
-    def get_p1d_kms(self,k_kms=None,values=None,return_covar=False,camb_evaluation=None):
+    def get_p1d_kms(self,k_kms=None,values=None,return_covar=False,
+                    camb_evaluation=None,return_blob=False):
         """Compute theoretical prediction for 1D P(k)"""
 
         if k_kms is None:
@@ -254,7 +271,8 @@ class Likelihood(object):
 
         return self.theory.get_p1d_kms(k_kms,like_params=like_params,
                                             return_covar=return_covar,
-                                            camb_evaluation=camb_evaluation)
+                                            camb_evaluation=camb_evaluation,
+                                            return_blob=return_blob)
 
 
     def get_chi2(self,values=None):
@@ -298,7 +316,8 @@ class Likelihood(object):
         return data_covar, emu_covar
 
 
-    def get_log_like(self,values=None,ignore_log_det_cov=True,camb_evaluation=None):
+    def get_log_like(self,values=None,ignore_log_det_cov=True,
+            camb_evaluation=None,return_blob=False):
         """Compute log(likelihood), including determinant of covariance
             unless you are setting ignore_log_det_cov=True."""
 
@@ -308,8 +327,15 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True,
-                            camb_evaluation=camb_evaluation)
+        if return_blob:
+            emu_p1d,emu_covar,blob=self.get_p1d_kms(k_kms,values,
+                            return_covar=True,camb_evaluation=camb_evaluation,
+                            return_blob=True)
+        else:
+            emu_p1d,emu_covar=self.get_p1d_kms(k_kms,values,
+                            return_covar=True,camb_evaluation=camb_evaluation,
+                            return_blob=False)
+
         if self.verbose: print('got P1D from emulator')
 
         # compute log like contribution from each redshift bin
@@ -342,23 +368,63 @@ class Likelihood(object):
             log_like += log_like_z
             if self.verbose: print('added {} to log_like'.format(log_like_z))
 
-        return log_like
+
+        if return_blob:
+            return log_like,blob
+        else:
+            return log_like
 
 
-    def log_prob(self,values):
-        """Return log likelihood plus log priors"""
+    def compute_log_prob(self,values,return_blob=False):
+        """Compute log likelihood plus log priors for input values
+            - if return_blob==True, it will return also extra information"""
+
+        # Always force parameter to be within range (for now)
+        if (max(values) > 1.0) or (min(values) < 0.0):
+            if return_blob:
+                dummy_blob=self.theory.get_blob()
+                return -np.inf, dummy_blob
+            else:
+                return -np.inf
 
         # compute log_prior
         log_prior=self.get_log_prior(values)
 
         # compute log_like (option to ignore emulator covariance)
-        log_like=self.get_log_like(values,ignore_log_det_cov=False)
+        if return_blob:
+            log_like,blob=self.get_log_like(values,ignore_log_det_cov=False,
+                                            return_blob=True)
+        else:
+            log_like=self.get_log_like(values,ignore_log_det_cov=False,
+                                            return_blob=False)
 
         if log_like == None or math.isnan(log_like)==True:
             if self.verbose: print('was not able to emulate at least on P1D')
-            return -np.inf
+            if return_blob:
+                dummy_blob=self.theory.get_blob()
+                return -np.inf, dummy_blob
+            else:
+                return -np.inf
 
-        return log_like + log_prior
+        if return_blob:
+            return log_like + log_prior, blob
+        else:
+            return log_like + log_prior
+
+
+    def log_prob(self,values):
+        """Return log likelihood plus log priors"""
+
+        return self.compute_log_prob(values,return_blob=False)
+
+
+    def log_prob_and_blobs(self,values):
+        """Function used by emcee to get both log_prob and extra information"""
+
+        lnprob,blob=self.compute_log_prob(values,return_blob=True)
+        # unpack tuple
+        out=lnprob,*blob
+        return out
 
 
     def get_log_prior(self,values):
@@ -522,7 +588,8 @@ class Likelihood(object):
 
         # fit linear power parameters for simulation cosmology
         sim_linP_params=fit_linP.parameterize_cosmology_kms(
-                cosmo=sim_cosmo,z_star=z_star,kp_kms=kp_kms)
+                cosmo=sim_cosmo,camb_results=None,
+                z_star=z_star,kp_kms=kp_kms)
 
         return sim_linP_params
 

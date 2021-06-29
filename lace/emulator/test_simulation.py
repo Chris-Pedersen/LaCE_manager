@@ -30,7 +30,8 @@ class TestSimulation(object):
                    still paired and fixed)
                 -- "running" is a test simulation with a small amount of 
                    running of the spectral index
-                -- "curved" is a simulation with nonzero curvature parameter
+                -- "curved_1" is a simulation with Omega_k=0.03
+                -- "curved_2" is a simulation with Omega_k=0.1
                 -- "diff_z" is the same simulation as the "central" sim,
                    but with snapshots at the same redshifts as the Chabanier2019
                    measurement
@@ -63,7 +64,9 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"diffSeed_sim"
         elif sim_label=="running":
             self.fulldir=repo+basedir+"running_sim"
-        elif sim_label=="curved":
+        elif sim_label=="curved_1":
+            self.fulldir=repo+basedir+"curved_003"
+        elif sim_label=="curved_2":
             self.fulldir=repo+basedir+"curved_sim"
         elif sim_label=="diff_z":
             self.fulldir=repo+basedir+"diff_z"

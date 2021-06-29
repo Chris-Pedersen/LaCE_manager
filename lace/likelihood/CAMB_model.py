@@ -8,8 +8,11 @@ from lace.likelihood import likelihood_parameter
 class CAMBModel(object):
     """ Interface between CAMB object and FullTheory """
 
-    def __init__(self,zs,cosmo=None,pivot_scalar=0.05):
-        """Setup from CAMB object and list of redshifts."""
+    def __init__(self,zs,cosmo=None,pivot_scalar=0.05,theta_MC=True):
+        """Setup from CAMB object and list of redshifts.
+          - theta_MC will determine whether we use 100theta_MC
+            as a likelihood parameter, or H0 in the case that
+            this flag is False """
 
         # list of redshifts at which we evaluate linear power
         self.zs=zs
@@ -24,6 +27,7 @@ class CAMBModel(object):
         self.cached_camb_results=None
         # will cache wavenumbers and linear power (at zs) when computed
         self.cached_linP_Mpc=None
+        self.theta_MC=theta_MC
 
 
     def get_likelihood_parameters(self):
@@ -34,6 +38,13 @@ class CAMBModel(object):
         ## custom prior volumes using Likelihood.free_param_limits
         ## So I will leave these for now, but this should be
         ## cleared up eventually.
+
+        ## This is a tad confusing, and means that the only time
+        ## this method is used is initialising the likelihood parameters,
+        ## and the prior range is instantly overwritten. 
+
+        ## If we want to be able to sample either H0 or theta_MC
+        ## we might have to reconsider how this is done
 
         params=[]
         params.append(likelihood_parameter.LikelihoodParameter(
@@ -49,11 +60,20 @@ class CAMBModel(object):
                         name='ns',min_value=0.90,max_value=1.05,
                         value=self.cosmo.InitPower.ns))
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='H0',min_value=63,max_value=77,
-                        value=self.cosmo.H0))
-        params.append(likelihood_parameter.LikelihoodParameter(
                         name='mnu',min_value=0.0,max_value=1.0,
                         value=camb_cosmo.get_mnu(self.cosmo)))
+        ## Check if we are using thetaMC or H0
+        if self.theta_MC==True:
+            if self.cached_camb_results is None:
+                camb_results = self.get_camb_results()
+            theta_MC=self.cached_camb_results.cosmomc_theta()
+            params.append(likelihood_parameter.LikelihoodParameter(
+                        name='cosmomc_theta',min_value=0.0140,max_value=0.0142,
+                        value=theta_MC))
+        else:
+            params.append(likelihood_parameter.LikelihoodParameter(
+                        name='H0',min_value=63,max_value=77,
+                        value=self.cosmo.H0))
 
         return params
 

@@ -95,6 +95,7 @@ def _build_cosmology_params_camb(config):
     params['ombh2'] = omegab*h0**2
     params['mnu'] = mnu
     params['omk'] = omegak
+    params['w'] = config['w0_fld']
     # these are not in Gadget file
     #params['TCMB'] = config["CMBTemperature"]
     #params['As'] = config["PrimordialAmp"]

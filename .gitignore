@@ -6,3 +6,4 @@ all_setup.sh
 */backend.h5
 lace.egg-info/
 notebooks/.ipynb_checkpoints/
+notebooks/development/.ipynb_checkpoints/

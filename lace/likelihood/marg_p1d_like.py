@@ -20,6 +20,5 @@ class MargP1DLike(object):
             values we want to evaluate the likelihood at """
 
         diff=self.true-vals
-        print("Evaluating marginalised Lya like - procedure 3")
 
         return -0.5*np.dot(np.dot(self.icov,diff),diff)

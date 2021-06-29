@@ -3,7 +3,7 @@ import os
 import camb
 from lace.cosmo import camb_cosmo
 
-def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
+def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=True):
     """For each redshift, fit linear power parameters around kp_Mpc.
         - include_f_p to compute logarithmic groth rate at each z (slow)
         - use_camb_fz will use faster code to compute fz, but not at kp_Mpc """
@@ -15,11 +15,6 @@ def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
     k_Mpc, zs_out, P_Mpc = camb_cosmo.get_linP_Mpc(cosmo,zs,camb_results)
 
     assert kp_Mpc < max(k_Mpc), "Pivot higher than k_max"
-
-    # if asked for, compute also logarithmic growth rate
-    if use_camb_fz and include_f_p:
-        # fast function (already has results in hand)
-        fz=camb_cosmo.get_f_of_z(cosmo,zs,camb_results)
 
     # specify wavenumber range to fit
     kmin_Mpc = 0.5*kp_Mpc
@@ -47,7 +42,7 @@ def get_linP_Mpc_zs(cosmo,zs,kp_Mpc,include_f_p=True,use_camb_fz=False):
             # compute logarithmic growth rate at each z
             if use_camb_fz:
                 # new version, faster but uses f = f sigma_8 / sigma_8
-                f_p = fz[iz]
+                f_p=camb_cosmo.get_f_of_z(cosmo,camb_results,z)
             else:
                 # older version, slower but can ask for particular kp_Mpc
                 f_p = compute_fz(cosmo,z=z,kp_Mpc=kp_Mpc)
@@ -133,14 +128,16 @@ def fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=None):
     return P_fit
 
 
-def parameterize_cosmology_kms(cosmo,z_star,kp_kms,use_camb_fz=False):
+def parameterize_cosmology_kms(cosmo,camb_results,z_star,kp_kms,
+            use_camb_fz=True):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp_kms.
         - use_camb_fz: get f from f sigma_8 / sigma_8."""
 
     # call get_results first, to avoid calling it twice
-    zs=[z_star]
-    camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,fast_camb=True)
+    if camb_results==None:
+        zs=[z_star]
+        camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,fast_camb=True)
 
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
@@ -156,8 +153,7 @@ def parameterize_cosmology_kms(cosmo,z_star,kp_kms,use_camb_fz=False):
     # get logarithmic growth rate at z_star, around kp_Mpc
     if use_camb_fz:
         # new code, compute from f sigma_8 / sigma_8 at z
-        f_of_z=camb_cosmo.get_f_of_z(cosmo,zs,camb_results)
-        f_star=f_of_z[0]
+        f_star=camb_cosmo.get_f_of_z(cosmo,camb_results,z_star)
     else:
         # old code, compute derivative of power at kp_Mpc
         kp_Mpc=kp_kms*camb_cosmo.dkms_dMpc(cosmo,z_star,camb_results)

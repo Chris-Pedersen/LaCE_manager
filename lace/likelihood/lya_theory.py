@@ -11,7 +11,8 @@ class LyaTheory(object):
     """Translator between the likelihood object and the emulator."""
 
     def __init__(self,zs,emulator,cosmo_fid=None,verbose=False,
-                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None):
+                    mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
+                    use_camb_fz=True):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -38,7 +39,7 @@ class LyaTheory(object):
         self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=emu_kp_Mpc,
                 like_z_star=like_z_star,like_kp_kms=like_kp_kms,
-                cosmo_fid=cosmo_fid,verbose=verbose)
+                cosmo_fid=cosmo_fid,use_camb_fz=use_camb_fz,verbose=verbose)
 
         # setup fiducial IGM models
         if mf_model_fid:
@@ -55,8 +56,9 @@ class LyaTheory(object):
             self.kF_model_fid = pressure_model.PressureModel()
 
 
-    def get_emulator_calls(self,like_params=[]):
-        """Compute models that will be emulated, one per redshift bin"""
+    def get_emulator_calls(self,like_params=[],return_blob=False):
+        """Compute models that will be emulated, one per redshift bin.
+            - return_blob will return extra information about the call."""
 
         # setup linear power using list of likelihood parameters
         linP_model=self.cosmo.get_linP_model(like_params)
@@ -87,19 +89,56 @@ class LyaTheory(object):
             if self.verbose: print(iz,z,'model',model)
             emu_calls.append(model)
 
-        return emu_calls
+        if return_blob:
+            blob=self.get_blob(linP_model=linP_model)
+            return emu_calls,blob
+        else:
+            return emu_calls
 
 
-    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,camb_evaluation=None):
+    def get_blobs_dtype(self):
+        """Return the format of the extra information (blobs) returned
+            by get_p1d_kms and used in emcee_sampler. """
+
+        blobs_dtype = [('Delta2_star', float),('n_star', float),
+                        ('alpha_star', float),('f_star', float),
+                        ('g_star', float)]
+        return blobs_dtype
+
+
+    def get_blob(self,linP_model=None):
+        """Return extra information (blob) for the emcee_sampler. """
+
+        if linP_model is None:
+            Nblob=len(self.get_blobs_dtype())
+            if Nblob==1:
+                return np.nan
+            else:
+                out=np.nan,*([np.nan]*(Nblob-1))
+                return out
+        else:
+            params=linP_model.get_params()
+            return params['Delta2_star'],params['n_star'], \
+                    params['alpha_star'],params['f_star'],params['g_star']
+
+
+    def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,
+                    camb_evaluation=None,return_blob=False):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
-            It might also return a covariance from the emulator."""
+            It might also return a covariance from the emulator,
+            or a blob with extra information for the emcee_sampler."""
 
         if self.emulator is None:
             raise ValueError('no emulator in LyaTheory')
 
         # figure out emulator calls, one per redshift
-        emu_calls=self.get_emulator_calls(like_params=like_params)
+        if return_blob:
+            emu_calls,blob=self.get_emulator_calls(like_params=like_params,
+                                                    return_blob=True)
+        else:
+            emu_calls=self.get_emulator_calls(like_params=like_params,
+                                                    return_blob=False)
 
         # setup linear power using list of likelihood parameters
         # we will need this to reconstruct H(z)
@@ -138,10 +177,17 @@ class LyaTheory(object):
                     else:
                         covars.append(cov_Mpc * dkms_dMpc**2)
 
+        # decide what to return, and return it
         if return_covar:
-            return p1d_kms,covars
+            if return_blob:
+                return p1d_kms,covars,blob
+            else:
+                return p1d_kms,covars
         else:
-            return p1d_kms
+            if return_blob:
+                return p1d_kms,blob
+            else:
+                return p1d_kms
 
 
     def get_parameters(self):

@@ -23,7 +23,7 @@ parser.add_argument('--raw_dir', type=str,
 parser.add_argument('--post_dir', type=str,
                 help='Base directory with simulation post-processings',required=True)
 parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers per side',required=False)
-parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separated list of optical depth scalings to use.',required=False)
+parser.add_argument('--scales_tau', type=str, default='[1.0]', help='Comma-separated list of optical depth scalings to use.',required=False)
 parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--p1d_label', type=str, default=None, help='String identifying P1D measurement and / or tau scaling.',required=False)
 args = parser.parse_args()
@@ -45,22 +45,24 @@ with open(cube_json) as json_data:
 # get number of samples in the hyper-cube
 nsamples=cube_data['nsamples']
 
+# the code below is copy-pasted from single_sim_scripts/archive_flux_power.py
+
 # for each sample, extract skewers for each snapshot
 for sample in range(nsamples):
     for sim in ['sim_plus','sim_minus']:
         # label identifying this sim (to be used in full path)
         sim_tag='/sim_pair_{}/{}/'.format(sample,sim)
-        skewers_dir=post_dir+sim_tag+'/skewers/'
+        skewers_dir=args.post_dir+sim_tag+'/skewers/'
 
         # get redshifts / snapshots Gadget parameter file 
-        paramfile=raw_dir+sim_tag+'/paramfile.gadget'
+        paramfile=args.raw_dir+sim_tag+'/paramfile.gadget'
         zs=read_gadget.redshifts_from_paramfile(paramfile)
         Nsnap=len(zs)
 
         ## Loop over snapshots
         for snap in range(Nsnap):
             # try to read information about filtering length in simulation
-            kF_json=post_dir+sim_tag+'/filtering_length.json'
+            kF_json=args.post_dir+sim_tag+'/filtering_length.json'
             if os.path.isfile(kF_json):
                 # read json file with filtering data
                 with open(kF_json) as json_data:

@@ -174,7 +174,7 @@ for p in sampler.like.free_params:
 
 ## Cannot call self.log_prob using multiprocess.pool
 def log_prob(theta):
-    return sampler.like.log_prob(theta)
+    return sampler.like.log_prob_and_blobs(theta)
 
 start = time.time()
 sampler.like.go_silent()

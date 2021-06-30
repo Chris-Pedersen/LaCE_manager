@@ -29,7 +29,8 @@ class Likelihood(object):
                     use_sim_cosmo=False,
                     pivot_scalar=0.05,
                     include_CMB=False,
-                    use_compression=0):
+                    use_compression=0,
+                    reduced_IGM=False):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
@@ -49,7 +50,11 @@ class Likelihood(object):
                                2 to compress into just 2
                                3 will use marginalised
                                  constraints on Delta2_star
-                                 and n_star """
+                                 and n_star
+            - reduced_IGM: temporary flag to determine in the case of
+                           use_compression=3, we want to use the
+                           covariance of a full IGM marginalisation
+                           or only ln_tau_0 """
 
 
         self.verbose=verbose
@@ -140,7 +145,7 @@ class Likelihood(object):
             assert igm==False, "Cannot run marginalised P1D with free IGM parameters"
 
             ## Set up marginalised p1d likelihood object
-            self.marg_p1d=marg_p1d_like.MargP1DLike()
+            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,reduced_IGM)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 

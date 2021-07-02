@@ -62,6 +62,7 @@ class Likelihood(object):
         self.emu_cov_factor=emu_cov_factor
         self.include_CMB=include_CMB
         self.use_compression=use_compression
+        self.reduced_IGM=reduced_IGM
 
         if data:
             self.data=data
@@ -145,7 +146,7 @@ class Likelihood(object):
             assert igm==False, "Cannot run marginalised P1D with free IGM parameters"
 
             ## Set up marginalised p1d likelihood object
-            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,reduced_IGM)
+            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,self.reduced_IGM)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 

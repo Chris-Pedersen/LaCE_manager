@@ -47,7 +47,7 @@ parser.add_argument('--data_year', help='Which version of the data covmats and k
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
 parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
 parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
-parser.add_argument('--reduce_IGM',action='store_true', help='Reduce IGM marginalisation in the case of use_compression=3?')
+parser.add_argument('--reduced_IGM',action='store_true', help='Reduce IGM marginalisation in the case of use_compression=3?')
 parser.add_argument('--use_compression',type=int, help='Go through compression parameters?')
 args = parser.parse_args()
 
@@ -159,7 +159,7 @@ like=likelihood.Likelihood(data=data,emulator=emu,
                             pivot_scalar=args.pivot_scalar,
                             include_CMB=args.include_CMB,
                             use_compression=args.use_compression,
-                            reduced_IGM=args.reduce_IGM)
+                            reduced_IGM=args.reduced_IGM)
 
 
 ## Pass likelihood to sampler

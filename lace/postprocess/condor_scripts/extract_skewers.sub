@@ -1,0 +1,26 @@
+executable = extract_skewers.sh
+
+n_skewers = 128
+width_Mpc = 0.08
+scales_T0 = 1.0
+scales_gamma = 1.0
+pair_label = sim_pair_0
+sim_label = minus
+
+raw_dir = /data/desi/scratch/HydroData/Emulator/untar_hydro_sims/Australia20/$(pair_label)/sim_$(sim_label)
+post_dir = /data/desi/common/HydroData/Emulator/test_australia/Australia20/$(pair_label)/sim_$(sim_label)
+
+args = --raw_dir $(raw_dir) --post_dir $(post_dir) --snap_num $(snap_num) --n_skewers $(n_skewers) --width_Mpc $(width_Mpc) --scales_T0 $(scales_T0) --scales_gamma $(scales_gamma) --verbose
+
+request_cpus = 4
+request_memory = 12GB
+
+output = logs/skew_$(pair_label)_$(sim_label)_$(snap_num)_$(n_skewers)_$(width_Mpc)-$(ClusterId).$(ProcId).out
+error = logs/skew_$(pair_label)_$(sim_label)_$(snap_num)_$(n_skewers)_$(width_Mpc)-$(ClusterId).$(ProcId).err
+log = logs/skew_$(pair_label)_$(sim_label)_$(snap_num)_$(n_skewers)_$(width_Mpc)-$(ClusterId).$(ProcId).log
+
+environment=PATH=$ENV(PATH);LD_LIBRARY_PATH=$ENV(LD_LIBRARY_PATH);PYTHONPATH=$ENV(PYTHONPATH);LYA_EMU_REPO=$ENV(LYA_EMU_REPO)
+
++flavour="short"
+
+queue snap_num in (0)

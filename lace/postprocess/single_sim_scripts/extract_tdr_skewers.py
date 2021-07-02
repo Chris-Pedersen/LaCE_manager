@@ -21,6 +21,7 @@ parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers
 parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--scales_T0', type=str, default='1.0', help='Comma-separated list of T0 scalings to use.',required=False)
 parser.add_argument('--scales_gamma', type=str, default='1.0', help='Comma-separated list of gamma scalings to use.',required=False)
+parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 args = parser.parse_args()
 
 scales_T0=[float(scale) for scale in args.scales_T0.split(',')]

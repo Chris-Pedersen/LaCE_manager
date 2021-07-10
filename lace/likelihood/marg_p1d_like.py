@@ -18,19 +18,19 @@ class MargP1DLike(object):
         ## Hardcoding the central sim values for now
         self.sim_label=sim_label
         if sim_label=="central":
-            self.true=np.array([0.34589603058122564,-2.299873036928861])
+            self.true=np.array([0.3462089,-2.29839649])
         elif sim_label=="h":
-            self.true=np.array([0.3422904199869149,-2.298993563980896])
+            self.true=np.array([0.3393979,-2.29942019])
         elif sim_label=="nu":
-            self.true=np.array([0.3425163041321543,-2.2997524228650206])
+            self.true=np.array([0.3425163,-2.29975242])
         else:
             print("Do not have truth values stored for the mock simulation")
 
         self.reduced_IGM=reduced_IGM
         if self.reduced_IGM==False:
             ## Use covariance after a full marginalisation
-            self.cov=np.array([[2.64662445e-04, 4.53424261e-05],
-                                [4.53424261e-05, 4.35919691e-05]])
+            self.cov=np.array([[1.77781998e-04, 4.56077117e-05],
+                                [4.56077117e-05, 4.47283109e-05]])
         else:
             ## Use covariance after a marginalisation over only ln_tau_0
             self.cov=np.array([[8.20389465e-05, 3.19638330e-05],

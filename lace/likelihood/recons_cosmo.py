@@ -10,7 +10,8 @@ class ReconstructedCosmology(object):
         reconstruct a cosmology object."""
 
     def __init__(self,zs,emu_kp_Mpc,like_z_star,like_kp_kms,
-            cosmo_fid=None,use_camb_fz=True,verbose=False):
+                cosmo_fid=None,use_camb_fz=True,
+                fit_kmin_kp=0.5,fit_kmax_kp=2.0,verbose=False):
         """Setup object to reconstruct cosmology from linear power parameters.
             - zs: redshifts where we want predictions (call emulator)
             - emu_kp_Mpc: pivot point in Mpc used in the emulator
@@ -18,6 +19,8 @@ class ReconstructedCosmology(object):
             - like_kp_kms: pivot point in likelihood parameterization (s/km)
             - cosmo_fid: CAMB object describing fiducial cosmology
             - use_camb_fz: use CAMB to compute f_star (faster)
+            - fit_kmin_kp: minimum k to use in linP fit (over kp_kms)
+            - fit_kmax_kp: maximum k to use in linP fit (over kp_kms)
             - verbose: print information for debugging."""
 
         self.verbose=verbose
@@ -46,7 +49,8 @@ class ReconstructedCosmology(object):
                 cosmo=self.cosmo_fid,
                 camb_results=self.camb_results_fid,
                 z_star=like_z_star,kp_kms=like_kp_kms,
-                use_camb_fz=self.use_camb_fz)
+                use_camb_fz=self.use_camb_fz,
+                fit_kmin_kp=fit_kmin_kp,fit_kmax_kp=fit_kmax_kp)
         if self.verbose: print('setup linP model for fiducial cosmology')
 
         # store pivot point for convenience

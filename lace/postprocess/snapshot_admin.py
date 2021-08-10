@@ -3,6 +3,7 @@ import sys
 import os
 import json
 import fake_spectra.griddedspectra as grid_spec
+import fake_spectra.spectra as spec
 from lace.setup_simulations import read_genic
 from lace.postprocess import measure_flux_power as powF
 
@@ -10,14 +11,26 @@ class SnapshotAdmin(object):
     """Book-keeping of all elements related to a snapshot.
         For now, it reads pre-computed skewers, for different temperatures."""
 
-    def __init__(self,snap_json,scales_tau=None,kF_Mpc=None):
+    def __init__(self,snap_json,scales_tau=None,kF_Mpc=None,post_dir=None):
         """Setup from JSON file with information about skewers extracted.
             One can also specify tau rescalings, and (optionally) provide
-            the measured filtering length."""
+            the measured filtering length.
+            If post_dir is provided, use it as postprocessing directory."""
 
         # read snapshot information from file (including temperature scalings)
         with open(snap_json) as json_data:
             self.data = json.load(json_data)
+
+        if post_dir:
+            #print('use',post_dir,'as post-processing directory')
+            self.data['post_dir']=post_dir
+            self.data['raw_dir']='NA'
+            self.data['skewers_dir']=post_dir+'/skewers/'
+        else:
+            if 'post_dir' in self.data:
+                print('no post_dir provided, will use',self.data['post_dir'])
+            else:
+                raise ValueError('must provide post_dir when using old files')
 
         # see if you have access filtering length information
         if kF_Mpc:
@@ -37,13 +50,10 @@ class SnapshotAdmin(object):
     def get_all_flux_power(self):
         """Loop over all skewers, and return flux power for each"""
 
-        raw_dir=self.data['raw_dir']
         post_dir=self.data['post_dir']
-
-        genic_file=raw_dir+'/paramfile.genic'
+        genic_file=post_dir+'/paramfile.genic'
         L_Mpc=read_genic.L_Mpc_from_paramfile(genic_file,verbose=True)
-
-        skewers_dir=post_dir+"/skewers/"
+        skewers_dir=self.data['skewers_dir']
         snap_num=self.data['snap_num']
 
         # will loop over all temperature models in snapshot
@@ -60,8 +70,11 @@ class SnapshotAdmin(object):
             sim_scale_gamma=self.data['sim_scale_gamma'][isk]
 
             # read skewers from HDF5 file
-            skewers=grid_spec.GriddedSpectra(snap_num, raw_dir+'/output/',
-                    savedir=skewers_dir, savefile=sk_file, reload_file=False)
+            #skewers=grid_spec.GriddedSpectra(snap_num, raw_dir+'/output/',
+            #        savedir=skewers_dir,savefile=sk_file,reload_file=False)
+            skewers=spec.Spectra(snap_num,base=None,cofm=None,axis=None,
+                    savedir=skewers_dir,savefile=sk_file,
+                    reload_file=False,load_snapshot=False)
 
             # loop over tau scalings
             for scale_tau in self.scales_tau:

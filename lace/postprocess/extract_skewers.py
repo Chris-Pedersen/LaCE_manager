@@ -146,6 +146,7 @@ def get_skewers_snapshot(raw_dir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
     """Extract skewers for a particular snapshot"""
 
     if not skewers_filename:
+        raise ValueError('update get_skewers_snapshot to figure out filename')
         skewers_filename="skewers_"+str(snap_num)+"_"+str(n_skewers)
         skewers_filename+="_"+str(width_kms)
         if set_T0:
@@ -158,14 +159,17 @@ def get_skewers_snapshot(raw_dir,skewers_dir,snap_num,n_skewers=50,width_kms=10,
     if os.path.exists(skewers_dir+'/'+skewers_filename):
         print(skewers_filename,'already exists in',skewers_dir)
 
+    # fake_spectra will set n_pix=int(L_kms/pix_kms), rounded down
+    tweaked_width_kms=0.99999*width_kms
+
     # avoid (if possible) to use set_T0, not always present in fake_spectra
     if (set_T0 is None) and (set_gamma is None):
         skewers = grid_spec.GriddedSpectra(snap_num,raw_dir+'/output/',
-                nspec=n_skewers,res=width_kms,savefile=skewers_filename,
+                nspec=n_skewers,res=tweaked_width_kms,savefile=skewers_filename,
                 savedir=skewers_dir,reload_file=True)
     else:
         skewers = grid_spec.GriddedSpectra(snap_num,raw_dir+'/output/',
-                nspec=n_skewers,res=width_kms,savefile=skewers_filename,
+                nspec=n_skewers,res=tweaked_width_kms,savefile=skewers_filename,
                 savedir=skewers_dir,reload_file=True,
                 set_T0=set_T0,set_gamma=set_gamma)
 

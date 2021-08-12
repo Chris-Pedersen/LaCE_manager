@@ -112,24 +112,23 @@ def fit_polynomial(xmin,xmax,x,y,deg=2):
     return np.poly1d(poly)
 
 
-def fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=None):
+def fit_linP_kms(cosmo,z_star,kp_kms,camb_results=None,
+                fit_kmin_kp=0.5,fit_kmax_kp=2.0):
     """Given input cosmology, compute linear power at z_star
         (in km/s) and fit polynomial around kp_kms.
-        - camb_results optional to avoid calling get_results. """
+        - camb_results optional to avoid calling get_results
+        - fit_kmin_kp (0.5): minimum k to fit (over kp)
+        - fit_kmax_kp (2.0): maximum k to fit (over kp) """
 
     k_kms, _, P_kms = camb_cosmo.get_linP_kms(cosmo,[z_star],
             camb_results=camb_results)
-    # specify wavenumber range to fit
-    kmin_kms = 0.5*kp_kms
-    kmax_kms = 2.0*kp_kms
     # compute ratio
-    P_fit=fit_polynomial(kmin_kms/kp_kms,kmax_kms/kp_kms,k_kms/kp_kms,
-            P_kms,deg=deg)
+    P_fit=fit_polynomial(fit_kmin_kp,fit_kmax_kp,k_kms/kp_kms,P_kms)
     return P_fit
 
 
 def parameterize_cosmology_kms(cosmo,camb_results,z_star,kp_kms,
-            use_camb_fz=True):
+                use_camb_fz=True,fit_kmin_kp=0.5,fit_kmax_kp=2.0):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp_kms.
         - use_camb_fz: get f from f sigma_8 / sigma_8."""
@@ -141,7 +140,8 @@ def parameterize_cosmology_kms(cosmo,camb_results,z_star,kp_kms,
 
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
-    linP_kms = fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=camb_results)
+    linP_kms = fit_linP_kms(cosmo,z_star,kp_kms,camb_results=camb_results,
+                            fit_kmin_kp=fit_kmin_kp,fit_kmax_kp=fit_kmax_kp)
 
     # translate the polynomial to our parameters
     ln_A_star = linP_kms[0]

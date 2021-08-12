@@ -12,13 +12,15 @@ class LyaTheory(object):
 
     def __init__(self,zs,emulator,cosmo_fid=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    use_camb_fz=True):
+                    use_camb_fz=True,fit_kmin_kp=0.5,fit_kmax_kp=2.0):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
             - emulator: object to interpolate simulated p1d
             - cosmo_fid: CAMB object with the fiducial cosmology (optional)
-            - verbose: print information, useful to debug."""
+            - verbose: print information, useful to debug
+            - fit_kmin_kp: minimum k to use in linP fit (over kp_kms)
+            - fit_kmax_kp: maximum k to use in linP fit (over kp_kms). """
 
         self.verbose=verbose
         self.zs=zs
@@ -39,7 +41,9 @@ class LyaTheory(object):
         self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=emu_kp_Mpc,
                 like_z_star=like_z_star,like_kp_kms=like_kp_kms,
-                cosmo_fid=cosmo_fid,use_camb_fz=use_camb_fz,verbose=verbose)
+                cosmo_fid=cosmo_fid,use_camb_fz=use_camb_fz,
+                fit_kmin_kp=fit_kmin_kp,fit_kmax_kp=fit_kmax_kp,
+                verbose=verbose)
 
         # setup fiducial IGM models
         if mf_model_fid:

@@ -10,7 +10,8 @@ class LinearPowerModel(object):
             - construct with set of parameters, and store them."""
 
     def __init__(self,params=None,cosmo=None,camb_results=None,
-            z_star=3.0,kp_kms=0.009,use_camb_fz=True):
+                z_star=3.0,kp_kms=0.009,use_camb_fz=True,
+                fit_kmin_kp=0.5,fit_kmax_kp=2.0):
         """Setup model, specifying redshift and pivot point"""
 
         # store pivot point
@@ -23,7 +24,8 @@ class LinearPowerModel(object):
             self._setup_from_parameters(params)
         else:
             # parameterize cosmology and store parameters
-            self._setup_from_cosmology(cosmo,camb_results,use_camb_fz)
+            self._setup_from_cosmology(cosmo,camb_results,use_camb_fz,
+                    fit_kmin_kp=fit_kmin_kp,fit_kmax_kp=fit_kmax_kp)
 
 
     def _setup_from_parameters(self,params):
@@ -45,11 +47,13 @@ class LinearPowerModel(object):
         self.linP_params['linP_kms']=linP_kms
 
 
-    def _setup_from_cosmology(self,cosmo,camb_results,use_camb_fz):
+    def _setup_from_cosmology(self,cosmo,camb_results,use_camb_fz,
+                fit_kmin_kp,fit_kmax_kp):
         """Compute and store parameters describing the linear power."""
 
         self.linP_params=fit_linP.parameterize_cosmology_kms(cosmo,camb_results,
-                self.z_star,self.kp_kms,use_camb_fz=use_camb_fz)
+                self.z_star,self.kp_kms,use_camb_fz=use_camb_fz,
+                fit_kmin_kp=fit_kmin_kp,fit_kmax_kp=fit_kmax_kp)
 
 
     def get_params(self):

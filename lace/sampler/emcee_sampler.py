@@ -520,6 +520,11 @@ class EmceeSampler(object):
         except:
             include_CMB=False
 
+        try:
+            reduced_IGM=config["reduced_IGM"]
+        except:
+            reduced_IGM=False
+
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
@@ -527,7 +532,8 @@ class EmceeSampler(object):
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
                             pivot_scalar=pivot_scalar,
-                            include_CMB=include_CMB)
+                            include_CMB=include_CMB,
+                            reduced_IGM=reduced_IGM)
 
         if self.verbose: print("Load sampler data")
 
@@ -653,6 +659,7 @@ class EmceeSampler(object):
         saveDict["data_year"]=self.like.data.data_cov_label
         saveDict["include_CMB"]=self.like.include_CMB
         saveDict["use_compression"]=self.like.use_compression
+        saveDict["reduced_IGM"]=self.like.reduced_IGM
 
         ## If we are sampling primordial power, save the pivot scale
         ## used to define As, ns

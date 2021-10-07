@@ -8,8 +8,10 @@ from lace.cosmo import fit_linP
 from lace.data import data_PD2013
 from lace.likelihood import lya_theory
 from lace.likelihood import likelihood_parameter
+from lace.likelihood import linear_power_model
 from lace.likelihood import full_theory
 from lace.likelihood import CAMB_model
+from lace.likelihood import marg_p1d_like
 from lace.setup_simulations import read_genic
 from lace.setup_simulations import sim_params_cosmo
 from lace.setup_simulations import sim_params_space
@@ -27,7 +29,8 @@ class Likelihood(object):
                     use_sim_cosmo=False,
                     pivot_scalar=0.05,
                     include_CMB=False,
-                    use_compression=0):
+                    use_compression=0,
+                    reduced_IGM=False):
         """Setup likelihood from theory and data. Options:
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
@@ -44,7 +47,14 @@ class Likelihood(object):
               from Planck as a prior on each cosmological parameter
             - use_compression: 0 for no compression
                                1 to compress into 4 parameters
-                               2 to compress into just 2 """
+                               2 to compress into just 2
+                               3 will use marginalised
+                                 constraints on Delta2_star
+                                 and n_star
+            - reduced_IGM: temporary flag to determine in the case of
+                           use_compression=3, we want to use the
+                           covariance of a full IGM marginalisation
+                           or only ln_tau_0 """
 
 
         self.verbose=verbose
@@ -52,6 +62,7 @@ class Likelihood(object):
         self.emu_cov_factor=emu_cov_factor
         self.include_CMB=include_CMB
         self.use_compression=use_compression
+        self.reduced_IGM=reduced_IGM
 
         if data:
             self.data=data
@@ -123,6 +134,19 @@ class Likelihood(object):
                     nu_mass=True
             self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo,
                                     nu_mass=nu_mass)
+
+        ## Set up a marginalised p1d likelihood if
+        ## we are using compression mode 3
+        if self.use_compression==3:
+            ## Check if IGM parameters are free
+            igm=False
+            for par in self.free_params:
+                if "ln_" in par.name:
+                    igm=True
+            assert igm==False, "Cannot run marginalised P1D with free IGM parameters"
+
+            ## Set up marginalised p1d likelihood object
+            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,self.reduced_IGM)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
@@ -323,6 +347,30 @@ class Likelihood(object):
         return data_covar, emu_covar
 
 
+    def get_marg_lya_like(self,values=None,return_blob=False):
+        """ Get log likelihood from P1D using pre-marginalised
+            constraints on Delta2_star and n_star """
+
+        ## Need to get Delta2_star and f_star from a set of values
+        like_params=self.parameters_from_sampling_point(values)
+
+        camb_model=self.theory.true_camb_model.get_new_model(like_params)
+        linP_model=linear_power_model.LinearPowerModel(
+                        cosmo=camb_model.cosmo,
+                        camb_results=camb_model.get_camb_results(),
+                        use_camb_fz=self.theory.use_camb_fz)
+
+        log_like=self.marg_p1d.return_lya_like(np.array([linP_model.linP_params["Delta2_star"],
+                                        linP_model.linP_params["n_star"]]))
+
+        ## Check if we want blobs
+        if return_blob:
+            blob=self.theory.get_blob(camb_model)
+            return log_like,blob
+        else:
+            return log_like
+
+
     def get_log_like(self,values=None,ignore_log_det_cov=True,
             camb_evaluation=None,return_blob=False):
         """Compute log(likelihood), including determinant of covariance
@@ -332,6 +380,16 @@ class Likelihood(object):
         k_kms=self.data.k
         zs=self.data.z
         Nz=len(zs)
+
+        if self.use_compression==3:
+            if return_blob==True:
+                log_like,blob=self.get_marg_lya_like(values=values,
+                                            return_blob=True)
+                return log_like,blob
+            else:
+                log_like=self.get_marg_lya_like(values=values,
+                                            return_blob=False)
+                return log_like
 
         # ask emulator prediction for P1D in each bin
         if return_blob:

@@ -12,11 +12,11 @@ subfolder=None
 rootdir=None
 
 sampler=emcee_sampler.EmceeSampler(read_chain_file=13,
-                    rootdir=None,subfolder=None)
+                    rootdir=rootdir,subfolder=subfolder)
 
 ## Cannot call self.log_prob using multiprocess.pool
 def log_prob(theta):
-    return sampler.like.log_prob(theta)
+    return sampler.like.log_prob_and_blobs(theta)
 
 sampler.resume_sampler(1000,log_prob)
 

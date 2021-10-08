@@ -47,6 +47,7 @@ parser.add_argument('--data_year', help='Which version of the data covmats and k
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
 parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
 parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
+parser.add_argument('--reduced_IGM',action='store_true', help='Reduce IGM marginalisation in the case of use_compression=3?')
 parser.add_argument('--use_compression',type=int, help='Go through compression parameters?')
 args = parser.parse_args()
 
@@ -157,7 +158,8 @@ like=likelihood.Likelihood(data=data,emulator=emu,
                             emu_cov_factor=args.emu_cov_factor,
                             pivot_scalar=args.pivot_scalar,
                             include_CMB=args.include_CMB,
-                            use_compression=args.use_compression)
+                            use_compression=args.use_compression,
+                            reduced_IGM=args.reduced_IGM)
 
 
 ## Pass likelihood to sampler
@@ -174,7 +176,7 @@ for p in sampler.like.free_params:
 
 ## Cannot call self.log_prob using multiprocess.pool
 def log_prob(theta):
-    return sampler.like.log_prob(theta)
+    return sampler.like.log_prob_and_blobs(theta)
 
 start = time.time()
 sampler.like.go_silent()

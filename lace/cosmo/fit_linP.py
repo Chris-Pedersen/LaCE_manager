@@ -112,24 +112,45 @@ def fit_polynomial(xmin,xmax,x,y,deg=2):
     return np.poly1d(poly)
 
 
-def fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=None):
+def fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=None,
+                        fit_min=0.5,fit_max=2.0):
     """Given input cosmology, compute linear power at z_star
         (in km/s) and fit polynomial around kp_kms.
         - camb_results optional to avoid calling get_results. """
 
-    k_kms, _, P_kms = camb_cosmo.get_linP_kms(cosmo,[z_star],
-            camb_results=camb_results)
+    k_kms=np.logspace(np.log10(0.5*kp_kms),np.log10(2.0*kp_kms),100)
+
+    if camb_results==None:
+        zs=[z_star]
+        camb_results = camb_cosmo.get_camb_results(cosmo,zs=zs,fast_camb=True)
+
+    assert z_star in list(camb_results.transfer_redshifts), ("Transfer function "
+                                    "not calculated for z_star in camb_results")
+        
+    ## Get conversion factor from velocity units to comoving
+    H_z=camb_results.hubble_parameter(z_star)
+    dvdX=H_z/(1+z_star)/(cosmo.H0/100.0)
+    k_hMpc=k_kms*dvdX
+    
+    camb_interp=camb_results.get_matter_power_interpolator(var1=8,var2=8,
+                                                       nonlinear=False)
+    
+    k_hMpc=dvdX*k_kms
+    P_hMpc=camb_interp.P(z_star,k_hMpc)
+    P_kms=P_hMpc*(dvdX**3)    
+
     # specify wavenumber range to fit
-    kmin_kms = 0.5*kp_kms
-    kmax_kms = 2.0*kp_kms
+    kmin_kms = fit_min*kp_kms
+    kmax_kms = fit_max*kp_kms
     # compute ratio
     P_fit=fit_polynomial(kmin_kms/kp_kms,kmax_kms/kp_kms,k_kms/kp_kms,
             P_kms,deg=deg)
+
     return P_fit
 
 
 def parameterize_cosmology_kms(cosmo,camb_results,z_star,kp_kms,
-            use_camb_fz=True):
+            use_camb_fz=True,fit_min=0.5,fit_max=2.0):
     """Given input cosmology, compute set of parameters that describe 
         the linear power around z_star and wavenumbers kp_kms.
         - use_camb_fz: get f from f sigma_8 / sigma_8."""
@@ -141,7 +162,8 @@ def parameterize_cosmology_kms(cosmo,camb_results,z_star,kp_kms,
 
     # compute linear power, in km/s, at z_star
     # and fit a second order polynomial to the log power, around kp_kms
-    linP_kms = fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=camb_results)
+    linP_kms = fit_linP_kms(cosmo,z_star,kp_kms,deg=2,camb_results=camb_results,
+                                fit_min=fit_min,fit_max=fit_max)
 
     # translate the polynomial to our parameters
     ln_A_star = linP_kms[0]
@@ -166,4 +188,3 @@ def parameterize_cosmology_kms(cosmo,camb_results,z_star,kp_kms,
             'Delta2_star':Delta2_star,'n_star':n_star,'alpha_star':alpha_star}
 
     return results
-

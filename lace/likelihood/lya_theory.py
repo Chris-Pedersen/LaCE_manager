@@ -36,7 +36,7 @@ class LyaTheory(object):
         like_kp_kms=0.009
 
         # setup object to compute linear power for any cosmology
-        self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
+        self.recons=recons_cosmo.ReconstructedCosmology(zs,
                 emu_kp_Mpc=emu_kp_Mpc,
                 like_z_star=like_z_star,like_kp_kms=like_kp_kms,
                 cosmo_fid=cosmo_fid,use_camb_fz=use_camb_fz,verbose=verbose)
@@ -61,7 +61,7 @@ class LyaTheory(object):
             - return_blob will return extra information about the call."""
 
         # setup linear power using list of likelihood parameters
-        linP_model=self.cosmo.get_linP_model(like_params)
+        linP_model=self.recons.get_linP_model(like_params)
         # setup IMG models using list of likelihood parameters
         igm_models=self.get_igm_models(like_params)
         mf_model=igm_models['mf_model']
@@ -70,7 +70,7 @@ class LyaTheory(object):
 
         # compute linear power parameters at all redshifts
         # (recons_cosmo already knows the pivot point emu_kp_Mpc)
-        linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
+        linP_Mpc_params=self.recons.get_linP_Mpc_params(linP_model)
 
         # loop over redshifts and store emulator calls
         emu_calls=[]
@@ -82,7 +82,7 @@ class LyaTheory(object):
             model['mF']=mf_model.get_mean_flux(z)
             model['gamma']=T_model.get_gamma(z)
             sigT_kms=T_model.get_sigT_kms(z)
-            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
+            dkms_dMpc=self.recons.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
             model['sigT_Mpc']=sigT_kms/dkms_dMpc
             kF_kms=kF_model.get_kF_kms(z)
             model['kF_Mpc']=kF_kms*dkms_dMpc
@@ -142,7 +142,7 @@ class LyaTheory(object):
 
         # setup linear power using list of likelihood parameters
         # we will need this to reconstruct H(z)
-        linP_model=self.cosmo.get_linP_model(like_params=like_params)
+        linP_model=self.recons.get_linP_model(like_params=like_params)
 
         # loop over redshifts and compute P1D
         p1d_kms=[]
@@ -153,7 +153,7 @@ class LyaTheory(object):
             # will call emulator for this model
             model=emu_calls[iz]
             # emulate p1d
-            dkms_dMpc=self.cosmo.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
+            dkms_dMpc=self.recons.reconstruct_Hubble_iz(iz,linP_model)/(1+z)
 
             k_Mpc = k_kms * dkms_dMpc
             if return_covar:
@@ -193,7 +193,7 @@ class LyaTheory(object):
     def get_parameters(self):
         """Return parameters in models, even if not free parameters"""
 
-        params=self.cosmo.linP_model_fid.get_likelihood_parameters()
+        params=self.recons.linP_model_fid.get_likelihood_parameters()
         for par in self.mf_model_fid.get_parameters():
             params.append(par)
         for par in self.T_model_fid.get_sigT_kms_parameters():

@@ -67,28 +67,19 @@ class FullTheory(object):
         else:
             self.kF_model_fid = pressure_model.PressureModel()
 
-        ## if we are using compression, need a recons_cosmo object
-        if self.use_compression!=0:
-            ## For now we hardcode z_star and kp_kms, since
-            ## these are also hardcoded in lya_theory.py
-
-# Chris, I would use a different name, to make clear what "cosmo" means
-# Maybe something like cosmo_fid_compression would be clearer
-
-            self.cosmo=recons_cosmo.ReconstructedCosmology(zs,
-                emu_kp_Mpc=self.emu_kp_Mpc,
-                like_z_star=3.0,like_kp_kms=0.009,
-                cosmo_fid=None,
-                use_camb_fz=self.use_camb_fz,
-                verbose=self.verbose)
-            ## Get fiducial values for linP params,
-            ## for alpha_star, f_star, g_star
-            cosmo_fid=camb_cosmo.get_cosmology()
-            linP_model=linear_power_model.LinearPowerModel(
-                        cosmo=cosmo_fid,
-                        camb_results=None,
-                        use_camb_fz=self.use_camb_fz)
-            self.fid_linP_params=linP_model.linP_params
+        ## Set up a recons_cosmo object
+        self.recons=recons_cosmo.ReconstructedCosmology(zs,
+                                    emu_kp_Mpc=self.emu_kp_Mpc,
+                                    like_z_star=3.0,like_kp_kms=0.009,
+                                    cosmo_fid=None,
+                                    use_camb_fz=self.use_camb_fz,
+                                    verbose=self.verbose)
+        cosmo_fid=camb_cosmo.get_cosmology()
+        linP_model=linear_power_model.LinearPowerModel(
+                    cosmo=cosmo_fid,
+                    camb_results=None,
+                    use_camb_fz=self.use_camb_fz)
+        self.fid_linP_params=linP_model.linP_params
 
 
     def fixed_background(self,like_params):
@@ -182,8 +173,8 @@ class FullTheory(object):
                 linP_model.linP_params["f_star"]=self.fid_linP_params["f_star"]
                 linP_model.linP_params["g_star"]=self.fid_linP_params["g_star"]
 
-            linP_Mpc_params=self.cosmo.get_linP_Mpc_params(linP_model)
-            M_of_zs=self.cosmo.reconstruct_M_of_zs(linP_model)
+            linP_Mpc_params=self.recons.get_linP_Mpc_params(linP_model)
+            M_of_zs=self.recons.reconstruct_M_of_zs(linP_model)
             if return_blob:
                 blob=self.get_blob(camb_model=camb_model)
         ## Otherwise calculate the emulator calls directly with no compression

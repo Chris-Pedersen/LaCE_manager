@@ -598,10 +598,7 @@ class Likelihood(object):
 
         self.verbose=False
         self.theory.verbose=False
-        try: ## Only lya_theory object has a theory.cosmo object
-            self.theory.cosmo.verbose=False
-        except:
-            pass
+        self.theory.recons.verbose=False
         self.theory.emulator.verbose=False
         self.theory.emulator.archive.verbose=False
 
@@ -611,10 +608,7 @@ class Likelihood(object):
 
         self.verbose=True
         self.theory.verbose=True
-        try:
-            self.theory.cosmo.verbose=True
-        except:
-            pass
+        self.theory.recons.verbose=True
         self.theory.emulator.verbose=True
         self.theory.emulator.archive.verbose=True
 
@@ -644,9 +638,8 @@ class Likelihood(object):
     def get_simulation_linP_params(self,sim_num):
         """ Compute Delta2_star and n_star for a given simulation in suite"""
 
-        # this function should only be called when using compressed parameters
-        z_star = self.theory.cosmo.z_star
-        kp_kms = self.theory.cosmo.kp_kms
+        z_star = self.theory.recons.z_star
+        kp_kms = self.theory.recons.kp_kms
 
         # setup cosmology from GenIC file
         sim_cosmo=self.theory.emulator.archive.get_simulation_cosmology(sim_num)

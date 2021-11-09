@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import json
+from numpy.lib.polynomial import poly
 from scipy.interpolate import interp1d
 import camb
 from lace.data import base_p1d_data
@@ -20,7 +21,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     def __init__(self,basedir=None,sim_label=None,skewers_label=None,
             zmin=None,zmax=None,z_list=None,kp_Mpc=0.7,
             data_cov_label="Chabanier2019",data_cov_factor=1.,
-            add_syst=True,pivot_scalar=0.05):
+            add_syst=True,pivot_scalar=0.05,polyfit=False):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
@@ -33,6 +34,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             - data_cov_label: P1D covariance to use (Chabanier2019 or PD2013)
             - data_cov_factor: multiply covariance by this factor
             - add_syst: Include systematic estimates in covariance matrices
+            - polyfit: Smooth the mock data by using a polynomial fit to the P1D
         """
 
         if basedir:
@@ -53,6 +55,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.data_cov_factor=data_cov_factor
         self.data_cov_label=data_cov_label
         self.kp_Mpc=kp_Mpc
+        self.polyfit=polyfit
 
         # read P1D from simulation
         z,k,Pk,cov=self._load_p1d(add_syst,pivot_scalar=pivot_scalar)
@@ -89,7 +92,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         # setup TestSimulation object to read json files from sim directory
         self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
                 sim_label=self.sim_label,skewers_label=self.skewers_label,
-                z_max=10,kmax_Mpc=30,kp_Mpc=self.kp_Mpc,
+                z_max=10,kmax_Mpc=8,kp_Mpc=self.kp_Mpc,
                 pivot_scalar=pivot_scalar)
 
         # get redshifts in simulation
@@ -115,8 +118,14 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         ## Set P1D and covariance for each redshift
         for iz,z in enumerate(z_sim):
             # store P1D in Mpc, except k=0
-            p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
-            k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
+            if self.polyfit==True:
+                ## Get "smoothed" polyfit p1d
+                k_Mpc,p1d_Mpc=self.mock_sim.get_polyfit_p1d_Mpc(z)
+                p1d_Mpc=p1d_Mpc[1:]
+                k_Mpc=k_Mpc[1:]
+            else:
+                p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
+                k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
             conversion_factor=sim_camb_results.hubble_parameter(z)/(1+z)
             
             # evaluate P1D in data wavenumbers (in velocity units)

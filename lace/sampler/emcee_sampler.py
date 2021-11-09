@@ -494,6 +494,11 @@ class EmceeSampler(object):
         else:
             pivot_scalar=0.05
 
+        if config["emu_type"]=="k_bin":
+            poly=False
+        else:
+            poly=True
+
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_label=config["data_sim_number"],
                                     basedir=config["basedir"],
@@ -501,7 +506,8 @@ class EmceeSampler(object):
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
                                     data_cov_label=data_year,
-                                    pivot_scalar=pivot_scalar)
+                                    pivot_scalar=pivot_scalar,
+                                    polyfit=poly)
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood

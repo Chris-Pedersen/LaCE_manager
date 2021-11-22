@@ -144,14 +144,13 @@ class EmceeSampler(object):
 
 
     def run_sampler(self,burn_in,max_steps,log_func=None,
-                parallel=False,force_steps=False,timeout=None):
+                parallel=False,timeout=None,force_timeout=False):
         """ Set up sampler, run burn in, run chains,
         return chains
-            - force_steps will force the sampler to run
-              until max_steps is reached regardless of
-              convergence
             - timeout is the time in hours to run the
-              sampler for """
+              sampler for
+            - force_timeout will continue to run the chains
+              until timeout, regardless of convergence """
 
 
         self.burnin_nsteps=burn_in
@@ -220,14 +219,14 @@ class EmceeSampler(object):
                     # Check convergence
                     converged = np.all(tau * 100 < sampler.iteration)
                     converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                    if force_steps == False:
+                    if force_timeout == False:
                         if converged:
                             print("Chains have converged")
                             break
-                        if timeout:
-                            if time.time()>time_end:
-                                print("Timed out")
-                                break
+                    else:
+                        if time.time()>time_end:
+                            print("Timed out")
+                            break
                     old_tau = tau
 
         ## Save chains

@@ -186,9 +186,8 @@ class EmceeSampler(object):
                 # Check convergence
                 converged = np.all(tau * 100 < sampler.iteration)
                 converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                if force_steps == False:
-                    if converged:
-                        break
+                if converged:
+                    break
                 old_tau = tau
 
         else:

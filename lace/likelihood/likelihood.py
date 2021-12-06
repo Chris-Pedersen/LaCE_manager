@@ -114,7 +114,8 @@ class Likelihood(object):
                         true_camb_model=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names),
-                        use_compression=use_compression)
+                        use_compression=use_compression,
+                        cosmo_fid=sim_cosmo)
                 assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
 
                 if not full:
@@ -266,6 +267,8 @@ class Likelihood(object):
                 cosmo_dict["As"]=like_param.value
             elif like_param.name=="ns":
                 cosmo_dict["ns"]=like_param.value
+            elif like_param.name=="mnu":
+                cosmo_dict["mnu"]=like_param.value
 
         assert len(cosmo_dict)>0, "No CMB cosmology parameters found in sampling space"
 

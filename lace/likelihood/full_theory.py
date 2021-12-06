@@ -16,7 +16,7 @@ class FullTheory(object):
     def __init__(self,zs,emulator=None,true_camb_model=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
                     pivot_scalar=0.05,theta_MC=True,use_compression=0,
-                    use_camb_fz=True):
+                    use_camb_fz=True,cosmo_fid=None):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
             - zs: redshifts that will be evaluated
@@ -31,7 +31,10 @@ class FullTheory(object):
                                 f_star and g_star
                     if set to 2, will compress into Delta2_star and n_star,
                                 and use a fiducial g_star and f_star
-                                in the reconstruction  """
+                                in the reconstruction
+            - cosmo_fid: Can pass a cosmology to be used as the fiducial in the
+                         reconstruction, in the case of running with compression.
+                         If set to None will use our standard fiducial cosmology.  """
 
         self.verbose=verbose
         self.zs=zs
@@ -71,7 +74,7 @@ class FullTheory(object):
         self.recons=recons_cosmo.ReconstructedCosmology(zs,
                                     emu_kp_Mpc=self.emu_kp_Mpc,
                                     like_z_star=3.0,like_kp_kms=0.009,
-                                    cosmo_fid=None,
+                                    cosmo_fid=cosmo_fid,
                                     use_camb_fz=self.use_camb_fz,
                                     verbose=self.verbose)
         cosmo_fid=camb_cosmo.get_cosmology()

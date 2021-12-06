@@ -5,6 +5,7 @@ from lace.setup_simulations import read_gadget
 from lace.setup_simulations import read_genic
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
+from lace.emulator import poly_p1d
 
 class TestSimulation(object):
     """ Object to store parameters and data for one
@@ -78,6 +79,7 @@ class TestSimulation(object):
 
         self.skewers_label=skewers_label
         self.p1d_label=p1d_label
+        self.kmax_Mpc=kmax_Mpc
         
         self._read_json_files(z_max,kmax_Mpc,pivot_scalar=pivot_scalar)
 
@@ -208,3 +210,16 @@ class TestSimulation(object):
         
         return self.k_Mpc, self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]]
 
+
+    def get_polyfit_p1d_Mpc(self,z,deg=4):
+        """ Return "smoothed" P_1D and correspondong k bins """
+        
+        assert z in self.zs, "Do not have data for that redshift"
+
+        ## Fit polynomial
+        fit_p1d = poly_p1d.PolyP1D(self.k_Mpc,self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]],kmin_Mpc=1.e-3,
+                    kmax_Mpc=self.kmax_Mpc,deg=deg)
+
+        p1d_poly=fit_p1d.P_Mpc(self.k_Mpc)
+        
+        return self.k_Mpc, p1d_poly

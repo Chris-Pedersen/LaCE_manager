@@ -108,6 +108,13 @@ undersample_z=args.undersample_z
 paramList=None
 free_parameters=args.free_parameters
 kmax_Mpc=args.kmax_Mpc
+if args.emu_type=="k_bin":
+    poly=False
+elif args.emu_type=="polyfit":
+    poly=True
+else:
+    print("Emulator type not recognised")
+    quit()
 
 prior=args.prior_Gauss_rms
 if prior==-1:
@@ -120,7 +127,8 @@ data=data_MPGADGET.P1D_MPGADGET(sim_label=test_sim_number,
 				                zmax=args.z_max,
                                 data_cov_factor=args.data_cov_factor,
                                 data_cov_label=args.data_year,
-                                pivot_scalar=args.pivot_scalar)
+                                pivot_scalar=args.pivot_scalar,
+                                polyfit=poly)
 zs=data.z
 
 ## Set up emulator training data

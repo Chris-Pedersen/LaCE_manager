@@ -796,7 +796,7 @@ class EmceeSampler(object):
         return
 
 
-    def plot_best_fit(self):
+    def plot_best_fit(self,figsize=(8,6)):
 
         """ Plot the P1D of the data and the emulator prediction
         for the MCMC best fit
@@ -804,7 +804,7 @@ class EmceeSampler(object):
 
         ## Get best fit values for each parameter
         chain,lnprob,blobs=self.get_chain()
-        plt.figure()
+        plt.figure(figsize=figsize)
         mean_value=[]
         for parameter_distribution in np.swapaxes(chain,0,1):
             mean_value.append(np.mean(parameter_distribution))
@@ -820,14 +820,17 @@ class EmceeSampler(object):
         return
 
 
-    def plot_prediction(self):
+    def plot_prediction(self,figsize=(8,6),values=None):
 
         """ Plot the P1D of the data and the emulator prediction
         for the fiducial model """
 
-        plt.figure()
-        plt.title("Fiducial model")
-        self.like.plot_p1d(values=None)
+        plt.figure(figsize=figsize)
+        if values == None:
+            plt.title("Fiducial model")
+        else:
+            plt.title("P1D at %s" % values )
+        self.like.plot_p1d(values=values)
         
         if self.save_directory is not None:
             plt.savefig(self.save_directory+"/fiducial.pdf")

@@ -612,6 +612,19 @@ class EmceeSampler(object):
         return
 
 
+    def get_best_fit(self):
+        """ Return an array of best fit
+        values from the MCMC chain, in unit
+        likelihood space """
+
+        chain,lnprob,blobs=self.get_chain()
+        mean_values=[]
+        for parameter_distribution in np.swapaxes(chain,0,1):
+            mean_values.append(np.mean(parameter_distribution))
+
+        return mean_values
+
+
     def write_chain_to_file(self):
         """Write flat chain to file"""
 
@@ -803,12 +816,10 @@ class EmceeSampler(object):
         """
 
         ## Get best fit values for each parameter
-        chain,lnprob,blobs=self.get_chain()
-        plt.figure(figsize=figsize)
-        mean_value=[]
-        for parameter_distribution in np.swapaxes(chain,0,1):
-            mean_value.append(np.mean(parameter_distribution))
+        mean_value=self.get_best_fit()
         print("Mean values:", mean_value)
+        
+        plt.figure(figsize=figsize)
         plt.title("MCMC best fit")
         self.like.plot_p1d(values=mean_value)
 

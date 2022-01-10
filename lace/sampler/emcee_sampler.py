@@ -218,14 +218,16 @@ class EmceeSampler(object):
                     # Check convergence
                     converged = np.all(tau * 100 < sampler.iteration)
                     converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                    if force_timeout == False:
-                        if converged:
-                            print("Chains have converged")
-                            break
-                    else:
-                        if time.time()>time_end:
-                            print("Timed out")
-                            break
+
+                    ## Check if we are over time limit
+                    if time.time()>time_end:
+                        print("Timed out")
+                        break
+                    ## If not, only halt on convergence criterion if
+                    ## force_timeout is false
+                    if (force_timeout == False) and (converged==True):   
+                        print("Chains have converged")
+                        break           
                     old_tau = tau
 
         ## Save chains

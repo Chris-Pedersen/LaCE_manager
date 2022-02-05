@@ -18,14 +18,18 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     """ Class to load an MP-Gadget simulation as a mock
     data object. Can use PD2013 or Chabanier2019 covmats """
 
-    def __init__(self,basedir=None,sim_label=None,skewers_label=None,
-            zmin=None,zmax=None,z_list=None,kp_Mpc=0.7,
-            data_cov_label="Chabanier2019",data_cov_factor=1.,
-            add_syst=True,pivot_scalar=0.05,polyfit=False):
+    def __init__(self,basedir="/p1d_emulator/sim_suites/Australia20/",
+            sim_label="central",
+            skewers_label='Ns500_wM0.05',
+            zmin=None,zmax=None,z_list=None,
+            kp_Mpc=0.7,
+            data_cov_label="Chabanier2019",data_cov_factor=0.2,
+            add_syst=True,pivot_scalar=0.05,polyfit=True):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
                 -- an integer, index from the Latin hypercube for that suite
+                -- "central", which takes the central sim from the LH
                 -- "nu", which corresponds to the 0.3eV neutrino sim
                 -- "h", which corresponds to the simulation with h=0.74
             - skewers_label: string identifying skewer extraction from sims
@@ -37,21 +41,9 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             - polyfit: Smooth the mock data by using a polynomial fit to the P1D
         """
 
-        if basedir:
-            self.basedir=basedir
-        else:
-            self.basedir="/p1d_emulator/sim_suites/Australia20/"
-
-        if skewers_label:
-            self.skewers_label=skewers_label
-        else:
-            self.skewers_label='Ns500_wM0.05'
-
-        if sim_label:
-            self.sim_label=sim_label
-        else:
-            self.sim_label=0
-
+        self.basedir=basedir
+        self.skewers_label=skewers_label
+        self.sim_label=sim_label
         self.data_cov_factor=data_cov_factor
         self.data_cov_label=data_cov_label
         self.kp_Mpc=kp_Mpc

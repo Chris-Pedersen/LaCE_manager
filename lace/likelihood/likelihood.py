@@ -147,7 +147,9 @@ class Likelihood(object):
             assert igm==False, "Cannot run marginalised P1D with free IGM parameters"
 
             ## Set up marginalised p1d likelihood object
-            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,self.reduced_IGM)
+            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,
+                                                    self.reduced_IGM,
+                                                    self.data.polyfit)
 
         if self.verbose: print(len(self.free_params),'free parameters')
 

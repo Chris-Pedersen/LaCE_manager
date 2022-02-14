@@ -19,7 +19,9 @@ class archiveP1D_Nyx(object):
         if not fname:
             assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
             repo=os.environ['LYA_EMU_REPO']
-            raise ValueError('add Nyx models file to repo')
+            fname=repo+'/lace/emulator/sim_suites/test_nyx/models.hdf5'
+            if verbose:
+                print('read Nyx archive from file',fname)
 
         self.fname=fname
         self.basedir='basedir_Nyx'

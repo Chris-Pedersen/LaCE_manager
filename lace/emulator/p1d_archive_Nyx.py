@@ -1,6 +1,4 @@
 import numpy as np
-import copy
-import sys
 import os
 import json
 import h5py
@@ -133,9 +131,9 @@ class archiveP1D_Nyx(object):
                     # deep copy of dictionary (thread safe, why not)
                     p1d_data = json.loads(json.dumps(snap_p1d_data))
                     # add measured P1D
-                    p1d_data['k_Mpc']=np.array(model_grid_data[0][0][0]['k'])
+                    p1d_data['k_Mpc']=np.array(model_grid_data[iz][im][it]['k'])
                     p1d_data['p1d_Mpc']=np.array(
-                                model_grid_data[0][0][0]['Pk1d'])
+                                model_grid_data[iz][im][it]['Pk1d'])
                     # add thermal parameters
                     thermal_str=modelgroupstrings[iz][im][it]
                     thermal_params=dict(f[thermal_str].attrs.items())

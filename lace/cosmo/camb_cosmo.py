@@ -306,3 +306,24 @@ def shift_primordial_pivot(cosmo_dict,pivot_scalar):
     cosmo_dict["pivot_scalar"]=pivot_scalar
 
     return cosmo_dict
+
+
+def get_Nyx_cosmology(params):
+    """Given a dictionary with Nyx sim params, return CAMB cosmology."""
+
+    print('CROSS-CHECK BARYON DENSITY')
+    ombh2=0.022
+    H0=params['H_0']
+    ommh2=params['omega_m']
+    omch2=ommh2-ombh2
+
+    pars = camb.CAMBparams()
+    pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, mnu=0.0)
+
+    # collect primorial power parameters
+    As=params['A_s']
+    ns=params['n_s']
+    # update primordial power
+    pars.InitPower.set_params(As=As, ns=ns)
+
+    return pars

@@ -108,7 +108,6 @@ class archiveP1D(object):
             sim_params = self.cube_data['samples']['%d'%sample]
             if self.verbose:
                 print(sample,'sample has sim params =',sim_params)
-            model_dict ={'sample':sample,'sim_param':sim_params}
 
             # read number of snapshots (should be the same in all sims)
             pair_dir=self.fulldir+'/sim_pair_%d'%sample

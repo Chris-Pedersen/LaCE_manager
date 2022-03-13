@@ -300,6 +300,10 @@ def shift_primordial_pivot(cosmo_dict,pivot_scalar):
     else:
         pivot_old=0.05
 
+    # if you want to use running, you need to implement the option here
+    if 'nrun' in cosmo_dict:
+        assert pivot_old==pivot_scalar,'can not shift power with running'
+
     new_As=cosmo_dict["As"]*(pivot_scalar/pivot_old)**(cosmo_dict["ns"]-1)
     ## Update dictionary with new As and pivot
     cosmo_dict["As"]=new_As

@@ -4,18 +4,20 @@ from lace.data import base_p1d_data
 
 class P1D_Karacayli_HIRES(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,diag_cov=True):
-        """Read measured P1D from file"""
+    def __init__(self,diag_cov=True,kmax_kms=0.09):
+        """Read measured P1D from file.
+            - diag_cov: for now, use diagonal covariance
+            - kmax_kms: limit to low-k where we trust emulator """
 
         # read redshifts, wavenumbers, power spectra and covariance matrices
-        z,k,Pk,cov=self._read_file(diag_cov)
+        z,k,Pk,cov=self._read_file(diag_cov,kmax_kms)
 
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
 
         return
 
 
-    def _read_file(self,diag_cov):
+    def _read_file(self,diag_cov,kmax_kms):
         """Read file containing mock P1D"""
 
         # folder storing P1D measurement
@@ -38,22 +40,27 @@ class P1D_Karacayli_HIRES(base_p1d_data.BaseDataP1D):
         # store unique redshifts 
         inz=[float(line.split()[0]) for line in data]
         z=np.unique(inz)
-        # store unique redshifts 
+
+        # store unique wavenumbers
         ink=[float(line.split()[3]) for line in data]
         k=np.unique(ink)
 
         # store P1D, statistical error, noise power, metal power and systematic
         inPk=[float(line.split()[6]) for line in data]
-        Pk=np.array(inPk).reshape([Nz,Nk])
-
-        # now read covariance matrix
-        assert diag_cov, 'implement code to read full covariance'
+        inPk=np.array(inPk).reshape([Nz,Nk])
 
         # for now only use diagonal elements
+        assert diag_cov, 'implement code to read full covariance'
         inErr=[float(line.split()[7]) for line in data]
+
+        # limit only to modes < 0.1 s/km
+        Ncull=np.sum(k>kmax_kms)
+        k=k[:Nk-Ncull]
+        Pk=[]
         cov=[]
         for i in range(Nz):
+            Pk.append(inPk[i,:Nk-Ncull])
             err=inErr[i*Nk:(i+1)*Nk]
-            cov.append(np.diag(np.array(err)**2))
+            cov.append(np.diag(np.array(err[:Nk-Ncull])**2))
 
         return z,k,Pk,cov

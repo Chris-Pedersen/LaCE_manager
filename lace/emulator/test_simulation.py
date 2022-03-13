@@ -14,7 +14,7 @@ class TestSimulation(object):
     in velocity units """
 
     def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',p1d_label="p1d",
-            z_max=4.0,kmax_Mpc=8,kp_Mpc=0.7,pivot_scalar=0.05):
+            z_max=4.0,kp_Mpc=0.7,pivot_scalar=0.05):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
             - sim_label can be either:
@@ -38,7 +38,6 @@ class TestSimulation(object):
                    measurement
             - skewers_label: string identifying skewer extraction from sims
             - z_max sets the highest z cut
-            - kmax_Mpc sets the highest k bin to store the P_1D for
             - kp_Mpc sets the comoving pivot scale used to calculate the
               emulator linear power parameters
             - pivot_scalar sets the pivot scale to define primordial
@@ -75,22 +74,19 @@ class TestSimulation(object):
         else:
             print("Simulation not found")
             
-        self.kp_Mpc=kp_Mpc ## Pivot point for Delta2_p, n_p, alpha_p
-
         self.skewers_label=skewers_label
         self.p1d_label=p1d_label
-        self.kmax_Mpc=kmax_Mpc
         
-        self._read_json_files(z_max,kmax_Mpc,pivot_scalar=pivot_scalar)
+        self._read_json_files(z_max,kp_Mpc,pivot_scalar)
 
         return
 
 
-    def _read_json_files(self,z_max,kmax_Mpc,pivot_scalar):
+    def _read_json_files(self,z_max,kp_Mpc,pivot_scalar):
         """ Read the json files for the given sim suite. Store the P1D
         and emulator parameters for the non-rescaled entries
             - z_max: discard redshifts above this cut
-            - kmax_Mpc: take only k bins below this cut """
+            - kp_Mpc: pivot point to compute linear power params """
         
         # There is a lot of overlap between this and functions in p1d_archive.py
         
@@ -117,7 +113,7 @@ class TestSimulation(object):
         # setup CAMB object
         self.sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
         # compute linear power parameters at each z (in Mpc units)
-        linP_zs=fit_linP.get_linP_Mpc_zs(self.sim_cosmo,self.zs,self.kp_Mpc,
+        linP_zs=fit_linP.get_linP_Mpc_zs(self.sim_cosmo,self.zs,kp_Mpc,
                 include_f_p=True)
         #print('linP_zs',linP_zs)
         linP_values=list(linP_zs)
@@ -142,8 +138,6 @@ class TestSimulation(object):
                 if plus_file["p1d_data"][bb]["scale_tau"]==1.0:
                     plus_data=plus_file["p1d_data"][bb]
                     minus_data=minus_file["p1d_data"][bb]
-                    
-                    
             assert plus_data["scale_tau"]==minus_data["scale_tau"]
             
             ## P1D
@@ -158,8 +152,7 @@ class TestSimulation(object):
             ## IGM parameters
             mf_plus=plus_data["mF"]
             mf_minus=minus_data["mF"]
-            pair_mf=0.5*(plus_data["mF"]
-                             +minus_data["mF"])
+            pair_mf=0.5*(plus_data["mF"]+minus_data["mF"])
             
             kF_Mpc=0.5*(plus_data["kF_Mpc"]+minus_data["kF_Mpc"])
             gamma=0.5*(plus_data["sim_gamma"]+minus_data["sim_gamma"])
@@ -169,7 +162,8 @@ class TestSimulation(object):
             p1d_combined=0.5*(p1d_plus * mf_plus**2
                                 + p1d_minus * mf_minus**2) / pair_mf**2
             
-            ## Cut higher than k_max
+            ## Cut higher than k_max=30 1/Mpc
+            kmax_Mpc=30.0
             self.k_Mpc.append(k_Mpc_plus[k_Mpc_plus<kmax_Mpc])
             self.p1d_Mpc.append(p1d_combined[k_Mpc_plus<kmax_Mpc])
             
@@ -211,14 +205,15 @@ class TestSimulation(object):
         return self.k_Mpc, self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]]
 
 
-    def get_polyfit_p1d_Mpc(self,z,deg=4):
+    def get_polyfit_p1d_Mpc(self,z,fit_kmax_Mpc,deg=4):
         """ Return "smoothed" P_1D and correspondong k bins """
         
         assert z in self.zs, "Do not have data for that redshift"
 
         ## Fit polynomial
-        fit_p1d = poly_p1d.PolyP1D(self.k_Mpc,self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]],kmin_Mpc=1.e-3,
-                    kmax_Mpc=self.kmax_Mpc,deg=deg)
+        fit_p1d = poly_p1d.PolyP1D(self.k_Mpc,
+                    self.p1d_Mpc[np.argwhere(self.zs==z)[0][0]],
+                    kmin_Mpc=1.e-3,kmax_Mpc=fit_kmax_Mpc,deg=deg)
 
         p1d_poly=fit_p1d.P_Mpc(self.k_Mpc)
         

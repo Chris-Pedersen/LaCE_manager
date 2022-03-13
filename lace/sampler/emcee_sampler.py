@@ -27,40 +27,26 @@ from lace.likelihood import likelihood_parameter
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
-    def __init__(self,like=None,emulator=None,free_param_names=None,
+    def __init__(self,like=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
                         subfolder=None,rootdir=None,
                         save_chain=True,progress=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain.
-            rootdir allows user to search for saved chains in a different location
-            to the code itself """
-
-        # WE SHOULD DOCUMENT BETTER THE OPTIONAL INPUTS
-        # WHEN WOULD SOMEONE PASS A LIKELIHOOD AND A LIST OF FREE PARAMETERS?
-        # WOULDN'T like.free_params ALREADY CONTAIN THAT?
-
-        # WHEN WOULD YOU LIKE TO HAVE A SAMPLER WITHOUT AN EMULATOR?
+            rootdir allows user to search for saved chains in a different
+            location to the code itself """
 
         self.verbose=verbose
         self.progress=progress
 
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
+            assert not like, "likelihood specified but reading chain from file"
             self.read_chain_from_file(read_chain_file,rootdir,subfolder)
             self.p0=None
             self.burnin_pos=None
         else: 
-            if like:
-                if self.verbose: print('use input likelihood')
-                self.like=like
-            else:
-                if self.verbose: print('use default likelihood')
-                data=data_PD2013.P1D_PD2013()
-                zs=data.z
-                theory=lya_theory.LyaTheory(zs,emulator=emulator)
-                self.like=likelihood.Likelihood(data=data,theory=theory,
-                                free_param_names=free_param_names,verbose=False)
+            self.like=like
             # number of free parameters to sample
             self.ndim=len(self.like.free_params)
 
@@ -448,7 +434,7 @@ class EmceeSampler(object):
                             nearest_tau=config["nearest_tau"],
                             z_max=config["z_max"],
                             drop_sim_number=config["data_sim_number"],
-                            p1d_label=config["p1d_label"],                            
+                            p1d_label=config["p1d_label"],
                             skewers_label=config["skewers_label"],
                             undersample_cube=config["undersample_cube"],
                             kp_Mpc=kp)

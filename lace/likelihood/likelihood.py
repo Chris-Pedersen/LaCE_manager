@@ -5,7 +5,6 @@ import math
 from scipy.optimize import minimize
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
-from lace.data import data_PD2013
 from lace.likelihood import lya_theory
 from lace.likelihood import likelihood_parameter
 from lace.likelihood import linear_power_model
@@ -20,7 +19,7 @@ from lace.likelihood import cmb_like
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
-    def __init__(self,data=None,theory=None,emulator=None,
+    def __init__(self,data,theory=None,emulator=None,
                     free_param_names=None,
                     free_param_limits=None,
                     verbose=False,
@@ -32,6 +31,10 @@ class Likelihood(object):
                     use_compression=0,
                     reduced_IGM=False):
         """Setup likelihood from theory and data. Options:
+            - data (required) is the data to model
+            - theory (optional) if not provided, will setup using emulator and
+              list of free parameters
+            - emulator (optional) only needed if theory not provided
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
             - if prior_Gauss_rms is None it will use uniform priors
@@ -64,12 +67,7 @@ class Likelihood(object):
         self.use_compression=use_compression
         self.reduced_IGM=reduced_IGM
 
-        if data:
-            self.data=data
-        else:
-            if self.verbose: print('use default data')
-            self.data=data_PD2013.P1D_PD2013()
-
+        self.data=data
         # (optionally) get rid of low-k data points
         self.data._cull_data(kmin_kms)
 
@@ -109,7 +107,8 @@ class Likelihood(object):
             else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
+                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar,
+                        theta_MC=("cosmomc_theta" in free_param_names))
                 self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
                         true_camb_model=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar,
@@ -169,8 +168,7 @@ class Likelihood(object):
         params = self.theory.get_parameters()
 
         ## select free parameters, make sure ordering
-        ## in self.free_params is same as
-        ## in self.free_parameters
+        ## in self.free_params is same as in free_param_names
         for par_name in free_param_names:
             for par in params:
                 if par.name == par_name:
@@ -669,7 +667,6 @@ class Likelihood(object):
 
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
-
         emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
 
         if self.verbose: print('got P1D from emulator')

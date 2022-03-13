@@ -46,11 +46,10 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.sim_label=sim_label
         self.data_cov_factor=data_cov_factor
         self.data_cov_label=data_cov_label
-        self.kp_Mpc=kp_Mpc
         self.polyfit=polyfit
 
         # read P1D from simulation
-        z,k,Pk,cov=self._load_p1d(add_syst,pivot_scalar=pivot_scalar)
+        z,k,Pk,cov=self._load_p1d(add_syst,kp_Mpc=kp_Mpc,pivot_scalar=pivot_scalar)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -64,7 +63,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self._set_true_values()
 
 
-    def _load_p1d(self,add_syst,pivot_scalar):
+    def _load_p1d(self,add_syst,kp_Mpc,pivot_scalar):
 
         if self.data_cov_label=="Chabanier2019":
             data_file=data_Chabanier2019.P1D_Chabanier2019(add_syst=add_syst)
@@ -84,8 +83,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         # setup TestSimulation object to read json files from sim directory
         self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
                 sim_label=self.sim_label,skewers_label=self.skewers_label,
-                z_max=10,kmax_Mpc=8,kp_Mpc=self.kp_Mpc,
-                pivot_scalar=pivot_scalar)
+                z_max=10,kp_Mpc=kp_Mpc,pivot_scalar=pivot_scalar)
 
         # get redshifts in simulation
         z_sim=self.mock_sim.zs
@@ -112,7 +110,8 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             # store P1D in Mpc, except k=0
             if self.polyfit==True:
                 ## Get "smoothed" polyfit p1d
-                k_Mpc,p1d_Mpc=self.mock_sim.get_polyfit_p1d_Mpc(z)
+                k_Mpc,p1d_Mpc=self.mock_sim.get_polyfit_p1d_Mpc(z,
+                            fit_kmax_Mpc=8)
                 p1d_Mpc=p1d_Mpc[1:]
                 k_Mpc=k_Mpc[1:]
             else:

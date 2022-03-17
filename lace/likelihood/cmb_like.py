@@ -6,7 +6,7 @@ class CMBLikelihood(object):
     given cosmology. We do this by storing the parameter covariances
     approximated as Gaussians from the Planck chains """
 
-    def __init__(self,cosmo,nu_mass=False):
+    def __init__(self,cosmo,nu_mass=False,nrun=False):
         """ Use the target cosmology as the centre of the posterior
         to represent the truth, so we are consistent between the CMB
         and P1D. """
@@ -37,6 +37,8 @@ class CMBLikelihood(object):
 
         ## Add neutrino mass info if we are using it
         self.nu_mass=nu_mass
+        self.nrun=nrun
+        assert self.nu_mass==False or self.nrun==False, "Cannot vary both nu_mass and nrun"
         if self.nu_mass==True:
             self.cov_cmb=cmb_mnu_cov
             self.mock_values=np.append(self.mock_values,
@@ -44,6 +46,13 @@ class CMBLikelihood(object):
             self.true_values=np.append(self.true_values,
                         self.cosmo.omnuh2/0.0107333333)
             self.param_list.append("$\Sigma m_\\nu$")
+        elif self.nrun==True:
+            self.cov_cmb=cmb_nrun_cov
+            self.mock_values=np.append(self.mock_values,
+                        self.cosmo.InitPower.nrun)
+            self.true_values=np.append(self.true_values,
+                        self.cosmo.InitPower.nrun)
+            self.param_list.append("$n_\mathrm{run}$")
         else:
             self.cov_cmb=cmb_nonu_cov
         self.icov_cmb=np.linalg.inv(self.cov_cmb)
@@ -88,6 +97,12 @@ class CMBLikelihood(object):
             else:
                 mnu=cosmo_fid.omnuh2/0.0107333333
             test_values=np.append(test_values,mnu)
+        if self.nrun==True:
+            if "nrun" in cosmo_dic:
+                nrun=cosmo_dic["nrun"]
+            else:
+                nrun=cosmo_fid.InitPower.nrun
+            test_values=np.append(test_values,nrun)
 
         diff=self.mock_values-test_values
 
@@ -130,3 +145,16 @@ cmb_mnu_cov=np.array([[ 2.88023813e-08, -1.27089673e-07,  2.43676928e-08,
             1.11767973e-05,  2.15653471e-05, -1.73038156e-04],
         [-7.56495151e-06,  4.13128633e-05, -1.31572811e-05,
             8.01147431e-05, -1.73038156e-04,  3.15689398e-02]])
+
+cmb_nrun_cov=np.array([[ 2.65068527e-08, -9.76940346e-08,  1.69794289e-08,
+         1.22320726e-06,  2.67678806e-07, -2.15390274e-07],
+       [-9.76940346e-08,  1.90173644e-06, -1.51181790e-07,
+         1.45115521e-06, -4.66996698e-06, -1.81650746e-06],
+       [ 1.69794289e-08, -1.51181790e-07,  9.80046570e-08,
+         3.86343651e-07,  5.01480600e-07,  1.35741624e-07],
+       [ 1.22320726e-06,  1.45115521e-06,  3.86343651e-07,
+         1.28728619e-03, -7.09031759e-06, -7.41620022e-05],
+       [ 2.67678806e-07, -4.66996698e-06,  5.01480600e-07,
+        -7.09031759e-06,  2.31033020e-05,  1.26570663e-05],
+       [-2.15390274e-07, -1.81650746e-06,  1.35741624e-07,
+        -7.41620022e-05,  1.26570663e-05,  4.62697051e-05]])

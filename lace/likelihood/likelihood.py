@@ -130,11 +130,14 @@ class Likelihood(object):
             ## cosmology as the central values
             ## Check if neutrino mass is a free parameter
             nu_mass=False
+            nrun=False
             for par in self.free_params:
                 if par.name=="mnu":
                     nu_mass=True
+                elif par.name=="nrun":
+                    nrun=True
             self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo,
-                                    nu_mass=nu_mass)
+                                    nu_mass=nu_mass,nrun=nrun)
 
         ## Set up a marginalised p1d likelihood if
         ## we are using compression mode 3

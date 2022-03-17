@@ -38,7 +38,7 @@ class CMBLikelihood(object):
         ## Add neutrino mass info if we are using it
         self.nu_mass=nu_mass
         self.nrun=nrun
-        assert self.nu==False or self.nrun==False, "Cannot vary both nu_mass and nrun"
+        assert self.nu_mass==False or self.nrun==False, "Cannot vary both nu_mass and nrun"
         if self.nu_mass==True:
             self.cov_cmb=cmb_mnu_cov
             self.mock_values=np.append(self.mock_values,

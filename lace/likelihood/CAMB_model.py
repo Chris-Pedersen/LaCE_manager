@@ -62,6 +62,9 @@ class CAMBModel(object):
         params.append(likelihood_parameter.LikelihoodParameter(
                         name='mnu',min_value=0.0,max_value=1.0,
                         value=camb_cosmo.get_mnu(self.cosmo)))
+        params.append(likelihood_parameter.LikelihoodParameter(
+                        name='nrun',min_value=-0.8,max_value=0.8,
+                        value=self.cosmo.InitPower.nrun))
         ## Check if we are using thetaMC or H0
         if self.theta_MC==True:
             if self.cached_camb_results is None:

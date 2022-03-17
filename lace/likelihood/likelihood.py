@@ -271,6 +271,8 @@ class Likelihood(object):
                 cosmo_dict["ns"]=like_param.value
             elif like_param.name=="mnu":
                 cosmo_dict["mnu"]=like_param.value
+            elif like_param.name=="nrun":
+                cosmo_dict["nrun"]=like_param.value
 
         assert len(cosmo_dict)>0, "No CMB cosmology parameters found in sampling space"
 

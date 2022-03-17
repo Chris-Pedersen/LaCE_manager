@@ -115,6 +115,7 @@ class EmceeSampler(object):
             all_truth["omch2"]=test_sim_cosmo.omch2
             all_truth["As"]=test_sim_cosmo.InitPower.As
             all_truth["ns"]=test_sim_cosmo.InitPower.ns
+            all_truth["nrun"]=test_sim_cosmo.InitPower.nrun
             all_truth["H0"]=test_sim_cosmo.H0
             all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
             all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
@@ -878,6 +879,7 @@ param_dict={
             "mnu":"$\Sigma m_\\nu$",
             "As":"$A_s$",
             "ns":"$n_s$",
+            "nrun":"$n_\mathrm{run}$",
             "ombh2":"$\omega_b$",
             "omch2":"$\omega_c$",
             "cosmomc_theta":"$\\theta_{MC}$"
@@ -888,7 +890,7 @@ param_dict={
 ## for chainconsumer plots
 cosmo_params=["Delta2_star","n_star","alpha_star",
                 "f_star","g_star","cosmomc_theta",
-                "H0","mnu","As","ns","ombh2","omch2"]
+                "H0","mnu","As","ns","nrun","ombh2","omch2"]
 
 ## list of strings for blobs
 blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]

@@ -45,6 +45,8 @@ class MargP1DLike(object):
             ## Use values for polyfit emulator
             if sim_label=="nu":
                 self.true=np.array([0.37,-2.293])
+            elif sim_label=="running":
+                self.true=np.array([0.362,-2.295])
             else:
                 raise Exception("No fits for this sim from polyfit emulator")
             self.cov=np.array([[1.8e-04, 7.2e-05],

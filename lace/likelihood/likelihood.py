@@ -5,7 +5,6 @@ import math
 from scipy.optimize import minimize
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
-from lace.data import data_PD2013
 from lace.likelihood import lya_theory
 from lace.likelihood import likelihood_parameter
 from lace.likelihood import linear_power_model
@@ -20,7 +19,7 @@ from lace.likelihood import cmb_like
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
-    def __init__(self,data=None,theory=None,emulator=None,
+    def __init__(self,data,theory=None,emulator=None,
                     free_param_names=None,
                     free_param_limits=None,
                     verbose=False,
@@ -30,8 +29,13 @@ class Likelihood(object):
                     pivot_scalar=0.05,
                     include_CMB=False,
                     use_compression=0,
-                    reduced_IGM=False):
+                    reduced_IGM=False,
+                    extra_p1d_data=None):
         """Setup likelihood from theory and data. Options:
+            - data (required) is the data to model
+            - theory (optional) if not provided, will setup using emulator and
+              list of free parameters
+            - emulator (optional) only needed if theory not provided
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
             - if prior_Gauss_rms is None it will use uniform priors
@@ -54,8 +58,8 @@ class Likelihood(object):
             - reduced_IGM: temporary flag to determine in the case of
                            use_compression=3, we want to use the
                            covariance of a full IGM marginalisation
-                           or only ln_tau_0 """
-
+                           or only ln_tau_0 
+            - extra_p1d_data: extra P1D data, e.g., from HIRES"""
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
@@ -64,12 +68,7 @@ class Likelihood(object):
         self.use_compression=use_compression
         self.reduced_IGM=reduced_IGM
 
-        if data:
-            self.data=data
-        else:
-            if self.verbose: print('use default data')
-            self.data=data_PD2013.P1D_PD2013()
-
+        self.data=data
         # (optionally) get rid of low-k data points
         self.data._cull_data(kmin_kms)
 
@@ -109,13 +108,15 @@ class Likelihood(object):
             else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar,theta_MC=("cosmomc_theta" in free_param_names))
-                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
+                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar,
+                        theta_MC=("cosmomc_theta" in free_param_names))
+                self.theory=full_theory.FullTheory(zs=self.data.z,emulator=emulator,
                         true_camb_model=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names),
                         use_compression=use_compression,
                         cosmo_fid=sim_cosmo)
+                # Andreu: This only works for mock data...
                 assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
 
                 if not full:
@@ -156,6 +157,24 @@ class Likelihood(object):
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
+
+        # extra P1D likelihood from, e.g., HIRES
+        if extra_p1d_data:
+            self.extra_p1d_like=Likelihood(data=extra_p1d_data,
+                    theory=self.theory,emulator=None,
+                    free_param_names=free_param_names,
+                    free_param_limits=free_param_limits,
+                    verbose=verbose,
+                    prior_Gauss_rms=prior_Gauss_rms,
+                    kmin_kms=kmin_kms,
+                    emu_cov_factor=1,
+                    use_sim_cosmo=use_sim_cosmo,
+                    pivot_scalar=pivot_scalar,
+                    include_CMB=False,
+                    use_compression=use_compression,
+                    reduced_IGM=reduced_IGM,
+                    extra_p1d_data=None)
+
         return
 
 
@@ -172,8 +191,7 @@ class Likelihood(object):
         params = self.theory.get_parameters()
 
         ## select free parameters, make sure ordering
-        ## in self.free_params is same as
-        ## in self.free_parameters
+        ## in self.free_params is same as in free_param_names
         for par_name in free_param_names:
             for par in params:
                 if par.name == par_name:
@@ -473,6 +491,12 @@ class Likelihood(object):
             log_like=self.get_log_like(values,ignore_log_det_cov=False,
                                             return_blob=False)
 
+        # if required, add extra P1D likelihood from, e.g., HIRES
+        if self.extra_p1d_like:
+            extra_log_like=self.extra_p1d_like.get_log_like(values,
+                        ignore_log_det_cov=False,return_blob=False)
+            log_like += extra_log_like
+
         if log_like == None or math.isnan(log_like)==True:
             if self.verbose: print('was not able to emulate at least on P1D')
             if return_blob:
@@ -674,7 +698,6 @@ class Likelihood(object):
 
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
-
         emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
 
         if self.verbose: print('got P1D from emulator')

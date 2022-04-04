@@ -79,7 +79,8 @@ class Likelihood(object):
             compressed=bool(set(free_param_names) & set(["Delta2_star",
                                 "n_star","alpha_star","f_star","g_star"]))
 
-            full=bool(set(free_param_names) & set(["H0","mnu","As","ns"]))
+            full=bool(set(free_param_names) & set(["cosmomc_theta",
+                                                   "H0","mnu","As","ns"]))
 
             if self.verbose:
                 if compressed:
@@ -109,7 +110,7 @@ class Likelihood(object):
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
                         cosmo=sim_cosmo,pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names))
-                self.theory=full_theory.FullTheory(zs=data.z,emulator=emulator,
+                self.theory=full_theory.FullTheory(zs=self.data.z,emulator=emulator,
                         true_camb_model=camb_model_sim,verbose=self.verbose,
                         pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names),

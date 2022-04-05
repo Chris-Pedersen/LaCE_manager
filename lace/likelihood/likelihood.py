@@ -80,7 +80,8 @@ class Likelihood(object):
             compressed=bool(set(free_param_names) & set(["Delta2_star",
                                 "n_star","alpha_star","f_star","g_star"]))
 
-            full=bool(set(free_param_names) & set(["H0","mnu","As","ns"]))
+            full=bool(set(free_param_names) & set(["cosmomc_theta",
+                                                   "H0","mnu","As","ns"]))
 
             if self.verbose:
                 if compressed:

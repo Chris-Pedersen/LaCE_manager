@@ -70,7 +70,25 @@ print("----------")
 ## these are still saved with the sampler so no book-keeping issues though
 
 ## Example for sampling CMB parameters:
-free_param_limits=[[0.0099,0.0109],
+if 'Delta2_star' in args.free_parameters:
+    ## Some template limits below
+    ## for reference, the default primordial limits I have been using are
+    ## (for a pivot_scalar of 0.7)
+    ## [[1.1e-09, 3.19e-09], [0.89, 1.05],
+    ## And for compressed params,
+    ## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
+    free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4],
+                    [-0.4, 0.4]]
+else:
+    assert 'cosmomc_theta' in args.free_parameters
+    free_param_limits=[[0.0099,0.0109],
                 [1.1e-09, 3.19e-09],
                 [0.89, 1.05],
                 [0.018, 0.026],
@@ -83,24 +101,6 @@ free_param_limits=[[0.0099,0.0109],
                 [-0.4, 0.4],
                 [-0.4, 0.4],
                 [-0.4, 0.4]]
-
-
-''' ## Some template limits below
-## for reference, the default primordial limits I have been using are
-## (for a pivot_scalar of 0.7)
-## [[1.1e-09, 3.19e-09], [0.89, 1.05],
-## And for compressed params,
-## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
-free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4]]
-'''
 
 skewers_label=args.skewers_label
 p1d_label=None
@@ -171,8 +171,7 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 
 
 ## Pass likelihood to sampler
-sampler = emcee_sampler.EmceeSampler(like=like,
-                        free_param_names=free_parameters,verbose=False,
+sampler = emcee_sampler.EmceeSampler(like=like,verbose=False,
                         nwalkers=args.nwalkers,
                         subfolder=args.subfolder)
 

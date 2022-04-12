@@ -20,5 +20,4 @@ export OMP_NUM_THREADS=1
 sampler_dir="/global/cfs/cdirs/desi/users/font/LaCE/lace/sampler/"
 echo "sampler dir", $sampler_dir
 
-python -u $sampler_dir/scripts/resume_sampler.py --subfolder central_sim --chain_num 9 --timeout 0.4
-
+python -u $sampler_dir/scripts/resume_sampler.py --subfolder central_sim --chain_num 9 --timeout 0.4 --nersc

@@ -20,5 +20,5 @@ export OMP_NUM_THREADS=1
 sampler_dir="/global/cfs/cdirs/desi/users/font/LaCE/lace/sampler/"
 echo "sampler dir", $sampler_dir
 
-python -u $sampler_dir/scripts/multiprocess_sampler.py -c $sampler_dir/scripts/example_compressed.config --timeout 0.3 --burn_in 100
+python -u $sampler_dir/scripts/multiprocess_sampler.py -c $sampler_dir/scripts/example_compressed.config --timeout 0.4 --burn_in 100 --nersc
 

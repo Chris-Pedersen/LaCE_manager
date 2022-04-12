@@ -175,6 +175,8 @@ class Likelihood(object):
                     use_compression=use_compression,
                     reduced_IGM=reduced_IGM,
                     extra_p1d_data=None)
+        else:
+            self.extra_p1d_like=None
 
         return
 

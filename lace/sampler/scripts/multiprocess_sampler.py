@@ -42,6 +42,7 @@ parser.add_argument('--prior_Gauss_rms',type=float, help='Width of Gaussian prio
 parser.add_argument('--emu_cov_factor', type=float,help='Factor between 0 and 1 to vary the contribution from emulator covariance')
 parser.add_argument('--emu_noise_var', type=float,help='Emulator noise variable')
 parser.add_argument('--parallel',action='store_true',help='Run sampler in parallel?')
+parser.add_argument('--timeout',default=47,type=float,help='Stop chain after these many hours')
 parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the data covariance by')
 parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
@@ -49,6 +50,7 @@ parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial p
 parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
 parser.add_argument('--reduced_IGM',action='store_true', help='Reduce IGM marginalisation in the case of use_compression=3?')
 parser.add_argument('--use_compression',type=int, help='Go through compression parameters?')
+parser.add_argument('--nersc', action='store_true', help='Running script at NERSC')
 args = parser.parse_args()
 
 test_sim_number=args.test_sim_number
@@ -176,7 +178,7 @@ sampler = emcee_sampler.EmceeSampler(like=like,verbose=False,
                         subfolder=args.subfolder)
 
 ## Copy the config file to the save folder
-shutil.copy(sys.argv[2],sampler.save_directory+"/"+sys.argv[2])
+shutil.copy(sys.argv[2],sampler.save_directory)
 
 for p in sampler.like.free_params:
     print(p.name,p.value,p.min_value,p.max_value)
@@ -187,7 +189,8 @@ def log_prob(theta):
 
 start = time.time()
 sampler.like.go_silent()
-sampler.run_sampler(args.burn_in,args.nsteps,log_prob,parallel=args.parallel,timeout=47.)
+sampler.run_sampler(args.burn_in,args.nsteps,log_prob,parallel=args.parallel,
+                    timeout=args.timeout)
 end = time.time()
 multi_time = end - start
 print("Sampling took {0:.1f} seconds".format(multi_time))
@@ -195,8 +198,9 @@ print("Sampling took {0:.1f} seconds".format(multi_time))
 sampler.write_chain_to_file()
 
 ## Copy corresponding job files to save folder
-jobstring=jobstring="job"+os.environ['SLURM_JOBID']+".out"
-slurmstring="slurm-"+os.environ['SLURM_JOBID']+".out"
-shutil.copy(jobstring,sampler.save_directory+"/"+jobstring)
-shutil.copy(slurmstring,sampler.save_directory+"/"+slurmstring)
+if not args.nersc:
+    jobstring=jobstring="job"+os.environ['SLURM_JOBID']+".out"
+    slurmstring="slurm-"+os.environ['SLURM_JOBID']+".out"
+    shutil.copy(jobstring,sampler.save_directory+"/"+jobstring)
+    shutil.copy(slurmstring,sampler.save_directory+"/"+slurmstring)
 

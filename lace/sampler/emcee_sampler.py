@@ -187,7 +187,7 @@ class EmceeSampler(object):
                                                 blobs_dtype=self.blobs_dtype)
                 if timeout:
                     time_end=time.time() + 3600*timeout
-                for sample in sampler.sample(p0, iterations=burn_in+max_steps,           
+                for sample in sampler.sample(p0, iterations=burn_in+max_steps,
                                         progress=self.progress):
                     # Only check convergence every 100 steps
                     if sampler.iteration % 100 or sampler.iteration < burn_in+1:

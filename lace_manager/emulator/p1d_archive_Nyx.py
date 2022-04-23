@@ -15,9 +15,9 @@ class archiveP1D_Nyx(object):
             linP params will be computed around kp_Mpc."""
 
         if not fname:
-            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
             repo=os.environ['LACE_REPO']
-            fname=repo+'/lace/emulator/sim_suites/test_nyx/models.hdf5'
+            fname=repo+'/lace_manager/emulator/sim_suites/test_nyx/models.hdf5'
             if verbose:
                 print('read Nyx archive from file',fname)
 

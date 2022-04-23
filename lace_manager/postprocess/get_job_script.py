@@ -35,7 +35,7 @@ mpi_tasks_per_node=$(echo "$SLURM_TASKS_PER_NODE" | sed -e  's/^\([0-9][0-9]*\).
 module load python/3.6.4
 module load hdf5/1.10.1
 #! Full path to application executable: 
-lya_scripts="/home/chrisp/Codes/LaCE/lace/postprocess/single_sim_scripts"
+lya_scripts="/home/chrisp/Codes/lace_manager/lace/postprocess/single_sim_scripts"
 application="python3 $lya_scripts/%s"
 # setup options 
 options="%s"

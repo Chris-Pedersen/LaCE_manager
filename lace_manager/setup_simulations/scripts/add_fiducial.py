@@ -7,7 +7,7 @@ Latin hypercube to the simulation suite.
 '''
 
 ## Read original Latin hypercube
-lh="/home/chris/Projects/lace/p1d_emulator/sim_suites/Australia20"
+lh="/home/chris/Projects/lace_manager/p1d_emulator/sim_suites/Australia20"
 with open(lh+"/latin_hypercube.json") as json_file:
     cube=json.load(json_file)
 

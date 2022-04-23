@@ -459,7 +459,7 @@ def generate_treecool_file(output_file='test_TREECOOL.txt',
                     z_mid_HI_reion=7.65, z_end_HeII_reion = 3.5,
                     DeltaTHI = 2.e4, DeltaTHeII = 1.5e+4):
     # input model will be, for now, that of HM2012
-    treecool_dir=os.environ['LACE_REPO']+'/lace/setup_simulations/treecool/'
+    treecool_dir=os.environ['LACE_MANAGER_REPO']+'/lace_manager/setup_simulations/treecool/'
     input_file=treecool_dir+'/TREECOOL_HM12.txt'
     # cosmology in HM2012
     Om=0.3

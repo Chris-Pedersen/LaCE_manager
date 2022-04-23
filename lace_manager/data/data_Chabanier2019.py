@@ -9,9 +9,9 @@ class P1D_Chabanier2019(base_p1d_data.BaseDataP1D):
         """Read measured P1D from Chabanier et al. (2019)."""
 
         # folder storing P1D measurement
-        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-        repo=os.environ['LACE_REPO']
-        basedir=repo+'/lace/data/data_files/Chabanier2019/'
+        assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
+        repo=os.environ['LACE_MANAGER_REPO']
+        basedir=repo+'/lace_manager/data/data_files/Chabanier2019/'
 
         # read redshifts, wavenumbers, power spectra and covariance matrices
         z,k,Pk,cov=self._setup_from_file(basedir,add_syst)

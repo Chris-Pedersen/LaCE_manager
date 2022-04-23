@@ -21,9 +21,9 @@ class P1D_Karacayli_HIRES(base_p1d_data.BaseDataP1D):
         """Read file containing mock P1D"""
 
         # folder storing P1D measurement
-        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-        repo=os.environ['LACE_REPO']
-        basedir=repo+'/lace/data/data_files/Karacayli_HIRES/'
+        assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
+        repo=os.environ['LACE_MANAGER_REPO']
+        basedir=repo+'/lace_manager/data/data_files/Karacayli_HIRES/'
 
         # start by reading the file with measured band power
         p1d_file=basedir+'highres-mock-power-spectrum.txt'

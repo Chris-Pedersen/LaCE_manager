@@ -413,8 +413,8 @@ class EmceeSampler(object):
         if rootdir:
             chain_location=rootdir
         else:
-            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-            chain_location=os.environ['LACE_REPO']+"/lace/sampler/chains/"
+            assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
+            chain_location=os.environ['LACE_MANAGER_REPO']+"/lace_manager/sampler/chains/"
         if subfolder:
             self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
         else:
@@ -561,8 +561,8 @@ class EmceeSampler(object):
         if rootdir:
             chain_location=rootdir
         else:
-            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-            chain_location=os.environ['LACE_REPO']+"/lace/sampler/chains/"
+            assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
+            chain_location=os.environ['LACE_MANAGER_REPO']+"/lace_manager/sampler/chains/"
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it

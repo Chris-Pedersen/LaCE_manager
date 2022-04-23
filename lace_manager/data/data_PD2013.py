@@ -8,9 +8,9 @@ class P1D_PD2013(base_p1d_data.BaseDataP1D):
         """Read measured P1D from files, either FFT or likelihood version."""
 
         # folder storing P1D measurement
-        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-        repo=os.environ['LACE_REPO']
-        basedir=repo+'/lace/data/data_files/PD2013/'
+        assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
+        repo=os.environ['LACE_MANAGER_REPO']
+        basedir=repo+'/lace_manager/data/data_files/PD2013/'
 
         # read redshifts, wavenumbers, power spectra and covariance matrices
         if use_FFT:

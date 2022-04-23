@@ -43,7 +43,7 @@ if verbose:
 nsamples=cube_data['nsamples']
 
 # directory to lace repo
-lya_repo='/home/dc-font1/Codes/lace/'
+lya_repo='/home/dc-font1/Codes/lace_manager/'
 
 # for each sample, run make_class_power and copy the files to the right path
 for sample in range(nsamples):

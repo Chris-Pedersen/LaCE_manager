@@ -7,9 +7,9 @@ import shutil
 import time
 # our own modules
 from lace_manager.data import data_MPGADGET
-from lace_manager.emulator import gp_emulator
+from lace.emulator import gp_emulator
 from lace_manager.emulator import z_emulator
-from lace_manager.emulator import p1d_archive
+from lace.emulator import p1d_archive
 from lace_manager.likelihood import likelihood
 from lace_manager.sampler import emcee_sampler
 

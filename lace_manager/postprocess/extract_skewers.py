@@ -6,7 +6,7 @@ import fake_spectra.tempdens as tdr
 import fake_spectra.griddedspectra as grid_spec 
 # our modules
 from lace_manager.setup_simulations import read_gadget
-from lace_manager.cosmo import camb_cosmo
+from lace.cosmo import camb_cosmo
 from lace_manager.nuisance import thermal_model
 
 def get_skewers_filename(num,n_skewers,width_Mpc,scale_T0=None,

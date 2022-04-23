@@ -22,8 +22,8 @@ class MeanFluxModel(object):
                     basedir="/lace/emulator/sim_suites/Australia20/"):
         """Construct model as a rescaling around a fiducial mean flux evolution"""
 
-        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        repo=os.environ['LYA_EMU_REPO']
+        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+        repo=os.environ['LACE_REPO']
 
         ## Load fiducial model
         fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")

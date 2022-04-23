@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import os
 import json
-from lace_manager.emulator import p1d_archive
+from lace.emulator import p1d_archive
 
 class SimplestEmulator(object):
     """Nearest-grid point emulator for flux P1D."""

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from lace_manager.cosmo import camb_cosmo
+from lace.cosmo import camb_cosmo
 from lace_manager.nuisance import mean_flux_model
 from lace_manager.nuisance import thermal_model
 from lace_manager.nuisance import pressure_model

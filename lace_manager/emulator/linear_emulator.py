@@ -3,8 +3,8 @@ import sys
 import os
 import json
 import scipy.interpolate
-from lace_manager.emulator import p1d_archive
-from lace_manager.emulator import poly_p1d
+from lace.emulator import p1d_archive
+from lace.emulator import poly_p1d
 
 class LinearEmulator(object):
     """Linear interpolation emulator for flux P1D."""

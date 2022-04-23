@@ -19,8 +19,8 @@ class P1D_Karacayli_DESI(base_p1d_data.BaseDataP1D):
         """Read file containing mock P1D"""
 
         # folder storing P1D measurement
-        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        repo=os.environ['LYA_EMU_REPO']
+        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+        repo=os.environ['LACE_REPO']
         basedir=repo+'/lace/data/data_files/Karacayli_DESI/'
     
         # start by reading the file with measured band power

@@ -1,5 +1,5 @@
 import numpy as np
-from lace_manager.cosmo import camb_cosmo
+from lace.cosmo import camb_cosmo
 
 class CMBLikelihood(object):
     """ Object to return estimates of a CMB likelihood for a

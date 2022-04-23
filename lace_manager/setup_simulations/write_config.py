@@ -4,7 +4,7 @@ import numpy as np
 import os
 import json
 from lace_manager.setup_simulations import gen_UVB as UVB
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import fit_linP
 
 def write_genic_file(simdir,cosmo,Ngrid=256,box_Mpc=90,z_ini=99,
         seed=123,paired=False):

@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 import os
 import math
 from scipy.optimize import minimize
-from lace_manager.cosmo import camb_cosmo
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood_parameter
 from lace_manager.likelihood import linear_power_model
 from lace_manager.likelihood import full_theory
 from lace_manager.likelihood import CAMB_model
 from lace_manager.likelihood import marg_p1d_like
-from lace_manager.setup_simulations import read_genic
+from lace.setup_simulations import read_genic
 from lace_manager.setup_simulations import sim_params_cosmo
 from lace_manager.setup_simulations import sim_params_space
 from lace_manager.likelihood import cmb_like

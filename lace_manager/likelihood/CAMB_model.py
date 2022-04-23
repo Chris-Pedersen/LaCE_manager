@@ -1,8 +1,8 @@
 import numpy as np
 import copy
 import camb
-from lace_manager.cosmo import camb_cosmo
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
 from lace_manager.likelihood import likelihood_parameter
 
 class CAMBModel(object):

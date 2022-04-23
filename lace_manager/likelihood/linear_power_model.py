@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from lace_manager.likelihood import likelihood_parameter
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import fit_linP
 
 class LinearPowerModel(object):
     """Store parameters describing the linear power in velocity units.

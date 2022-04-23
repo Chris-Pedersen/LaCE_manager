@@ -13,12 +13,12 @@ from multiprocessing import Pool
 from multiprocessing import Process
 from chainconsumer import ChainConsumer
 # our own modules
-from lace_manager.cosmo import fit_linP
-from lace_manager.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
+from lace.cosmo import camb_cosmo
 from lace_manager.data import data_MPGADGET
 from lace_manager.data import data_PD2013
-from lace_manager.emulator import p1d_archive
-from lace_manager.emulator import gp_emulator
+from lace.emulator import p1d_archive
+from lace.emulator import gp_emulator
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
@@ -413,8 +413,8 @@ class EmceeSampler(object):
         if rootdir:
             chain_location=rootdir
         else:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            chain_location=os.environ['LYA_EMU_REPO']+"/lace/sampler/chains/"
+            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            chain_location=os.environ['LACE_REPO']+"/lace/sampler/chains/"
         if subfolder:
             self.save_directory=chain_location+"/"+subfolder+"/chain_"+str(chain_number)
         else:
@@ -561,8 +561,8 @@ class EmceeSampler(object):
         if rootdir:
             chain_location=rootdir
         else:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            chain_location=os.environ['LYA_EMU_REPO']+"/lace/sampler/chains/"
+            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            chain_location=os.environ['LACE_REPO']+"/lace/sampler/chains/"
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it

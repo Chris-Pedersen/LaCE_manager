@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 # our own modules
-from lace_manager.emulator import gp_emulator
+from lace.emulator import gp_emulator
 from lace_manager.likelihood import likelihood
 from lace_manager.sampler import emcee_sampler
 from lace_manager.data import data_MPGADGET
-from lace_manager.emulator import p1d_archive
+from lace.emulator import p1d_archive
 
 
 rootdir="/media/chris/Hard/Work/EmulatorChains/chains" ## Directory where chains are stored

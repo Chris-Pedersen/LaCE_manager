@@ -3,8 +3,8 @@ import os
 import json
 import h5py
 import matplotlib.pyplot as plt
-from lace_manager.cosmo import camb_cosmo
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
 from lace_manager.postprocess import extract_skewers
 
 class archiveP1D_Nyx(object):
@@ -15,8 +15,8 @@ class archiveP1D_Nyx(object):
             linP params will be computed around kp_Mpc."""
 
         if not fname:
-            assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-            repo=os.environ['LYA_EMU_REPO']
+            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            repo=os.environ['LACE_REPO']
             fname=repo+'/lace/emulator/sim_suites/test_nyx/models.hdf5'
             if verbose:
                 print('read Nyx archive from file',fname)

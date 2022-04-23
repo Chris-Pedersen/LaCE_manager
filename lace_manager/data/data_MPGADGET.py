@@ -9,10 +9,10 @@ from lace_manager.data import data_PD2013
 from lace_manager.data import data_Chabanier2019
 from lace_manager.data import data_Karacayli_DESI
 from lace_manager.data import data_Karacayli_HIRES
-from lace_manager.emulator import p1d_archive
+from lace.emulator import p1d_archive
 from lace_manager.emulator import test_simulation
-from lace_manager.setup_simulations import read_genic
-from lace_manager.cosmo import camb_cosmo
+from lace.setup_simulations import read_genic
+from lace.cosmo import camb_cosmo
 
 class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     """ Class to load an MP-Gadget simulation as a mock

@@ -3,7 +3,7 @@ import sys
 import os
 import json
 import fake_spectra.griddedspectra as grid_spec
-from lace_manager.setup_simulations import read_genic
+from lace.setup_simulations import read_genic
 from lace_manager.postprocess import measure_flux_power as powF
 
 class SnapshotAdmin(object):

@@ -4,9 +4,9 @@ import sys
 import os
 import json
 import matplotlib.pyplot as plt
-from lace_manager.setup_simulations import read_genic
-from lace_manager.cosmo import camb_cosmo
-from lace_manager.cosmo import fit_linP
+from lace.setup_simulations import read_genic
+from lace.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
 
 class archiveP1D(object):
     """Book-keeping of flux P1D measured in a suite of simulations."""
@@ -24,8 +24,8 @@ class archiveP1D(object):
 
         # SHOULD UPDATE DOCSTRING WITH ALL THESE ARGUMENTS
 
-        assert ('LYA_EMU_REPO' in os.environ),'export LYA_EMU_REPO'
-        repo=os.environ['LYA_EMU_REPO']
+        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+        repo=os.environ['LACE_REPO']
 
         self.basedir=basedir
         self.fulldir=repo+basedir

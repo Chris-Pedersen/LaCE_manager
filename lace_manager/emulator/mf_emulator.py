@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from lace_manager.emulator import gp_emulator
-from lace_manager.emulator import p1d_archive
+from lace.emulator import gp_emulator
+from lace.emulator import p1d_archive
 
 class MeanFluxEmulator:
     """

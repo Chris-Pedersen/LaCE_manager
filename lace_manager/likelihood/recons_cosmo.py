@@ -1,8 +1,8 @@
 import numpy as np
 import os
 import camb
-from lace_manager.cosmo import camb_cosmo
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
 from lace_manager.likelihood import linear_power_model
 
 class ReconstructedCosmology(object):

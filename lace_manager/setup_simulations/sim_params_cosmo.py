@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from lace_manager.cosmo import camb_cosmo
-from lace_manager.cosmo import fit_linP
+from lace.cosmo import camb_cosmo
+from lace.cosmo import fit_linP
 
 def cosmo_from_sim_params(param_space,sim_params,verbose=False):
     """Given list of simulation parameters, and fiducial cosmology,

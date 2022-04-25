@@ -95,7 +95,11 @@ def _build_cosmology_params_camb(config):
     params['ombh2'] = omegab*h0**2
     params['mnu'] = mnu
     params['omk'] = omegak
-    params['w'] = config['w0_fld']
+    if 'w0_fld' in config:
+        params['w'] = config['w0_fld']
+    else:
+        print('assume w=-1')
+        params['w'] = -1
     # these are not in Gadget file
     #params['TCMB'] = config["CMBTemperature"]
     #params['As'] = config["PrimordialAmp"]

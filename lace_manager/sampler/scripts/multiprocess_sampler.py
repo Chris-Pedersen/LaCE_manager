@@ -82,7 +82,7 @@ if 'Delta2_star' in args.free_parameters:
 
     if 'ln_tau_1' in args.free_parameters:
         ## 8 IGM parameters (standard)
-        free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
+        free_param_limits=[[0.24, 0.47], [-2.352, -2.25],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
                     [-0.4, 0.4],
@@ -93,7 +93,7 @@ if 'Delta2_star' in args.free_parameters:
                     [-0.4, 0.4]]
     else:
         ## 1 IGM parameter (debugging)
-        free_param_limits=[[1.1e-09, 3.19e-09], [0.89, 1.05],
+        free_param_limits=[[0.24, 0.47], [-2.352, -2.25],
                     [-0.4, 0.4]]
 else:
     ## Sample CMB parameters:

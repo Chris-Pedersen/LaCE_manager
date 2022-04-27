@@ -4,36 +4,52 @@ from lace_manager.data import base_p1d_data
 
 class P1D_Karacayli_DESI(base_p1d_data.BaseDataP1D):
 
-    def __init__(self,diag_cov=True,kmax_kms=0.04):
+    def __init__(self,diag_cov=True,kmax_kms=0.04,
+                    version='ohio-v0'):
         """Read measured P1D from file"""
 
         # read redshifts, wavenumbers, power spectra and covariance matrices
-        z,k,Pk,cov=self._read_file(diag_cov,kmax_kms)
+        z,k,Pk,cov=self._read_file(diag_cov,kmax_kms,version)
 
         base_p1d_data.BaseDataP1D.__init__(self,z,k,Pk,cov)
 
         return
 
 
-    def _read_file(self,diag_cov,kmax_kms):
+    def _read_file(self,diag_cov,kmax_kms,version):
         """Read file containing mock P1D"""
 
         # folder storing P1D measurement
         assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
         repo=os.environ['LACE_MANAGER_REPO']
         basedir=repo+'/lace_manager/data/data_files/Karacayli_DESI/'
+
+        # for now we can only handle diagonal covariances
+        if 'desilite' in version:
+            fname=basedir+'/desilite/desilite-oqe-mock-power-spectrum.txt'
+            Nz=12
+            Nk=19
+            #first line in ascii file containing p1d
+            istart=44
+        else:
+            fname=basedir+'/ohio/desi-y5fp-1.5-4-o3-deconv-power-qmle_kmax0.04.txt'
+            Nz=12
+            Nk=32
+            #first line in ascii file containing p1d
+            istart=42
     
         # start by reading the file with measured band power
-        p1d_file=basedir+'desilite-oqe-mock-power-spectrum.txt'
-        with open(p1d_file, 'r') as reader:
+        print('will read P1D file',fname)
+        with open(fname, 'r') as reader:
             lines=reader.readlines()
         # read number of bins from line 42
-        bins = lines[41].split()
-        Nz = int(bins[1])
-        Nk = int(bins[2])
-        print('read Nz = {} , Nk = {}'.format(Nz,Nk))
+        #bins = lines[41].split()
+        #Nz = int(bins[1])
+        #Nk = int(bins[2])
+        #print('read Nz = {} , Nk = {}'.format(Nz,Nk))
+
         # z k1 k2 kc Pfid ThetaP Pest ErrorP d b t
-        data = lines[44:]
+        data = lines[istart:]
 
         # store unique redshifts 
         inz=[float(line.split()[0]) for line in data]

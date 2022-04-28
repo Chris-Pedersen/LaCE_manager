@@ -689,7 +689,7 @@ class Likelihood(object):
         return sim_linP_params
 
 
-    def plot_p1d(self,values=None,plot_every_iz=1):
+    def plot_p1d(self,values=None,plot_every_iz=1,residuals=False):
         """Plot P1D in theory vs data. If plot_every_iz >1,
             plot only few redshift bins"""
 
@@ -711,29 +711,53 @@ class Likelihood(object):
             z=zs[iz]
             p1d_data=self.data.get_Pk_iz(iz)
             p1d_cov=self.data.get_cov_iz(iz)
+            p1d_err=np.sqrt(np.diag(p1d_cov))
             p1d_theory=emu_p1d[iz]
             cov_theory=emu_cov[iz]
+            err_theory=np.sqrt(np.diag(cov_theory))
             
             if p1d_theory is None:
                 if self.verbose: print(z,'emulator did not provide P1D')
                 continue
             # plot everything
             col = plt.cm.jet(iz/(Nz-1))
-            plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
-                    yerr=np.sqrt(np.diag(p1d_cov))*k_kms/np.pi,fmt="o",ms="4",
-                    label="z=%.1f" % z)
-            plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,color=col,linestyle="dashed")
-            plt.fill_between(k_emu_kms,((p1d_theory+np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,
 
-            ((p1d_theory-np.sqrt(np.diag(cov_theory)))*k_emu_kms)/np.pi,alpha=0.35,color=col)
-                
+            if residuals:
+                # interpolate theory to data kp values
+                model=np.interp(k_kms,k_emu_kms,p1d_theory)
+                # shift data in y axis for clarity
+                yshift=iz/(Nz-1)
+                plt.errorbar(k_kms,p1d_data/model+yshift,color=col,
+                        yerr=p1d_err/model,
+                        fmt="o",ms="4",label="z=%.1f" % z)
+                plt.plot(k_emu_kms,p1d_theory/p1d_theory+yshift,
+                        color=col,linestyle="dashed")
+                plt.fill_between(k_emu_kms,
+                        (p1d_theory+err_theory)/p1d_theory+yshift,
+                        (p1d_theory-err_theory)/p1d_theory+yshift,
+                        alpha=0.35,color=col)
+            else:
+                plt.errorbar(k_kms,p1d_data*k_kms/np.pi,color=col,
+                        yerr=p1d_err*k_kms/np.pi,
+                        fmt="o",ms="4",label="z=%.1f" % z)
+                plt.plot(k_emu_kms,(p1d_theory*k_emu_kms)/np.pi,
+                        color=col,linestyle="dashed")
+                plt.fill_between(k_emu_kms,(p1d_theory+err_theory)*k_emu_kms/np.pi,
+                        (p1d_theory-err_theory)*k_emu_kms/np.pi,
+                        alpha=0.35,color=col)
+
+        if residuals:
+            plt.ylabel(r'$P_{\rm 1D}(z,k_\parallel)$ residuals')
+            plt.ylim(0.9,2.1)
+        else:
+            plt.yscale('log')
+            plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
+            plt.ylim(0.005,0.6)
+
         plt.plot(-10,-10,linestyle="-",label="Data",color="k")
         plt.plot(-10,-10,linestyle=":",label="Fit",color="k")
-        plt.yscale('log')
         plt.legend()
         plt.xlabel('k [s/km]')
-        plt.ylabel(r'$k_\parallel \, P_{\rm 1D}(z,k_\parallel) / \pi$')
-        plt.ylim(0.005,0.6)
         plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
         plt.tight_layout()
         plt.show()

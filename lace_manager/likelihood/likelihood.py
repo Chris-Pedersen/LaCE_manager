@@ -757,7 +757,7 @@ class Likelihood(object):
         plt.plot(-10,-10,linestyle="-",label="Data",color="k")
         plt.plot(-10,-10,linestyle=":",label="Fit",color="k")
         plt.legend()
-        plt.xlabel('k [s/km]')
+        plt.xlabel('k_\parallel [s/km]')
         plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
         plt.tight_layout()
         plt.show()

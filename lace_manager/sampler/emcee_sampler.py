@@ -766,7 +766,8 @@ class EmceeSampler(object):
         c.add_chain(params_plot,parameters=strings_plot,name="Chains")
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
-                    label_font_size=25, max_ticks=4)
+                    label_font_size=25, max_ticks=4,
+                    usetex=False, serif=False)
 
         ## Decide which parameters to plot
         if plot_params==None:
@@ -908,7 +909,8 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
             truth_dict=sampler.truth
     
     c.configure(diagonal_tick_labels=False, tick_font_size=15,
-                label_font_size=25, max_ticks=4)
+                label_font_size=25, max_ticks=4,
+                usetex=False, serif=False)
     if plot_params==None:
         fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
     else:

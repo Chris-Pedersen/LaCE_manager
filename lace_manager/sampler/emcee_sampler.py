@@ -747,7 +747,7 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,plot_params=None,cmb_prior=False):
+    def plot_corner(self,plot_params=None,cmb_prior=False,usetex=True,serif=True):
         """ Make corner plot in ChainConsumer
          - plot_params: Pass a list of parameters to plot (in LaTeX form),
                         or leave as None to
@@ -767,7 +767,7 @@ class EmceeSampler(object):
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
                     label_font_size=25, max_ticks=4,
-                    usetex=False, serif=False)
+                    usetex=usetex, serif=serif)
 
         ## Decide which parameters to plot
         if plot_params==None:
@@ -883,7 +883,7 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
 blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
-                    rootdir=None,subfolder=None):
+                    rootdir=None,subfolder=None,usetex=True,serif=True):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
      - plot_params: list of parameters (in code variables, not latex form)
@@ -910,7 +910,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     
     c.configure(diagonal_tick_labels=False, tick_font_size=15,
                 label_font_size=25, max_ticks=4,
-                usetex=False, serif=False)
+                usetex=usetex, serif=serif)
     if plot_params==None:
         fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
     else:

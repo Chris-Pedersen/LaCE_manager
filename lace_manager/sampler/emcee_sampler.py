@@ -327,12 +327,26 @@ class EmceeSampler(object):
         self.like.go_silent()
 
 
-    def get_chain(self,cube=True):
-        """Figure out whether chain has been read from file, or computed"""
+    def get_chain(self,cube=True,delta_lnprob_cut=None):
+        """Figure out whether chain has been read from file, or computed.
+            - if cube=True, return values in range [0,1]
+            - if delta_lnprob_cut is set, use it to remove low-prob islands"""
 
         chain=self.chain#.get_chain(flat=True,discard=self.burnin_nsteps)
         lnprob=self.lnprob#.get_log_prob(flat=True,discard=self.burnin_nsteps)
         blobs=self.blobs
+
+        if delta_lnprob_cut:
+            max_lnprob=np.max(lnprob)
+            cut_lnprob=max_lnprob-delta_lnprob_cut
+            mask=lnprob>cut_lnprob
+            # total number and masked points in chain
+            nt=len(lnprob)
+            nm=sum(mask)
+            print('will keep {} \ {} points from chain'.format(nm,nt))
+            chain=chain[mask]
+            lnprob=lnprob[mask]
+            blobs=blobs[mask]
 
         if cube == False:
             cube_values=chain
@@ -364,12 +378,14 @@ class EmceeSampler(object):
         return
 
 
-    def get_all_params(self):
+    def get_all_params(self,delta_lnprob_cut=None):
         """ Get a merged array of both sampled and derived parameters
             returns a 2D array of all parameters, and an ordered list of
-            the LaTeX strings for each """
+            the LaTeX strings for each.
+                - if delta_lnprob_cut is set, keep only high-prob points"""
         
-        chain,lnprob,blobs=self.get_chain(cube=False)
+        chain,lnprob,blobs=self.get_chain(cube=False,
+                    delta_lnprob_cut=delta_lnprob_cut)
 
         if blobs==None:
              ## Old chains will have no blobs
@@ -601,12 +617,12 @@ class EmceeSampler(object):
         return
 
 
-    def get_best_fit(self):
-        """ Return an array of best fit
-        values from the MCMC chain, in unit
-        likelihood space """
+    def get_best_fit(self,delta_lnprob_cut=None):
+        """ Return an array of best fit values (mean) from the MCMC chain,
+            in unit likelihood space.
+                - if delta_lnprob_cut is set, use only high-prob points"""
 
-        chain,lnprob,blobs=self.get_chain()
+        chain,lnprob,blobs=self.get_chain(delta_lnprob_cut=delta_lnprob_cut)
         mean_values=[]
         for parameter_distribution in np.swapaxes(chain,0,1):
             mean_values.append(np.mean(parameter_distribution))
@@ -614,7 +630,7 @@ class EmceeSampler(object):
         return mean_values
 
 
-    def write_chain_to_file(self):
+    def write_chain_to_file(self,residuals=False,plot_nersc=False):
         """Write flat chain to file"""
 
         saveDict={}
@@ -703,11 +719,11 @@ class EmceeSampler(object):
         ## Using try as have latex issues when running on compute
         ## nodes on some clusters
         try:
-            self.plot_best_fit()
+            self.plot_best_fit(residuals=residuals)
         except:
             print("Can't plot best fit")
         try:
-            self.plot_prediction()
+            self.plot_prediction(residuals=residuals)
         except:
             print("Can't plot prediction")
         try:
@@ -715,19 +731,20 @@ class EmceeSampler(object):
         except:
             print("Can't plot autocorrelation time")
         try:
-            self.plot_corner()
+            self.plot_corner(usetex=(not plot_nersc),serif=(not plot_nersc))
         except:
             print("Can't plot corner")
 
         return
 
 
-    def plot_histograms(self,cube=False):
+    def plot_histograms(self,cube=False,delta_lnprob_cut=None):
         """Make histograms for all dimensions, using re-normalized values if
-            cube=True"""
+            cube=True
+            - if delta_lnprob_cut is set, use only high-prob points"""
 
         # get chain (from sampler or from file)
-        chain,lnprob,blobs=self.get_chain()
+        chain,lnprob,blobs=self.get_chain(delta_lnprob_cut=delta_lnprob_cut)
         plt.figure()
 
         for ip in range(self.ndim):
@@ -747,15 +764,18 @@ class EmceeSampler(object):
         return
 
 
-    def plot_corner(self,plot_params=None,cmb_prior=False,usetex=True,serif=True):
+    def plot_corner(self,plot_params=None,cmb_prior=False,
+                delta_lnprob_cut=None,usetex=True,serif=True):
         """ Make corner plot in ChainConsumer
-         - plot_params: Pass a list of parameters to plot (in LaTeX form),
+            - plot_params: Pass a list of parameters to plot (in LaTeX form),
                         or leave as None to
-                        plot all (including derived) """
+                        plot all (including derived)
+            - if delta_lnprob_cut is set, keep only high-prob points"""
 
         c=ChainConsumer()
 
-        params_plot, strings_plot=self.get_all_params()
+        params_plot, strings_plot=self.get_all_params(
+                                            delta_lnprob_cut=delta_lnprob_cut)
 
         if cmb_prior==True:
             mean_cmb = self.like.cmb_like.true_values
@@ -799,19 +819,21 @@ class EmceeSampler(object):
         return
 
 
-    def plot_best_fit(self,figsize=(8,6)):
+    def plot_best_fit(self,figsize=(8,6),plot_every_iz=1,
+                residuals=False,delta_lnprob_cut=None):
 
         """ Plot the P1D of the data and the emulator prediction
         for the MCMC best fit
         """
 
         ## Get best fit values for each parameter
-        mean_value=self.get_best_fit()
+        mean_value=self.get_best_fit(delta_lnprob_cut=delta_lnprob_cut)
         print("Mean values:", mean_value)
         
         plt.figure(figsize=figsize)
         plt.title("MCMC best fit")
-        self.like.plot_p1d(values=mean_value)
+        self.like.plot_p1d(values=mean_value,
+                plot_every_iz=plot_every_iz,residuals=residuals)
 
         if self.save_directory is not None:
             plt.savefig(self.save_directory+"/best_fit.pdf")
@@ -821,7 +843,8 @@ class EmceeSampler(object):
         return
 
 
-    def plot_prediction(self,figsize=(8,6),values=None):
+    def plot_prediction(self,figsize=(8,6),values=None,plot_every_iz=1,
+                residuals=False):
 
         """ Plot the P1D of the data and the emulator prediction
         for the fiducial model """
@@ -831,7 +854,8 @@ class EmceeSampler(object):
             plt.title("Fiducial model")
         else:
             plt.title("P1D at %s" % values )
-        self.like.plot_p1d(values=values)
+        self.like.plot_p1d(values=values,
+                plot_every_iz=plot_every_iz,residuals=residuals)
         
         if self.save_directory is not None:
             plt.savefig(self.save_directory+"/fiducial.pdf")
@@ -883,13 +907,15 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
 blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
-                    rootdir=None,subfolder=None,usetex=True,serif=True):
+                    rootdir=None,subfolder=None,delta_lnprob_cut=None,
+                    usetex=True,serif=True):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
      - plot_params: list of parameters (in code variables, not latex form)
                     to plot if only a subset is desired
      - save_string: to save the plot. Must include
-                    file extension (i.e. .pdf, .png etc) """
+                    file extension (i.e. .pdf, .png etc)
+     - if delta_lnprob_cut is set, keep only high-prob points"""
     
     assert len(chain_files)==len(labels)
     
@@ -900,7 +926,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     for aa,chain_file in enumerate(chain_files):
         sampler=EmceeSampler(read_chain_file=chain_file,
                                 subfolder=subfolder,rootdir=rootdir)
-        params,strings=sampler.get_all_params()
+        params,strings=sampler.get_all_params(delta_lnprob_cut=delta_lnprob_cut)
         c.add_chain(params,parameters=strings,name=labels[aa])
         
         ## Do not check whether truth results are the same for now
@@ -911,6 +937,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     c.configure(diagonal_tick_labels=False, tick_font_size=15,
                 label_font_size=25, max_ticks=4,
                 usetex=usetex, serif=serif)
+
     if plot_params==None:
         fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)
     else:

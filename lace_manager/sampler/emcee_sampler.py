@@ -43,7 +43,6 @@ class EmceeSampler(object):
             if self.verbose: print('will read chain from file',read_chain_file)
             assert not like, "likelihood specified but reading chain from file"
             self.read_chain_from_file(read_chain_file,rootdir,subfolder)
-            self.p0=None
             self.burnin_pos=None
         else: 
             self.like=like
@@ -64,9 +63,6 @@ class EmceeSampler(object):
             else:
                 self.nwalkers=10*self.ndim
             if self.verbose: print('setup with',self.nwalkers,'walkers')
-            # setup sampler
-            # setup walkers
-            self.p0=self.get_initial_walkers()
 
         ## Set up list of parameter names in tex format for plotting
         self.paramstrings=[]
@@ -284,8 +280,11 @@ class EmceeSampler(object):
         return
 
 
-    def get_initial_walkers(self):
-        """Setup initial states of walkers in sensible points"""
+    def get_initial_walkers(self,initial=0.1):
+        """Setup initial states of walkers in sensible points
+           -- initial will set a range within unit volume around the
+              fiducial values to initialise walkers (set to 0.5 to
+              distribute across full prior volume) """
 
 
         ndim=self.ndim
@@ -296,6 +295,7 @@ class EmceeSampler(object):
 
         if self.like.prior_Gauss_rms is None:
             p0=np.random.rand(ndim*nwalkers).reshape((nwalkers,ndim))
+            p0=p0*initial+0.5
         else:
             rms=self.like.prior_Gauss_rms
             p0=np.ndarray([nwalkers,ndim])

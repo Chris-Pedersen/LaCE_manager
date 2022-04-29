@@ -43,7 +43,6 @@ class EmceeSampler(object):
             if self.verbose: print('will read chain from file',read_chain_file)
             assert not like, "likelihood specified but reading chain from file"
             self.read_chain_from_file(read_chain_file,rootdir,subfolder)
-            self.p0=None
             self.burnin_pos=None
         else: 
             self.like=like
@@ -64,9 +63,6 @@ class EmceeSampler(object):
             else:
                 self.nwalkers=10*self.ndim
             if self.verbose: print('setup with',self.nwalkers,'walkers')
-            # setup sampler
-            # setup walkers
-            self.p0=self.get_initial_walkers()
 
         ## Set up list of parameter names in tex format for plotting
         self.paramstrings=[]
@@ -284,8 +280,11 @@ class EmceeSampler(object):
         return
 
 
-    def get_initial_walkers(self):
-        """Setup initial states of walkers in sensible points"""
+    def get_initial_walkers(self,initial=0.1):
+        """Setup initial states of walkers in sensible points
+           -- initial will set a range within unit volume around the
+              fiducial values to initialise walkers (set to 0.5 to
+              distribute across full prior volume) """
 
 
         ndim=self.ndim
@@ -296,6 +295,7 @@ class EmceeSampler(object):
 
         if self.like.prior_Gauss_rms is None:
             p0=np.random.rand(ndim*nwalkers).reshape((nwalkers,ndim))
+            p0=p0*initial+0.5
         else:
             rms=self.like.prior_Gauss_rms
             p0=np.ndarray([nwalkers,ndim])
@@ -765,7 +765,7 @@ class EmceeSampler(object):
 
 
     def plot_corner(self,plot_params=None,cmb_prior=False,
-                delta_lnprob_cut=None):
+                delta_lnprob_cut=None,usetex=True,serif=True):
         """ Make corner plot in ChainConsumer
             - plot_params: Pass a list of parameters to plot (in LaTeX form),
                         or leave as None to
@@ -787,7 +787,7 @@ class EmceeSampler(object):
 
         c.configure(diagonal_tick_labels=False, tick_font_size=10,
                     label_font_size=25, max_ticks=4,
-                    usetex=False, serif=False)
+                    usetex=usetex, serif=serif)
 
         ## Decide which parameters to plot
         if plot_params==None:
@@ -907,7 +907,8 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
 blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
-                    rootdir=None,subfolder=None,delta_lnprob_cut=None):
+                    rootdir=None,subfolder=None,delta_lnprob_cut=None,
+                    usetex=True,serif=True):
     """ Function to take a list of chain files and overplot the chains
     Pass a list of chain files (ints) and a list of labels (strings)
      - plot_params: list of parameters (in code variables, not latex form)
@@ -935,7 +936,7 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     
     c.configure(diagonal_tick_labels=False, tick_font_size=15,
                 label_font_size=25, max_ticks=4,
-                usetex=False, serif=False)
+                usetex=usetex, serif=serif)
 
     if plot_params==None:
         fig = c.plotter.plot(figsize=(15,15),truth=truth_dict)

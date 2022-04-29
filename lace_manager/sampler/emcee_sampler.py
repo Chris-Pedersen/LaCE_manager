@@ -630,7 +630,7 @@ class EmceeSampler(object):
         return mean_values
 
 
-    def write_chain_to_file(self):
+    def write_chain_to_file(self,residuals=False,plot_nersc=False):
         """Write flat chain to file"""
 
         saveDict={}
@@ -719,11 +719,11 @@ class EmceeSampler(object):
         ## Using try as have latex issues when running on compute
         ## nodes on some clusters
         try:
-            self.plot_best_fit()
+            self.plot_best_fit(residuals=residuals)
         except:
             print("Can't plot best fit")
         try:
-            self.plot_prediction()
+            self.plot_prediction(residuals=residuals)
         except:
             print("Can't plot prediction")
         try:
@@ -731,7 +731,7 @@ class EmceeSampler(object):
         except:
             print("Can't plot autocorrelation time")
         try:
-            self.plot_corner()
+            self.plot_corner(usetex=(not plot_nersc),serif=(not plot_nersc))
         except:
             print("Can't plot corner")
 

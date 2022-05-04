@@ -30,11 +30,13 @@ class EmceeSampler(object):
     def __init__(self,like=None,
                         nwalkers=None,read_chain_file=None,verbose=False,
                         subfolder=None,rootdir=None,
-                        save_chain=True,progress=False):
+                        save_chain=True,progress=False,
+                        train_when_reading=True):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain.
             rootdir allows user to search for saved chains in a different
-            location to the code itself """
+            location to the code itself.
+            If not train_when_reading, emulator can not be used when reading."""
 
         self.verbose=verbose
         self.progress=progress
@@ -42,7 +44,8 @@ class EmceeSampler(object):
         if read_chain_file:
             if self.verbose: print('will read chain from file',read_chain_file)
             assert not like, "likelihood specified but reading chain from file"
-            self.read_chain_from_file(read_chain_file,rootdir,subfolder)
+            self.read_chain_from_file(read_chain_file,rootdir,subfolder,
+                        train_when_reading)
             self.burnin_pos=None
         else: 
             self.like=like
@@ -423,8 +426,9 @@ class EmceeSampler(object):
         return all_params, all_strings
 
 
-    def read_chain_from_file(self,chain_number,rootdir,subfolder):
-        """Read chain from file, and check parameters"""
+    def read_chain_from_file(self,chain_number,rootdir,subfolder,
+                train_when_reading):
+        """Read chain from file, check parameters and setup likelihood"""
         
         if rootdir:
             chain_location=rootdir
@@ -464,14 +468,14 @@ class EmceeSampler(object):
         ## Set up the emulators
         if config["z_emulator"]:
             emulator=z_emulator.ZEmulator(paramList=config["paramList"],
-                                train=True,
+                                train=train_when_reading,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
                                 reduce_var_mf=reduce_var,
                                 passarchive=archive,verbose=self.verbose)
         else:
             emulator=gp_emulator.GPEmulator(paramList=config["paramList"],
-                                train=True,
+                                train=train_when_reading,
                                 emu_type=config["emu_type"],
                                 kmax_Mpc=config["kmax_Mpc"],
                                 asymmetric_kernel=config["asym_kernel"],
@@ -925,7 +929,8 @@ def compare_corners(chain_files,labels,plot_params=None,save_string=None,
     ## Add each chain we want to plot
     for aa,chain_file in enumerate(chain_files):
         sampler=EmceeSampler(read_chain_file=chain_file,
-                                subfolder=subfolder,rootdir=rootdir)
+                                subfolder=subfolder,rootdir=rootdir,
+                                train_when_reading=False)
         params,strings=sampler.get_all_params(delta_lnprob_cut=delta_lnprob_cut)
         c.add_chain(params,parameters=strings,name=labels[aa])
         

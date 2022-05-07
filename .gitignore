@@ -10,3 +10,5 @@ lace/*/__pycache__/
 notebooks/.ipynb_checkpoints/
 notebooks/postprocess_PIC/.ipynb_checkpoints/
 notebooks/development/.ipynb_checkpoints/
+lace/sampler/chains
+lace/sampler/logs

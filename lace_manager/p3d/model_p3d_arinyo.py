@@ -1,6 +1,6 @@
 import numpy as np
 import scipy
-import camb_cosmo
+from lace.cosmo import camb_cosmo
 
 def get_linP_interp(cosmo,zs,camb_results):
     """ Ask CAMB for an interpolator of linear power. """

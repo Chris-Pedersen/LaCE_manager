@@ -47,7 +47,7 @@ class SnapshotAdmin(object):
             self.scales_tau=[1.0]
 
 
-    def get_all_flux_power(self):
+    def get_all_flux_power(self,add_p3d=False):
         """Loop over all skewers, and return flux power for each"""
 
         post_dir=self.data['post_dir']
@@ -76,7 +76,7 @@ class SnapshotAdmin(object):
 
             # loop over tau scalings
             for scale_tau in self.scales_tau:
-                k,p1d,mF=powF.measure_F_p1D_Mpc(skewers,scale_tau,L_Mpc=L_Mpc)
+                k,p1d,mF=powF.measure_F_p1d_Mpc(skewers,scale_tau,L_Mpc=L_Mpc)
                 info_p1d={'k_Mpc':list(k),'p1d_Mpc':list(p1d),'mF':mF}
                 info_p1d['scale_tau']=scale_tau
                 # add information about skewers and temperature rescaling
@@ -88,6 +88,12 @@ class SnapshotAdmin(object):
                 info_p1d['sim_scale_gamma']=sim_scale_gamma
                 if 'kF_Mpc' in self.data:
                     info_p1d['kF_Mpc'] = self.data['kF_Mpc']
+                # try to add also P3D
+                if add_p3d:
+                    # being lazy for now
+                    info_p3d=powF.measure_p3d_Mpc(skewers,scale_tau,L_Mpc=L_Mpc)
+                    info_p1d['p3d_data']=info_p3d
+
                 p1d_data.append(info_p1d)
 
         self.p1d_data=p1d_data

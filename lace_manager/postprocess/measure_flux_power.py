@@ -145,11 +145,12 @@ def measure_p3d_Mpc(skewers,scale_tau,L_Mpc,
                     statistic = 'mean', bins = [k_bin_edges,mu_bin_edges])[0]
     print(time.asctime(),'got binned mu')
 
+    # convert to list so that we can use json dump
+    results['k_Mpc'] = binned_k.tolist()
+    results['mu'] = binned_mu.tolist()
+    results['counts'] = binned_counts.tolist()
     # quantity above is dimensionless, multiply by box size (in Mpc)
-    results['p3d_Mpc'] = binned_p3d * L_Mpc**3
-    results['k_Mpc'] = binned_k
-    results['mu'] = binned_mu
-    results['counts'] = binned_counts
+    results['p3d_Mpc'] = (binned_p3d * L_Mpc**3).tolist()
 
     return results
 

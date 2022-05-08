@@ -77,7 +77,7 @@ class SnapshotAdmin(object):
             # loop over tau scalings
             for scale_tau in self.scales_tau:
                 k,p1d,mF=powF.measure_F_p1d_Mpc(skewers,scale_tau,L_Mpc=L_Mpc)
-                info_p1d={'k_Mpc':list(k),'p1d_Mpc':list(p1d),'mF':mF}
+                info_p1d={'k_Mpc':k.tolist(),'p1d_Mpc':p1d.tolist(),'mF':mF}
                 info_p1d['scale_tau']=scale_tau
                 # add information about skewers and temperature rescaling
                 info_p1d['sk_file']=sk_file

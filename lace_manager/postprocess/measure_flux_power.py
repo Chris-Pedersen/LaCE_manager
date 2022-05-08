@@ -41,7 +41,7 @@ def measure_p1d_Mpc(field,L_Mpc):
     return k_Mpc, p1d_Mpc
 
 
-def measure_F_p1D_Mpc(skewers,scale_tau,L_Mpc):
+def measure_F_p1d_Mpc(skewers,scale_tau,L_Mpc):
     """ Measure 1D power spectrum of delta_F, after rescaling optical depth. """
 
     # obtain transmitted flux fraction, after rescaling
@@ -88,11 +88,12 @@ def get_box_geometry(grid,L_Mpc):
     return results
     
 
-def measure_p3d_Mpc(skewers,L_Mpc,n_k_bins=20,k_Mpc_max=20.0,n_mu_bins=16):
+def measure_p3d_Mpc(skewers,scale_tau,L_Mpc,
+            n_k_bins=20,k_Mpc_max=20.0,n_mu_bins=16):
     """ Compute 3D power spectrum of input grid of skewers. """
 
     # obtain transmitted flux fraction, after rescaling
-    F = get_transmitted_flux_fraction(skewers,scale_tau=1.0)
+    F = get_transmitted_flux_fraction(skewers,scale_tau=scale_tau)
     mF = np.mean(F)
     delta_F = F / mF - 1.0
 
@@ -101,8 +102,9 @@ def measure_p3d_Mpc(skewers,L_Mpc,n_k_bins=20,k_Mpc_max=20.0,n_mu_bins=16):
     print(time.asctime(),'got box geometry')
 
     # collect relevant information 
-    results={'z':skewers.red,'mean_flux':mF,'n_xy':box['n_xy'],
-                'n_z':box['n_z'],'d_xy':box['d_xy'],'d_z':box['d_z'],
+    results={'z':skewers.red,'mean_flux':mF,
+                'n_xy':box['n_xy'],'n_z':box['n_z'],
+                'd_xy':box['d_xy'],'d_z':box['d_z'],
                 'n_k_bins':n_k_bins,'k_Mpc_max':k_Mpc_max,'n_mu_bins':n_mu_bins}
 
     # get Fourier modes

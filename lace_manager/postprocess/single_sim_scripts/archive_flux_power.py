@@ -19,6 +19,7 @@ parser.add_argument('--n_skewers', type=int, default=10, help='Number of skewers
 parser.add_argument('--width_Mpc', type=float, default=0.1, help='Cell width (in Mpc)',required=False)
 parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separated list of optical depth scalings to use.',required=False)
 parser.add_argument('--p1d_label', type=str, default=None, help='String identifying P1D measurement and / or tau scaling.',required=False)
+parser.add_argument('--add_p3d', action='store_true', help='Compute also P3D from skewers grid',required=False)
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 args = parser.parse_args()
 
@@ -62,7 +63,7 @@ if verbose:
     print('snapshot has {} temperature rescalings'.format(Nsk))
 
 # measure flux power for all tau scalings, for all temperature scalings
-archive_p1d=snapshot.get_all_flux_power(simdir)
+archive_p1d=snapshot.get_all_flux_power(simdir,add_p3d=args.add_p3d)
 
 # write all measured power in a JSON file
 snapshot.write_p1d_json(p1d_label=args.p1d_label)

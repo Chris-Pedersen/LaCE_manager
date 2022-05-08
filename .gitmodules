@@ -1,0 +1,3 @@
+[submodule "LaCE"]
+	path = LaCE
+	url = git@github.com:igmhub/LaCE.git

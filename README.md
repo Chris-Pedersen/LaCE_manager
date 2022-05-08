@@ -5,10 +5,12 @@ https://arxiv.org/abs/2011.15127.
 
 ## Installation
 
-Set an environment variable `export LYA_EMU_REPO=/path/to/repo/LaCE`. This will be needed to use the code, so its best to have this
-in something like a `.bashrc` so it is always defined.
+1. Set environment variables: `export LACE_MANAGER_REPO=/path/to/repo/LaCE_Manager` and `export LACE_REPO=/path/to/repo/LaCE`. Best to set this in a `.bashrc` or similar.
+2. Ensure the python dependencies below are installed
+3. Run `git submodule init && git submodule update` in the `LaCE_manager` repo
+4. `cd LaCE` and run `python3 setup.py install --user`
+5. `cd ..` and run `python3 setup.py install --user`
 
-Run `python setup.py install --user` after ensuring dependencies listed below are met.
 
 #### Dependencies:
 Python version 3.6 or later is necessary due to `CAMB` version dependencies.

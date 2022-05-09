@@ -158,12 +158,12 @@ def measure_p3d_Mpc(skewers,scale_tau,L_Mpc,
 def plot_p3d(results,downsample_mu=3,savefig=None):
     """ Make simple plot for measured P3D, for a few mu bins. """
 
-    p3d_Mpc=results['p3d_Mpc']
-    k_Mpc=results['k_Mpc']
-    mu=results['mu']
-    counts=results['counts']
+    p3d_Mpc=np.array(results['p3d_Mpc'])
+    k_Mpc=np.array(results['k_Mpc'])
+    mu=np.array(results['mu'])
+    counts=np.array(results['counts'])
     # plot p3d in snapshot
-    n_mu=results['mu'].shape[1]
+    n_mu=mu.shape[1]
     mu_bin_edges = np.linspace(0., 1.,n_mu + 1)
     cm=plt.get_cmap('hsv')
     for i in range(0,n_mu,downsample_mu):

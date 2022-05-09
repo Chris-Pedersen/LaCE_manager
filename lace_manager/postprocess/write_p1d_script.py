@@ -13,7 +13,7 @@ def string_from_list(in_list):
 
 
 def get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
-                scales_tau,p1d_label,verbose):
+                scales_tau,p1d_label,add_p3d,verbose):
     """ Option string to pass to python script in SLURM"""
 
     # make sure scales are comma-separated string (and not lists)
@@ -27,6 +27,8 @@ def get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
     options+='--scales_tau {} '.format(str_scales_tau)
     if p1d_label is not None:
         options+='--p1d_label {} '.format(p1d_label)
+    if add_p3d:
+        options+='--add_p3d '
     if verbose:
         options+='--verbose'
 
@@ -34,12 +36,12 @@ def get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
 
 
 def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
-                scales_tau,time,p1d_label,machine,verbose):
+                scales_tau,time,p1d_label,add_p3d,machine,verbose):
     """ Generate a SLURM file to measure p1d for a given snapshot."""
 
     # construct string with options to be passed to python script
     options=get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
-                scales_tau,p1d_label,verbose)
+                scales_tau,p1d_label,add_p3d,verbose)
 
     if verbose:
         print('print options: '+options)
@@ -59,7 +61,7 @@ def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
 
 def write_p1d_scripts_in_sim(post_dir,n_skewers,width_Mpc,
                 scales_tau,time,zmax,verbose,p1d_label=None,
-                run=False,machine='hypatia'):
+                add_p3d=False,run=False,machine='hypatia'):
     """ Generate a SLURM file for each snapshot in the simulation, to read
         skewers for different thermal histories and measure p1d."""
     
@@ -79,8 +81,8 @@ def write_p1d_scripts_in_sim(post_dir,n_skewers,width_Mpc,
             slurm_script=post_dir+'/p1d_%s.sub'%snap
             write_p1d_script(script_name=slurm_script,post_dir=post_dir,
                         snap_num=snap,n_skewers=n_skewers,width_Mpc=width_Mpc,
-                        scales_tau=scales_tau,time=time,
-                        p1d_label=p1d_label,machine=machine,verbose=verbose)
+                        scales_tau=scales_tau,time=time,p1d_label=p1d_label,
+                        add_p3d=add_p3d,machine=machine,verbose=verbose)
             if run:
                 info_file=post_dir+'/info_sub_p1d_'+str(snap)
                 if verbose:

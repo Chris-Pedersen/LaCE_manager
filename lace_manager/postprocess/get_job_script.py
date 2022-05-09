@@ -90,8 +90,8 @@ def get_cori_script(name,postprocess_script,options,output_files):
 #SBATCH --nodes=1
 #SBATCH --time=00:30:00
 #SBATCH -J %s
-#SBATCH -o %s.out
-#SBATCH -e %s.err
+#SBATCH -o %s-%j.out
+#SBATCH -e %s-%j.err
 
 ## Load modules
 module load python

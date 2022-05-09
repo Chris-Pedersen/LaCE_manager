@@ -22,6 +22,7 @@ parser.add_argument('--scales_tau', type=str, default='1.0', help='Comma-separat
 parser.add_argument('--time', type=str, default='01:00:00', help='String formatted time to pass to SLURM script')
 parser.add_argument('--zmax', type=float, default=5.5, help='Measure p1d for snapshots below this redshift')
 parser.add_argument('--p1d_label', type=str, default=None, help='String identifying P1D measurement and / or tau scaling.',required=False)
+parser.add_argument('--add_p3d', action='store_true', help='Measure also 3D P(k)')
 parser.add_argument('--run', action='store_true', help='Actually submit the SLURM scripts')
 parser.add_argument('--machine', type=str, default="hypatia", help='Specify machine where scripts are run (hypatia, cori)',required=False)
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
@@ -65,7 +66,7 @@ for sample in range(nsamples):
         print('sim dir',post_dir+sim_tag)
         wps.write_p1d_scripts_in_sim(post_dir=post_dir+sim_tag,
                 n_skewers=args.n_skewers,width_Mpc=args.width_Mpc,
-                scales_tau=args.scales_tau,
+                scales_tau=args.scales_tau,add_p3d=args.add_p3d,
                 time=args.time,zmax=args.zmax,
                 verbose=verbose,p1d_label=args.p1d_label,
                 run=args.run,machine=args.machine)

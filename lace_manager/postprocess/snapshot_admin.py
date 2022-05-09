@@ -23,7 +23,7 @@ class SnapshotAdmin(object):
         if post_dir:
             print('use',post_dir,'as post-processing directory')
             self.data['post_dir']=post_dir
-            self.data['raw_dir']='NA'
+            self.data['raw_dir']=None
             self.data['skewers_dir']=post_dir+'/skewers/'
         else:
             if 'post_dir' in self.data:

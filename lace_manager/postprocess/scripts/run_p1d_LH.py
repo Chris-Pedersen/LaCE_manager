@@ -25,6 +25,7 @@ parser.add_argument('--p1d_label', type=str, default=None, help='String identify
 parser.add_argument('--add_p3d', action='store_true', help='Measure also 3D P(k)')
 parser.add_argument('--run', action='store_true', help='Actually submit the SLURM scripts')
 parser.add_argument('--machine', type=str, default="hypatia", help='Specify machine where scripts are run (hypatia, cori)',required=False)
+parser.add_argument('--queue', type=str, default="debug", help='Specify queue to use at NERSC (debug, regular)',required=False)
 parser.add_argument('--verbose', action='store_true', help='Print runtime information',required=False)
 
 args = parser.parse_args()
@@ -63,10 +64,10 @@ for sample in range(nsamples):
     for sim in ['sim_plus','sim_minus']:
         # label identifying this sim (to be used in full path)
         sim_tag='/sim_pair_{}/{}/'.format(sample,sim)
-        print('sim dir',post_dir+sim_tag)
         wps.write_p1d_scripts_in_sim(post_dir=post_dir+sim_tag,
                 n_skewers=args.n_skewers,width_Mpc=args.width_Mpc,
                 scales_tau=args.scales_tau,add_p3d=args.add_p3d,
                 time=args.time,zmax=args.zmax,
                 verbose=verbose,p1d_label=args.p1d_label,
-                run=args.run,machine=args.machine)
+                run=args.run,machine=args.machine,
+                queue=args.queue)

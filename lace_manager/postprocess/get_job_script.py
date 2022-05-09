@@ -3,25 +3,29 @@ import os
 from lace_manager.setup_simulations import read_gadget
 from lace_manager.postprocess import flux_real_genpk
 
-def get_job_script(name,postprocess_script,options,time,output_files,machine="hypatia"):
+def get_job_script(name,postprocess_script,options,time,output_files,
+            machine="hypatia",**machine_kwargs):
     """ Return a job script
      - name: job name
      - postprocess_script: which postprocessing script to run
      - options: arguments to be passed to the executable
      - time: job time limit
      - output_files: name and path to save job log files
-     - machine: specify machine (hypatia, cori) """
+     - machine: specify machine (hypatia, cori) 
+     - machine_kwargs: specific options for a machine"""
 
     if machine=="hypatia":
-        return get_hypatia_script(name,postprocess_script,options,time,output_files)
+        return get_hypatia_script(name,postprocess_script,options,time,
+                output_files,**machine_kwargs)
     elif machine=="cori":
-        print('ignore time in cori script')
-        return get_cori_script(name,postprocess_script,options,output_files)
+        return get_cori_script(name,postprocess_script,options,time,
+                output_files,**machine_kwargs)
     else:
         raise ValueError("unknown machine "+machine)
 
 
-def get_hypatia_script(name,postprocess_script,options,time,output_files):
+def get_hypatia_script(name,postprocess_script,options,time,
+            output_files,**machine_kwargs):
     submit_string='''#!/bin/bash
 #!
 #! Example SLURM job script for Peta4-Skylake (Skylake CPUs, OPA)
@@ -82,16 +86,27 @@ eval $CMD'''%(name,output_files,output_files,time,postprocess_script,options)
     return submit_string
 
 
-def get_cori_script(name,postprocess_script,options,output_files):
+def get_cori_script(name,postprocess_script,options,time,
+            output_files,**machine_kwargs):
+
+    print('machine_kwargs options in get_cori_script')
+    for key,value in machine_kwargs.items():
+        print(key,value)
+
+    if 'queue' in machine_kwargs:
+        queue=machine_kwargs['queue']
+    else:
+        queue='debug'
+
     submit_string='''#!/bin/bash
 #SBATCH -C haswell
-#SBATCH --partition=debug
+#SBATCH --partition={}
 #SBATCH --account=desi
 #SBATCH --nodes=1
-#SBATCH --time=00:30:00
-#SBATCH -J %s
-#SBATCH -o %s-%j.out
-#SBATCH -e %s-%j.err
+#SBATCH --time={}
+#SBATCH -J {}
+#SBATCH -o {}-%j.out
+#SBATCH -e {}-%j.err
 
 ## Load modules
 module load python
@@ -103,10 +118,10 @@ export OMP_NUM_THREADS=1
 
 #! Full path to application executable:
 lya_scripts="/global/cfs/cdirs/desi/users/font/LaCE_pp/lace_manager/postprocess/single_sim_scripts"
-application="python $lya_scripts/%s"
+application="python $lya_scripts/{}"
 
 # setup options
-options="%s"
+options="{}"
 
 CMD="$application $options"
 echo -e "
@@ -114,7 +129,9 @@ Executing command:
 ==================
 $CMD
 "
-eval $CMD'''%(name,output_files,output_files,postprocess_script,options)
+eval $CMD'''.format(queue,time,name,output_files,output_files,
+                    postprocess_script,options)
+
     return submit_string
 
 

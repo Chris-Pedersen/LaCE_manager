@@ -36,7 +36,8 @@ def get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
 
 
 def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
-                scales_tau,time,p1d_label,add_p3d,machine,verbose):
+                scales_tau,time,p1d_label,add_p3d,machine,verbose,
+                **machine_kwargs):
     """ Generate a SLURM file to measure p1d for a given snapshot."""
 
     # construct string with options to be passed to python script
@@ -51,7 +52,7 @@ def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
 
     submit_string=get_job_script.get_job_script("calc_flux_p1d",
                     "archive_flux_power.py",options,time,output_files,
-                    machine=machine)
+                    machine=machine,**machine_kwargs)
 
     submit_script = open(script_name,'w')
     for line in submit_string:
@@ -61,12 +62,16 @@ def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
 
 def write_p1d_scripts_in_sim(post_dir,n_skewers,width_Mpc,
                 scales_tau,time,zmax,verbose,p1d_label=None,
-                add_p3d=False,run=False,machine='hypatia'):
+                add_p3d=False,run=False,machine='hypatia',
+                **machine_kwargs):
     """ Generate a SLURM file for each snapshot in the simulation, to read
         skewers for different thermal histories and measure p1d."""
     
     if verbose:
         print('in write_p1d_scripts_in_sim',post_dir)
+        print('machine_kwargs options in write_p1d_scripts_in_sim')
+        for key,value in machine_kwargs.items():
+            print(key,value)
 
     # get redshifts / snapshots Gadget parameter file 
     paramfile=post_dir+'/paramfile.gadget'
@@ -82,7 +87,8 @@ def write_p1d_scripts_in_sim(post_dir,n_skewers,width_Mpc,
             write_p1d_script(script_name=slurm_script,post_dir=post_dir,
                         snap_num=snap,n_skewers=n_skewers,width_Mpc=width_Mpc,
                         scales_tau=scales_tau,time=time,p1d_label=p1d_label,
-                        add_p3d=add_p3d,machine=machine,verbose=verbose)
+                        add_p3d=add_p3d,machine=machine,verbose=verbose,
+                        **machine_kwargs)
             if run:
                 info_file=post_dir+'/info_sub_p1d_'+str(snap)
                 if verbose:

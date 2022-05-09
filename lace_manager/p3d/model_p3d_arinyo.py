@@ -22,7 +22,7 @@ class ArinyoModel(object):
 
     def __init__(self,cosmo,zs,camb_results=None,
                 default_bias=-0.18, default_beta=1.3, 
-                default_d1_q1=0.4, default_d1_q2=0.19, default_d1_kvav=0.58,
+                default_d1_q1=0.4, default_d1_q2=0.0, default_d1_kvav=0.58,
                 default_d1_av=0.29, default_d1_bv=1.55, default_d1_kp=10.5):
         """Set up flux power spectrum model.
             Inputs:

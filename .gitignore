@@ -5,3 +5,5 @@ notebooks/.ipynb_checkpoints/
 notebooks/development/.ipynb_checkpoints/
 lace_manager/sampler/chains
 lace_manager/sampler/logs
+lace_manager/__pycache__/
+lace_manager/*/__pycache__/

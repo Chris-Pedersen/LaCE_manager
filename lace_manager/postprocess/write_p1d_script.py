@@ -12,7 +12,7 @@ def string_from_list(in_list):
     return out_string
 
 
-def get_options_string(simdir,snap_num,n_skewers,width_Mpc,
+def get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
                 scales_tau,p1d_label,verbose):
     """ Option string to pass to python script in SLURM"""
 
@@ -22,7 +22,7 @@ def get_options_string(simdir,snap_num,n_skewers,width_Mpc,
     else:
         str_scales_tau=string_from_list(scales_tau)
 
-    options='--simdir {} --snap_num {} '.format(simdir,snap_num)
+    options='--post_dir {} --snap_num {} '.format(post_dir,snap_num)
     options+='--n_skewers {} --width_Mpc {} '.format(n_skewers,width_Mpc)
     options+='--scales_tau {} '.format(str_scales_tau)
     if p1d_label is not None:
@@ -33,22 +33,23 @@ def get_options_string(simdir,snap_num,n_skewers,width_Mpc,
     return options
 
 
-def write_p1d_script(script_name,simdir,snap_num,n_skewers,width_Mpc,
-                scales_tau,time,p1d_label,verbose):
+def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
+                scales_tau,time,p1d_label,machine,verbose):
     """ Generate a SLURM file to measure p1d for a given snapshot."""
 
     # construct string with options to be passed to python script
-    options=get_options_string(simdir,snap_num,n_skewers,width_Mpc,
+    options=get_options_string(post_dir,snap_num,n_skewers,width_Mpc,
                 scales_tau,p1d_label,verbose)
 
     if verbose:
         print('print options: '+options)
 
     # set output files (.out and .err)
-    output_files=simdir+'/slurm_p1d_'+str(snap_num)
+    output_files=post_dir+'/slurm_p1d_'+str(snap_num)
 
     submit_string=get_job_script.get_job_script("calc_flux_p1d",
-                    "archive_flux_power.py",options,time,output_files)
+                    "archive_flux_power.py",options,time,output_files,
+                    machine=machine)
 
     submit_script = open(script_name,'w')
     for line in submit_string:
@@ -56,16 +57,17 @@ def write_p1d_script(script_name,simdir,snap_num,n_skewers,width_Mpc,
     submit_script.close()
 
 
-def write_p1d_scripts_in_sim(simdir,n_skewers,width_Mpc,
-                scales_tau,time,zmax,verbose,p1d_label=None,run=False):
+def write_p1d_scripts_in_sim(post_dir,n_skewers,width_Mpc,
+                scales_tau,time,zmax,verbose,p1d_label=None,
+                run=False,machine='hypatia'):
     """ Generate a SLURM file for each snapshot in the simulation, to read
         skewers for different thermal histories and measure p1d."""
     
     if verbose:
-        print('in write_p1d_scripts_in_sim',simdir)
+        print('in write_p1d_scripts_in_sim',post_dir)
 
     # get redshifts / snapshots Gadget parameter file 
-    paramfile=simdir+'/paramfile.gadget'
+    paramfile=post_dir+'/paramfile.gadget'
     zs=read_gadget.redshifts_from_paramfile(paramfile)
     Nsnap=len(zs)
 
@@ -74,13 +76,13 @@ def write_p1d_scripts_in_sim(simdir,n_skewers,width_Mpc,
         if z < zmax:
             if verbose:
                 print('will measure p1d for snapshot',snap)
-            slurm_script=simdir+'/p1d_%s.sub'%snap
-            write_p1d_script(script_name=slurm_script,simdir=simdir,
+            slurm_script=post_dir+'/p1d_%s.sub'%snap
+            write_p1d_script(script_name=slurm_script,post_dir=post_dir,
                         snap_num=snap,n_skewers=n_skewers,width_Mpc=width_Mpc,
                         scales_tau=scales_tau,time=time,
-                        p1d_label=p1d_label,verbose=verbose)
+                        p1d_label=p1d_label,machine=machine,verbose=verbose)
             if run:
-                info_file=simdir+'/info_sub_p1d_'+str(snap)
+                info_file=post_dir+'/info_sub_p1d_'+str(snap)
                 if verbose:
                     print('print submit info to',info_file)
                 cmd='sbatch '+slurm_script+' > '+info_file

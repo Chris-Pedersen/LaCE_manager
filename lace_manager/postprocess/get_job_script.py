@@ -3,15 +3,22 @@ import os
 from lace_manager.setup_simulations import read_gadget
 from lace_manager.postprocess import flux_real_genpk
 
-def get_job_script(name,postprocess_script,options,time,output_files):
+def get_job_script(name,postprocess_script,options,time,output_files,machine="hypatia"):
     """ Return a job script
      - name: job name
      - postprocess_script: which postprocessing script to run
      - options: arguments to be passed to the executable
      - time: job time limit
-     - output_files: name and path to save job log files """
+     - output_files: name and path to save job log files
+     - machine: specify machine (hypatia, cori) """
 
-    return get_hypatia_script(name,postprocess_script,options,time,output_files)
+    if machine=="hypatia":
+        return get_hypatia_script(name,postprocess_script,options,time,output_files)
+    elif machine=="cori":
+        print('ignore time in cori script')
+        return get_cori_script(name,postprocess_script,options,output_files)
+    else:
+        raise ValueError("unknown machine "+machine)
 
 
 def get_hypatia_script(name,postprocess_script,options,time,output_files):
@@ -34,7 +41,7 @@ mpi_tasks_per_node=$(echo "$SLURM_TASKS_PER_NODE" | sed -e  's/^\([0-9][0-9]*\).
 ## Load modules
 module load python/3.6.4
 module load hdf5/1.10.1
-#! Full path to application executable: 
+#! Full path to application executable:
 lya_scripts="/home/chrisp/Codes/lace_manager/lace/postprocess/single_sim_scripts"
 application="python3 $lya_scripts/%s"
 # setup options 
@@ -73,6 +80,43 @@ $CMD
 "
 eval $CMD'''%(name,output_files,output_files,time,postprocess_script,options)
     return submit_string
+
+
+def get_cori_script(name,postprocess_script,options,output_files):
+    submit_string='''#!/bin/bash
+#SBATCH -C haswell
+#SBATCH --partition=debug
+#SBATCH --account=desi
+#SBATCH --nodes=1
+#SBATCH --time=00:30:00
+#SBATCH -J %s
+#SBATCH -o %s.out
+#SBATCH -e %s.err
+
+## Load modules
+module load python
+module load gsl
+source activate lace_pp
+
+export HDF5_USE_FILE_LOCKING=FALSE
+export OMP_NUM_THREADS=1
+
+#! Full path to application executable:
+lya_scripts="/global/cfs/cdirs/desi/users/font/LaCE_pp/lace_manager/postprocess/single_sim_scripts"
+application="python $lya_scripts/%s"
+
+# setup options
+options="%s"
+
+CMD="$application $options"
+echo -e "
+Executing command:
+==================
+$CMD
+"
+eval $CMD'''%(name,output_files,output_files,postprocess_script,options)
+    return submit_string
+
 
 ###################################################
 ## Scripts for other machines can be added below ##

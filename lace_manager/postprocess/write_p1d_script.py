@@ -50,7 +50,7 @@ def write_p1d_script(script_name,post_dir,snap_num,n_skewers,width_Mpc,
     # set output files (.out and .err)
     output_files=post_dir+'/slurm_p1d_'+str(snap_num)
 
-    submit_string=get_job_script.get_job_script("calc_flux_p1d",
+    submit_string=get_job_script.get_job_script("flux_p1d",
                     "archive_flux_power.py",options,time,output_files,
                     machine=machine,**machine_kwargs)
 

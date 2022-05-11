@@ -132,7 +132,7 @@ class FitP3D(object):
             ratio_error=irel_error*power_ratio
             # plot ratio
             plt.errorbar(ik,power_ratio,yerr=ratio_error,
-                capsize=3,ecolor=col,color=col,marker="x",fmt='.',
+                capsize=3,ecolor=col,color=col,marker="x",
                 label=r"%.2f $\leq \mu \leq$ %.2f" % (mu_bin_edges[i],
                                                       mu_bin_edges[i+1]))
 

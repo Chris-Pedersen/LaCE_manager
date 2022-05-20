@@ -108,17 +108,15 @@ class FullTheory(object):
         # make sure you are not changing the background expansion
         assert self.fixed_background(like_params)
 
-        # for now, crash if changing running (should be easy to add)
-        assert 'nrun' not in [par.name for par in like_params]
-
         # get linP_Mpc_params from fiducial model (should be very fast)
         linP_Mpc_params=self.true_camb_model.get_linP_Mpc_params(
                 kp_Mpc=self.emu_kp_Mpc)
         if self.verbose: print('got linP_Mpc_params for fiducial model')
 
-        # compute ratio of amplitudes and difference in slope (at CMB pivot)
+        # differences in primordial power (at CMB pivot point)
         ratio_As=1.0
         delta_ns=0.0
+        delta_nrun=0.0
         for par in like_params:
             if par.name == 'As':
                 fid_As = self.true_camb_model.cosmo.InitPower.As
@@ -126,15 +124,25 @@ class FullTheory(object):
             if par.name == 'ns':
                 fid_ns = self.true_camb_model.cosmo.InitPower.ns
                 delta_ns = par.value - fid_ns
+            if par.name == 'nrun':
+                fid_nrun = self.true_camb_model.cosmo.InitPower.nrun
+                delta_nrun = par.value - fid_nrun
 
-        # compute ratio of amplitudes at emulator pivot point
-        kp_camb = self.true_camb_model.cosmo.InitPower.pivot_scalar
-        ratio_Delta2_p = ratio_As * (self.emu_kp_Mpc/kp_camb)**delta_ns
+        # pivot scale in primordial power
+        ks_Mpc=self.true_camb_model.cosmo.InitPower.pivot_scalar
+        # logarithm of ratio of pivot points
+        ln_kp_ks=np.log(self.emu_kp_Mpc/ks_Mpc)
+
+        # compute scalings
+        delta_alpha_p=delta_nrun
+        delta_n_p=delta_ns + delta_nrun*ln_kp_ks
+        ln_ratio_A_p=np.log(ratio_As)+(delta_ns+0.5*delta_nrun*ln_kp_ks)*ln_kp_ks
 
         # update values of linP_params at emulator pivot point, at each z
         for zlinP in linP_Mpc_params:
-            zlinP['Delta2_p'] *= ratio_Delta2_p
-            zlinP['n_p'] += delta_ns
+            zlinP['Delta2_p'] *= np.exp(ln_ratio_A_p)
+            zlinP['n_p'] += delta_n_p
+            zlinP['alpha_p'] += delta_alpha_p
 
         return linP_Mpc_params
 
@@ -265,15 +273,26 @@ class FullTheory(object):
     def get_blob_fixed_background(self,like_params):
         """Fast computation of blob when running with fixed background"""
 
-        # ask true camb_model for blobs (it should be fiducial!)
-        true_blob=self.get_blob(self.true_camb_model)
+        # make sure you are not changing the background expansion
+        assert self.fixed_background(like_params)
 
-        # setup new camb model given likelihood parameters
-        camb_model=self.true_camb_model.get_new_model(like_params)
+        # differences in primordial power (at CMB pivot point)
+        ratio_As=1.0
+        delta_ns=0.0
+        delta_nrun=0.0
+        for par in like_params:
+            if par.name == 'As':
+                fid_As = self.true_camb_model.cosmo.InitPower.As
+                ratio_As = par.value / fid_As
+            if par.name == 'ns':
+                fid_ns = self.true_camb_model.cosmo.InitPower.ns
+                delta_ns = par.value - fid_ns
+            if par.name == 'nrun':
+                fid_nrun = self.true_camb_model.cosmo.InitPower.nrun
+                delta_nrun = par.value - fid_nrun
 
-        # pivot scale in primordial power
+        # pivot scale of primordial power
         ks_Mpc=self.true_camb_model.cosmo.InitPower.pivot_scalar
-        assert ks_Mpc==camb_model.cosmo.InitPower.pivot_scalar
 
         # likelihood pivot point, in velocity units
         z_star=self.recons.z_star
@@ -284,21 +303,13 @@ class FullTheory(object):
         # logarithm of ratio of pivot points
         ln_kp_ks=np.log(kp_Mpc/ks_Mpc)
 
-        # primordial power spectrum in true cosmo
-        true_A_s=self.true_camb_model.cosmo.InitPower.As
-        true_n_s=self.true_camb_model.cosmo.InitPower.ns
-        true_alpha_s=self.true_camb_model.cosmo.InitPower.nrun
-
-        # primordial power spectrum in test cosmo
-        A_s=camb_model.cosmo.InitPower.As
-        n_s=camb_model.cosmo.InitPower.ns
-        alpha_s=camb_model.cosmo.InitPower.nrun
+        # ask true camb_model for blobs (it should be fiducial!)
+        true_blob=self.get_blob(self.true_camb_model)
 
         # rescale blobs
-        delta_alpha_star=alpha_s-true_alpha_s
-        delta_n_star=(n_s-true_n_s)+delta_alpha_star*ln_kp_ks
-        ln_ratio_A_star=np.log(A_s/true_A_s)+(n_s-true_n_s
-                                    +0.5*delta_alpha_star*ln_kp_ks)*ln_kp_ks
+        delta_alpha_star=delta_nrun
+        delta_n_star=delta_ns+delta_nrun*ln_kp_ks
+        ln_ratio_A_star=np.log(ratio_As)+(delta_ns+0.5*delta_nrun*ln_kp_ks)*ln_kp_ks
 
         alpha_star=true_blob[2]+delta_alpha_star
         n_star=true_blob[1]+delta_n_star

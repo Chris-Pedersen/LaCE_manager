@@ -53,6 +53,7 @@ class FullTheory(object):
         if true_camb_model:
             self.true_camb_model=true_camb_model
         else:
+            # this really should not be called "true" but "fiducial"
             self.true_camb_model=CAMB_model.CAMBModel(zs=self.zs,
                             pivot_scalar=pivot_scalar,theta_MC=theta_MC)
 
@@ -70,13 +71,16 @@ class FullTheory(object):
         else:
             self.kF_model_fid = pressure_model.PressureModel()
 
-        ## Set up a recons_cosmo object
+        ## Set up a recons_cosmo object (used when compressing likelihood)
         self.recons=recons_cosmo.ReconstructedCosmology(zs,
                                     emu_kp_Mpc=self.emu_kp_Mpc,
                                     like_z_star=3.0,like_kp_kms=0.009,
                                     cosmo_fid=cosmo_fid,
                                     use_camb_fz=self.use_camb_fz,
                                     verbose=self.verbose)
+
+        # Andreu: this is quite confusing. Why re-setting cosmo_fid here?
+        assert cosmo_fid is None, "figure out fiducial / true cosmo"
         cosmo_fid=camb_cosmo.get_cosmology()
         linP_model=linear_power_model.LinearPowerModel(
                     cosmo=cosmo_fid,
@@ -187,7 +191,7 @@ class FullTheory(object):
             linP_Mpc_params=self.get_linP_Mpc_params_from_truth(like_params)
             M_of_zs=self.true_camb_model.get_M_of_zs()
             if return_blob:
-                raise ValueError('implement blob for fixed background runs')
+                blob=self.get_blob_fixed_background(like_params)
         else:
             # setup a new CAMB_model from like_params
             if self.verbose: print('create new CAMB_model')
@@ -249,11 +253,58 @@ class FullTheory(object):
         else:
             linP_model=linear_power_model.LinearPowerModel(
                                     cosmo=camb_model.cosmo,
-                                    camb_results=camb_model.get_camb_results())
+                                    camb_results=camb_model.get_camb_results(),
+                                    z_star=self.recons.z_star,
+                                    kp_kms=self.recons.kp_kms)
             params=linP_model.get_params()
             return params['Delta2_star'],params['n_star'], \
                     params['alpha_star'],params['f_star'], \
                     params['g_star'],camb_model.cosmo.H0
+
+
+    def get_blob_fixed_background(self,like_params):
+        """Fast computation of blob when running with fixed background"""
+
+        # ask true camb_model for blobs (it should be fiducial!)
+        true_blob=self.get_blob(self.true_camb_model)
+
+        # setup new camb model given likelihood parameters
+        camb_model=self.true_camb_model.get_new_model(like_params)
+
+        # pivot scale in primordial power
+        ks_Mpc=self.true_camb_model.cosmo.InitPower.pivot_scalar
+        assert ks_Mpc==camb_model.cosmo.InitPower.pivot_scalar
+
+        # likelihood pivot point, in velocity units
+        z_star=self.recons.z_star
+        kp_kms=self.recons.kp_kms
+        dkms_dMpc=self.recons.H_star_fid/(1+z_star)
+        kp_Mpc=kp_kms*dkms_dMpc
+
+        # logarithm of ratio of pivot points
+        ln_kp_ks=np.log(kp_Mpc/ks_Mpc)
+
+        # primordial power spectrum in true cosmo
+        true_A_s=self.true_camb_model.cosmo.InitPower.As
+        true_n_s=self.true_camb_model.cosmo.InitPower.ns
+        true_alpha_s=self.true_camb_model.cosmo.InitPower.nrun
+
+        # primordial power spectrum in test cosmo
+        A_s=camb_model.cosmo.InitPower.As
+        n_s=camb_model.cosmo.InitPower.ns
+        alpha_s=camb_model.cosmo.InitPower.nrun
+
+        # rescale blobs
+        delta_alpha_star=alpha_s-true_alpha_s
+        delta_n_star=(n_s-true_n_s)+delta_alpha_star*ln_kp_ks
+        ln_ratio_A_star=np.log(A_s/true_A_s)+(n_s-true_n_s
+                                    +0.5*delta_alpha_star*ln_kp_ks)*ln_kp_ks
+
+        alpha_star=true_blob[2]+delta_alpha_star
+        n_star=true_blob[1]+delta_n_star
+        Delta2_star=true_blob[0]*np.exp(ln_ratio_A_star)
+
+        return (Delta2_star, n_star, alpha_star) + true_blob[3:]
 
 
     def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,

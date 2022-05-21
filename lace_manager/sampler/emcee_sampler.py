@@ -72,6 +72,7 @@ class EmceeSampler(object):
         for param in self.like.free_params:
             self.paramstrings.append(param_dict[param.name])
 
+        # when running on simulated data, we can store true cosmo values
         self.set_truth()
 
         # Figure out what extra information will be provided as blobs
@@ -82,49 +83,37 @@ class EmceeSampler(object):
         """ Set up dictionary with true values of cosmological
         likelihood parameters for plotting purposes """
 
-        test_sim_cosmo=self.like.data.mock_sim.sim_cosmo
-        test_results=camb_cosmo.get_camb_results(test_sim_cosmo)
+        # this will crash if not running on mock data
+        cosmo_sim=self.like.get_sim_cosmo()
+        camb_results_sim=camb_cosmo.get_camb_results(cosmo_sim)
+        linP_sim=fit_linP.parameterize_cosmology_kms(cosmo=cosmo_sim,
+                        camb_results=camb_results_sim,
+                        z_star=self.like.theory.recons.z_star,
+                        kp_kms=self.like.theory.recons.kp_kms)
+
+        ## Get all possible likelihood params
+        all_truth={}
+        all_truth["ombh2"]=sim_cosmo.ombh2
+        all_truth["omch2"]=sim_cosmo.omch2
+        all_truth["As"]=sim_cosmo.InitPower.As
+        all_truth["ns"]=sim_cosmo.InitPower.ns
+        all_truth["nrun"]=sim_cosmo.InitPower.nrun
+        all_truth["H0"]=sim_cosmo.H0
+        all_truth["mnu"]=camb_cosmo.get_mnu(sim_cosmo)
+        all_truth["cosmomc_theta"]=camb_results.cosmomc_theta()
+
+        ## Store truth for compressed parameters
+        all_truth["Delta2_star"]=linP_sim["Delta2_star"]
+        all_truth["n_star"]=linP_sim["n_star"]
+        all_truth["alpha_star"]=linP_sim["alpha_star"]
+        all_truth["f_star"]=linP_sim["f_star"]
+        all_truth["g_star"]=linP_sim["g_star"]
+
+        ## Store truth for all parameters, whether free or not
         self.truth={}
-
-        linP_truth=fit_linP.parameterize_cosmology_kms(
-                        cosmo=test_sim_cosmo,
-                        camb_results=test_results,
-                        z_star=3.0, ## Hardcoding for now!!!
-                        kp_kms=0.009)
-
-        ## Are we using full theory or compressed theory
-        if hasattr(self.like.theory,"emu_kp_Mpc"):
-            ## Get all possible likelihood params
-            all_truth={}
-            all_truth["ombh2"]=test_sim_cosmo.ombh2
-            all_truth["omch2"]=test_sim_cosmo.omch2
-            all_truth["As"]=test_sim_cosmo.InitPower.As
-            all_truth["ns"]=test_sim_cosmo.InitPower.ns
-            all_truth["nrun"]=test_sim_cosmo.InitPower.nrun
-            all_truth["H0"]=test_sim_cosmo.H0
-            all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
-            all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
-            ## Store truth for compressed parameters in case we want to
-            ## plot them as derived parameters
-            all_truth["Delta2_star"]=linP_truth["Delta2_star"]
-            all_truth["n_star"]=linP_truth["n_star"]
-            all_truth["alpha_star"]=linP_truth["alpha_star"]
-            all_truth["f_star"]=linP_truth["f_star"]
-            all_truth["g_star"]=linP_truth["g_star"]
-            ## Store truth for all parameters, whether free or not
-            ## in the full_theory case
-            for param in cosmo_params:
-                param_string=param_dict[param]
-                self.truth[param_string]=all_truth[param]
-        else:
-            ## True compressed parameters
-            all_truth=linP_truth
-            ## Take only free parameters, and store values
-            ## along with LaTeX strings
-            for param in self.like.free_params:
-                if param.name in cosmo_params:
-                    param_string=param_dict[param.name]
-                    self.truth[param_string]=all_truth[param.name]
+        for param in cosmo_params:
+            param_string=param_dict[param]
+            self.truth[param_string]=all_truth[param]
 
         return
 
@@ -137,7 +126,6 @@ class EmceeSampler(object):
               sampler for
             - force_timeout will continue to run the chains
               until timeout, regardless of convergence """
-
 
         self.burnin_nsteps=burn_in
         # We'll track how the average autocorrelation time estimate changes
@@ -684,8 +672,9 @@ class EmceeSampler(object):
         saveDict["reduced_IGM"]=self.like.reduced_IGM
 
         # Make sure (As,ns,nrun) were defined in standard pivot_scalar
-        if hasattr(self.like.theory,"true_camb_model"):
-            pivot_scalar=self.like.theory.true_camb_model.cosmo.InitPower.pivot_scalar
+        if hasattr(self.like.theory,"cosmo_model_fid"):
+            cosmo_fid=self.like.theory.cosmo_model_fid.cosmo
+            pivot_scalar=cosmo_fid.InitPower.pivot_scalar
             assert pivot_scalar==0.05,"non-standard pivot_scalar"
 
         free_params_save=[]
@@ -794,7 +783,6 @@ class EmceeSampler(object):
             ## Plot params passed as argument
             params_to_plot=plot_params
 
-
         if cmb_prior==True:
             ## Only plot the parameters that are varied in the chain
             ## not priors for parameters that aren't being varied
@@ -902,6 +890,7 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
 
 ## list of strings for blobs
 blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
+
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
                     rootdir=None,subfolder=None,delta_lnprob_cut=None,

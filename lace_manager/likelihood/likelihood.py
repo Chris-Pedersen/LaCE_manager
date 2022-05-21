@@ -11,20 +11,19 @@ from lace_manager.likelihood import linear_power_model
 from lace_manager.likelihood import full_theory
 from lace_manager.likelihood import CAMB_model
 from lace_manager.likelihood import marg_p1d_like
-from lace.setup_simulations import read_genic
-from lace_manager.setup_simulations import sim_params_cosmo
-from lace_manager.setup_simulations import sim_params_space
 from lace_manager.likelihood import cmb_like
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
     def __init__(self,data,theory=None,emulator=None,
+                    cosmo_fid=None,
                     free_param_names=None,
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
-                    kmin_kms=None,emu_cov_factor=1,
+                    kmin_kms=None,
+                    emu_cov_factor=1,
                     use_sim_cosmo=False,
                     include_CMB=False,
                     use_compression=0,
@@ -35,15 +34,14 @@ class Likelihood(object):
             - theory (optional) if not provided, will setup using emulator and
               list of free parameters
             - emulator (optional) only needed if theory not provided
+            - cosmo_fid (optional) to specify values of fixed parameters
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > kmin_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
             set between 0 and 1.
-            - use_sim_cosmo will extract the cosmological likelihood
-              parameters from the fiducial simulation, and use these
-              as a fiducial model
+            - use_sim_cosmo to use true sim cosmology as fiducial
             - include_CMB will use the CMB Gaussian likelihood approximation
               from Planck as a prior on each cosmological parameter
             - use_compression: 0 for no compression
@@ -70,8 +68,14 @@ class Likelihood(object):
         self.data._cull_data(kmin_kms)
 
         if theory:
+            assert not use_sim_cosmo, "wrong settings"
             self.theory=theory
         else:
+            # use true cosmology as fiducial (mostly for debugging)
+            if use_sim_cosmo:
+                assert not cosmo_fid, "can't set cosmo_fid and use_sim_cosmo"
+                cosmo_fid=get_sim_cosmo()
+
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object
             compressed=bool(set(free_param_names) & set(["Delta2_star",
@@ -91,36 +95,26 @@ class Likelihood(object):
 
             assert (compressed and full)==False, "Cannot vary both compressed and full likelihood parameters"
 
-            if use_sim_cosmo:
-                # Use the simulation cosmology as fiducial, for mock data
-                sim_cosmo=self.data.mock_sim.sim_cosmo
-                if self.verbose:
-                    print('use_sim_cosmo',camb_cosmo.print_info(sim_cosmo))
-            else:
-                sim_cosmo=None
-            
             if compressed:
                 ## Set up a compressed LyaTheory object
                 self.theory=lya_theory.LyaTheory(self.data.z,emulator=emulator,
-                        cosmo_fid=sim_cosmo,verbose=self.verbose)
+                        cosmo_fid=cosmo_fid,verbose=self.verbose)
             else:
                 ## Set up a FullTheory object
-                camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo,
-                        theta_MC=("cosmomc_theta" in free_param_names))
-                self.theory=full_theory.FullTheory(zs=self.data.z,emulator=emulator,
-                        true_camb_model=camb_model_sim,verbose=self.verbose,
+                self.theory=full_theory.FullTheory(zs=self.data.z,
+                        emulator=emulator,verbose=self.verbose,
                         theta_MC=("cosmomc_theta" in free_param_names),
                         use_compression=use_compression,
-                        cosmo_fid=sim_cosmo)
-
-                # when using sim cosmology, check matching pivot points
-                if sim_cosmo:
-                    # could probably get rid of this, not sure it is relevant
-                    assert sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
+                        cosmo_fid=cosmo_fid)
 
                 if not full:
                     print("No cosmology parameters are varied")
+
+        # check matching pivot points when using mock data
+        if hasattr(self.data,"mock_sim"):
+            data_pivot=self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar
+            theory_pivot=self.theory.recons.cosmo_fid.InitPower.pivot_scalar
+            assert data_pivot==theory_pivot, "non-standard pivot_scalar"
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)
@@ -128,7 +122,8 @@ class Likelihood(object):
         if self.include_CMB==True:
             ## Set up a CMB likelihood object, using the simulation mock
             ## cosmology as the central values
-            ## Check if neutrino mass is a free parameter
+            sim_cosmo=self.get_sim_cosmo()
+            ## Check if neutrino mass or running are free parameters
             nu_mass=False
             nrun=False
             for par in self.free_params:
@@ -136,8 +131,8 @@ class Likelihood(object):
                     nu_mass=True
                 elif par.name=="nrun":
                     nrun=True
-            self.cmb_like=cmb_like.CMBLikelihood(self.data.mock_sim.sim_cosmo,
-                                    nu_mass=nu_mass,nrun=nrun)
+            self.cmb_like=cmb_like.CMBLikelihood(sim_cosmo,
+                    nu_mass=nu_mass,nrun=nrun)
 
         ## Set up a marginalised p1d likelihood if
         ## we are using compression mode 3
@@ -148,6 +143,9 @@ class Likelihood(object):
                 if "ln_" in par.name:
                     igm=True
             assert igm==False, "Cannot run marginalised P1D with free IGM parameters"
+
+            # for now this only runs on simulated data
+            assert hasattr(self.data,"sim_label"), "cannot run 3rd compression"
 
             ## Set up marginalised p1d likelihood object
             self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,
@@ -167,7 +165,6 @@ class Likelihood(object):
                     prior_Gauss_rms=prior_Gauss_rms,
                     kmin_kms=kmin_kms,
                     emu_cov_factor=1,
-                    use_sim_cosmo=use_sim_cosmo,
                     include_CMB=False,
                     use_compression=use_compression,
                     reduced_IGM=reduced_IGM,
@@ -300,17 +297,24 @@ class Likelihood(object):
         return cosmo_dict
 
 
+    def get_sim_cosmo(self):
+        """ Check that we are running on mock data, and return sim cosmo"""
+
+        assert hasattr(self.data,"mock_sim"), "p1d data is not a mock"
+        return self.data.mock_sim.sim_cosmo
+
+
     def get_cmb_like(self,values):
         """ For a given point in sampling space, return the CMB likelihood """
 
-        # get cosmology parameters from sampling points
-        cosmo_dic=self.cosmology_params_from_sampling_point(values)
+        # get true cosmology used in the simulation
+        sim_cosmo=self.get_sim_cosmo()
 
-        # (pretty ugly way to) get true cosmology from full_theory object
-        true_cosmo=self.theory.true_camb_model.cosmo
+        # get cosmology parameters from sampling points
+        input_cosmo=self.cosmology_params_from_sampling_point(values)
 
         # compute CMB likelihood by comparing both cosmologies
-        cmb_like=self.cmb_like.get_cmb_like(cosmo_dic,true_cosmo)
+        cmb_like=self.cmb_like.get_cmb_like(input_cosmo,sim_cosmo)
 
         return cmb_like
 
@@ -382,7 +386,7 @@ class Likelihood(object):
         ## Need to get Delta2_star and f_star from a set of values
         like_params=self.parameters_from_sampling_point(values)
 
-        camb_model=self.theory.true_camb_model.get_new_model(like_params)
+        camb_model=self.theory.cosmo_model_fid.get_new_model(like_params)
         linP_model=linear_power_model.LinearPowerModel(
                         cosmo=camb_model.cosmo,
                         camb_results=camb_model.get_camb_results(),

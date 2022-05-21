@@ -22,6 +22,7 @@ class LinearPowerModel(object):
             assert cosmo is None, 'can not pass both cosmo and params'
             self._setup_from_parameters(params)
         else:
+            assert cosmo, 'need to provide either params or cosmo'
             # parameterize cosmology and store parameters
             self._setup_from_cosmology(cosmo,camb_results,use_camb_fz)
 

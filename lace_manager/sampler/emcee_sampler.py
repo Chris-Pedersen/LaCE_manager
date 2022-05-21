@@ -84,9 +84,9 @@ class EmceeSampler(object):
         likelihood parameters for plotting purposes """
 
         # this will crash if not running on mock data
-        cosmo_sim=self.like.get_sim_cosmo()
-        camb_results_sim=camb_cosmo.get_camb_results(cosmo_sim)
-        linP_sim=fit_linP.parameterize_cosmology_kms(cosmo=cosmo_sim,
+        sim_cosmo=self.like.get_sim_cosmo()
+        camb_results_sim=camb_cosmo.get_camb_results(sim_cosmo)
+        linP_sim=fit_linP.parameterize_cosmology_kms(cosmo=sim_cosmo,
                         camb_results=camb_results_sim,
                         z_star=self.like.theory.recons.z_star,
                         kp_kms=self.like.theory.recons.kp_kms)
@@ -100,7 +100,7 @@ class EmceeSampler(object):
         all_truth["nrun"]=sim_cosmo.InitPower.nrun
         all_truth["H0"]=sim_cosmo.H0
         all_truth["mnu"]=camb_cosmo.get_mnu(sim_cosmo)
-        all_truth["cosmomc_theta"]=camb_results.cosmomc_theta()
+        all_truth["cosmomc_theta"]=camb_results_sim.cosmomc_theta()
 
         ## Store truth for compressed parameters
         all_truth["Delta2_star"]=linP_sim["Delta2_star"]

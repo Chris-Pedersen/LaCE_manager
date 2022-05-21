@@ -46,6 +46,10 @@ class FullTheory(object):
         else:
             self.emu_kp_Mpc=self.emulator.archive.kp_Mpc
 
+        # setup fiducial cosmology
+        if not cosmo_fid:
+            cosmo_fid=camb_cosmo.get_cosmology()
+
         # setup CAMB object for the fiducial cosmology
         self.cosmo_model_fid=CAMB_model.CAMBModel(zs=self.zs,
                     cosmo=cosmo_fid,theta_MC=theta_MC)
@@ -73,8 +77,10 @@ class FullTheory(object):
                                     verbose=self.verbose)
 
         # store fiducial linear parameters
-        linP_model_fid=linear_power_model.LinearPowerModel(cosmo=cosmo_fid,
-                    camb_results=None,use_camb_fz=self.use_camb_fz)
+        linP_model_fid=linear_power_model.LinearPowerModel(
+                    cosmo=self.cosmo_model_fid.cosmo,
+                    camb_results=self.cosmo_model_fid.get_camb_results(),
+                    use_camb_fz=self.use_camb_fz)
         self.fid_linP_params=linP_model_fid.linP_params
 
 

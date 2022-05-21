@@ -8,7 +8,7 @@ from lace_manager.likelihood import likelihood_parameter
 class CAMBModel(object):
     """ Interface between CAMB object and FullTheory """
 
-    def __init__(self,zs,cosmo=None,pivot_scalar=0.05,theta_MC=True):
+    def __init__(self,zs,cosmo=None,theta_MC=True):
         """Setup from CAMB object and list of redshifts.
           - theta_MC will determine whether we use 100theta_MC
             as a likelihood parameter, or H0 in the case that
@@ -19,7 +19,7 @@ class CAMBModel(object):
         
         # setup CAMB cosmology object
         if cosmo is None:
-            self.cosmo=camb_cosmo.get_cosmology(pivot_scalar=pivot_scalar)
+            self.cosmo=camb_cosmo.get_cosmology()
         else:
             self.cosmo=cosmo
 

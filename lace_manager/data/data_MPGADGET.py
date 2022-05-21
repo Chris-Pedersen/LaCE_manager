@@ -25,7 +25,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             zmin=None,zmax=None,z_list=None,
             kp_Mpc=0.7,
             data_cov_label="Chabanier2019",data_cov_factor=0.2,
-            add_syst=True,pivot_scalar=0.05,polyfit=True):
+            add_syst=True,polyfit=True):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
@@ -50,7 +50,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.polyfit=polyfit
 
         # read P1D from simulation
-        z,k,Pk,cov=self._load_p1d(add_syst,kp_Mpc=kp_Mpc,pivot_scalar=pivot_scalar)
+        z,k,Pk,cov=self._load_p1d(add_syst,kp_Mpc=kp_Mpc)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -64,7 +64,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self._set_true_values()
 
 
-    def _load_p1d(self,add_syst,kp_Mpc,pivot_scalar):
+    def _load_p1d(self,add_syst,kp_Mpc):
 
         if self.data_cov_label=="Chabanier2019":
             data_file=data_Chabanier2019.P1D_Chabanier2019(add_syst=add_syst)
@@ -84,7 +84,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         # setup TestSimulation object to read json files from sim directory
         self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
                 sim_label=self.sim_label,skewers_label=self.skewers_label,
-                z_max=10,kp_Mpc=kp_Mpc,pivot_scalar=pivot_scalar)
+                z_max=10,kp_Mpc=kp_Mpc)
 
         # get redshifts in simulation
         z_sim=self.mock_sim.zs

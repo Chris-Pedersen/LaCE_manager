@@ -15,7 +15,7 @@ class FullTheory(object):
 
     def __init__(self,zs,emulator=None,true_camb_model=None,verbose=False,
                     mf_model_fid=None,T_model_fid=None,kF_model_fid=None,
-                    pivot_scalar=0.05,theta_MC=True,use_compression=0,
+                    theta_MC=True,use_compression=0,
                     use_camb_fz=True,cosmo_fid=None):
         """Setup object to compute predictions for the 1D power spectrum.
         Inputs:
@@ -23,8 +23,6 @@ class FullTheory(object):
             - emulator: object to interpolate simulated p1d
             - true_camb_model: pass truth while testing / debugging
             - verbose: print information, useful to debug.
-            - pivot_scalar sets the pivot scale used to define primordial
-              power spectrum parameters
             - use_compression: Three options, 0,1,2
                     if set to 0, will bypass compression
                     if set to 1, will compress into Delta2_star, n_star,
@@ -55,7 +53,7 @@ class FullTheory(object):
         else:
             # this really should not be called "true" but "fiducial"
             self.true_camb_model=CAMB_model.CAMBModel(zs=self.zs,
-                            pivot_scalar=pivot_scalar,theta_MC=theta_MC)
+                            theta_MC=theta_MC)
 
         # setup fiducial IGM models
         if mf_model_fid:

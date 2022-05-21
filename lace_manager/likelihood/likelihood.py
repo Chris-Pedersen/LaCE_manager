@@ -26,7 +26,6 @@ class Likelihood(object):
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,emu_cov_factor=1,
                     use_sim_cosmo=False,
-                    pivot_scalar=0.05,
                     include_CMB=False,
                     use_compression=0,
                     reduced_IGM=False,
@@ -45,8 +44,6 @@ class Likelihood(object):
             - use_sim_cosmo will extract the cosmological likelihood
               parameters from the fiducial simulation, and use these
               as a fiducial model
-            - pivot_scalar sets the pivot scale used for the primordial
-              power spectrum in the case of using a full_theory object
             - include_CMB will use the CMB Gaussian likelihood approximation
               from Planck as a prior on each cosmological parameter
             - use_compression: 0 for no compression
@@ -109,20 +106,21 @@ class Likelihood(object):
             else:
                 ## Set up a FullTheory object
                 camb_model_sim=CAMB_model.CAMBModel(zs=self.data.z,
-                        cosmo=sim_cosmo,pivot_scalar=pivot_scalar,
+                        cosmo=sim_cosmo,
                         theta_MC=("cosmomc_theta" in free_param_names))
                 self.theory=full_theory.FullTheory(zs=self.data.z,emulator=emulator,
                         true_camb_model=camb_model_sim,verbose=self.verbose,
-                        pivot_scalar=pivot_scalar,
                         theta_MC=("cosmomc_theta" in free_param_names),
                         use_compression=use_compression,
                         cosmo_fid=sim_cosmo)
-                # Andreu: This only works for mock data...
-                assert self.data.mock_sim.sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
+
+                # when using sim cosmology, check matching pivot points
+                if sim_cosmo:
+                    # could probably get rid of this, not sure it is relevant
+                    assert sim_cosmo.InitPower.pivot_scalar == self.theory.true_camb_model.cosmo.InitPower.pivot_scalar
 
                 if not full:
                     print("No cosmology parameters are varied")
-
 
         # setup parameters
         self.set_free_parameters(free_param_names,free_param_limits)
@@ -170,7 +168,6 @@ class Likelihood(object):
                     kmin_kms=kmin_kms,
                     emu_cov_factor=1,
                     use_sim_cosmo=use_sim_cosmo,
-                    pivot_scalar=pivot_scalar,
                     include_CMB=False,
                     use_compression=use_compression,
                     reduced_IGM=reduced_IGM,

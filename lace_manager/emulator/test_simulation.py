@@ -13,8 +13,8 @@ class TestSimulation(object):
     either on the emulator directly in Mpc or on the sampler
     in velocity units """
 
-    def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',p1d_label="p1d",
-            z_max=4.0,kp_Mpc=0.7,pivot_scalar=0.05):
+    def __init__(self,basedir,sim_label,skewers_label='Ns500_wM0.05',
+            p1d_label="p1d",z_max=4.0,kp_Mpc=0.7):
         """ Extract data from a chosen simulation
             - basedir sets which sim suite to work with
             - sim_label can be either:
@@ -40,9 +40,6 @@ class TestSimulation(object):
             - z_max sets the highest z cut
             - kp_Mpc sets the comoving pivot scale used to calculate the
               emulator linear power parameters
-            - pivot_scalar sets the pivot scale to define primordial
-              parameters, in 1/Mpc when setting up the camb cosmology
-              object
         """
 
         assert ('LACE_REPO' in os.environ),'export LACE_REPO'
@@ -77,19 +74,19 @@ class TestSimulation(object):
         self.skewers_label=skewers_label
         self.p1d_label=p1d_label
         
-        self._read_json_files(z_max,kp_Mpc,pivot_scalar)
+        self._read_json_files(z_max,kp_Mpc)
 
         return
 
 
-    def _read_json_files(self,z_max,kp_Mpc,pivot_scalar):
+    def _read_json_files(self,z_max,kp_Mpc):
         """ Read the json files for the given sim suite. Store the P1D
         and emulator parameters for the non-rescaled entries
             - z_max: discard redshifts above this cut
             - kp_Mpc: pivot point to compute linear power params """
-        
+
         # There is a lot of overlap between this and functions in p1d_archive.py
-        
+
         ## First get zs from paramfile
         sim_config=read_gadget.read_gadget_paramfile(self.fulldir+
                             "/sim_plus/paramfile.gadget")
@@ -100,16 +97,23 @@ class TestSimulation(object):
         drop=zs[:(len(zs)-len(self.zs))] ## Redshifts we don't want to keep
         ## Reverse order of redshifts to match the rest of the code (earliest first)
         self.zs=np.flip(self.zs)
-        
+
         ## Set up remaining lists
         self.p1d_Mpc=[]
         self.k_Mpc=[] ## These should all be the same, will double check
         self.emu_calls=[]
-        
+
         ## Get cosmology from IC file to get linear power parameters
         genic_fname=self.fulldir+"/sim_plus/paramfile.genic"
         sim_cosmo_dict=read_genic.camb_from_genic(genic_fname)
-        sim_cosmo_dict=camb_cosmo.shift_primordial_pivot(sim_cosmo_dict,pivot_scalar)
+
+        # simulation parameters might have been defined at other pivot point
+        if "pivot_scalar" in sim_cosmo_dict:
+            # default value in CAMB (in 1/Mpc)
+            if sim_cosmo_dict['pivot_scalar'] != 0.05:
+                raise ValueError('enable again shift_primordial_pivot')
+                #sim_cosmo_dict=camb_cosmo.shift_primordial_pivot(sim_cosmo_dict,pivot_scalar)
+
         # setup CAMB object
         self.sim_cosmo=camb_cosmo.get_cosmology_from_dictionary(sim_cosmo_dict)
         # compute linear power parameters at each z (in Mpc units)

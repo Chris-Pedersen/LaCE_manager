@@ -22,7 +22,6 @@ from lace.emulator import gp_emulator
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
-from lace_manager.likelihood import likelihood_parameter
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
@@ -570,7 +569,7 @@ class EmceeSampler(object):
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it
-            if not os.path.isdir(chain_location+subfolder):
+            if not os.path.isdir(chain_location+"/"+subfolder):
                 os.mkdir(chain_location+"/"+subfolder)
             base_string=chain_location+"/"+subfolder+"/chain_"
         else:

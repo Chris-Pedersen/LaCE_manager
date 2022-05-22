@@ -582,7 +582,7 @@ class EmceeSampler(object):
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it
-            if not os.path.isdir(chain_location+subfolder):
+            if not os.path.isdir(chain_location+"/"+subfolder):
                 os.mkdir(chain_location+"/"+subfolder)
             base_string=chain_location+"/"+subfolder+"/chain_"
         else:

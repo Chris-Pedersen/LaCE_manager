@@ -22,7 +22,6 @@ from lace.emulator import gp_emulator
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
-from lace_manager.likelihood import likelihood_parameter
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""

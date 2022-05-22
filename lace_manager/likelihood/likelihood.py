@@ -6,7 +6,6 @@ from scipy.optimize import minimize
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
 from lace_manager.likelihood import lya_theory
-from lace_manager.likelihood import likelihood_parameter
 from lace_manager.likelihood import linear_power_model
 from lace_manager.likelihood import full_theory
 from lace_manager.likelihood import CAMB_model

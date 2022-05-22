@@ -74,7 +74,7 @@ class Likelihood(object):
             # use true cosmology as fiducial (mostly for debugging)
             if use_sim_cosmo:
                 assert not cosmo_fid, "can't set cosmo_fid and use_sim_cosmo"
-                cosmo_fid=get_sim_cosmo()
+                cosmo_fid=self.get_sim_cosmo()
 
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object

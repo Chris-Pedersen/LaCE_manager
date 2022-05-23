@@ -72,40 +72,33 @@ print("----------")
 
 ## Sample compressed parameters
 if 'Delta2_star' in args.free_parameters:
-    ## for compressed params,
-    ## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
-
-    if 'ln_tau_1' in args.free_parameters:
-        ## 8 IGM parameters (standard)
-        free_param_limits=[[0.24, 0.47], [-2.352, -2.25],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4]]
-    else:
-        ## 1 IGM parameter (debugging)
-        free_param_limits=[[0.24, 0.47], [-2.352, -2.25],
-                    [-0.4, 0.4]]
-else:
-    ## Sample CMB parameters:
-    assert 'cosmomc_theta' in args.free_parameters
+    # compressed params (Delta2_*,n_*)
+    free_param_limits=[[0.24, 0.47], [-2.352, -2.25]]
+elif 'cosmomc_theta' in args.free_parameters:
+    # CMB parameters
     free_param_limits=[[0.0099,0.0109],
                 [1.1e-09, 3.19e-09],
                 [0.89, 1.05],
                 [0.018, 0.026],
-                [0.1,0.13],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4]]
+                [0.1,0.13]]
+elif 'H0' in args.free_parameters:
+    # direct fits (As,ns,H0)
+    free_param_limits=[[1e-9, 3.2e-9], [0.85,1.05], [50,100]]
+else:
+    # fixed background parameters (As,ns)
+    free_param_limits=[[1e-9, 3.2e-9], [0.85,1.05]]
+
+print('cosmo params',free_param_limits)
+
+# figure out IGM parameters
+if 'ln_tau_1' in args.free_parameters:
+    ## 8 IGM parameters (standard)
+    free_param_limits += 8*[[-0.4, 0.4]]
+else:
+    # 1 IGM parameter (debugging)
+    free_param_limits += [[-0.4, 0.4]]
+
+print('total params',free_param_limits)
 
 skewers_label=args.skewers_label
 p1d_label=None

@@ -21,7 +21,7 @@ parser.add_argument('--kmax_Mpc',type=float, help='Maximum k to train emulator')
 parser.add_argument('--z_max',type=float, help='Maximum redshift')
 parser.add_argument('--free_cosmo_params', nargs="+", help='List of cosmological parameters to sample')
 parser.add_argument('--simple_igm',action='store_true',help='Use a one-parameter IGM model for testing')
-parser.add_argument('--cosmo_fid',type=str,default='default',help='Fiducial cosmology to use (default,truth)')
+parser.add_argument('--cosmo_fid_label',type=str,default='default',help='Fiducial cosmology to use (default,truth)')
 parser.add_argument('--nwalkers', type=int,help='Number of walkers to sample')
 parser.add_argument('--nsteps', type=int,help='Max number of steps to run (assuming we dont reach autocorrelation time convergence')
 parser.add_argument('--burn_in', type=int,help='Number of burn in steps')
@@ -84,25 +84,12 @@ emu=gp_emulator.GPEmulator(basedir,train=True,
                         asymmetric_kernel=True,
                         rbf_only=True)
 
-# figure out which fiducial cosmology to use
-if args.cosmo_fid=='default':
-    cosmo_fid=None
-    use_sim_cosmo=False
-elif args.cosmo_fid=='truth':
-    cosmo_fid=None
-    use_sim_cosmo=True
-else:
-    print('use special fiducial cosmo',args.cosmo_fid)
-    raise ValueError('implement special fiducial cosmo')
-    camb_cosmo.print_info(cosmo_fid)
-
 ## Create likelihood object from data and emulator
 like=likelihood.Likelihood(data=data,emulator=emu,
                         free_param_names=free_parameters,
                         prior_Gauss_rms=args.prior_Gauss_rms,
                         include_CMB=args.include_CMB,
-                        cosmo_fid=cosmo_fid,
-                        use_sim_cosmo=use_sim_cosmo,
+                        cosmo_fid_label=args.cosmo_fid_label,
                         use_compression=args.use_compression)
 
 ## Pass likelihood to sampler

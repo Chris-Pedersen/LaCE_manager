@@ -522,6 +522,12 @@ class EmceeSampler(object):
         except:
             reduced_IGM=False
 
+        # read what type of fiducial cosmology we used
+        try:
+            cosmo_fid_label=config["cosmo_fid_label"]
+        except:
+            cosmo_fid_label='default'
+
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
@@ -529,7 +535,8 @@ class EmceeSampler(object):
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
                             include_CMB=include_CMB,
-                            reduced_IGM=reduced_IGM)
+                            reduced_IGM=reduced_IGM,
+                            cosmo_fid_label=cosmo_fid_label)
 
         if self.verbose: print("Load sampler data")
 
@@ -670,6 +677,7 @@ class EmceeSampler(object):
         saveDict["include_CMB"]=self.like.include_CMB
         saveDict["use_compression"]=self.like.use_compression
         saveDict["reduced_IGM"]=self.like.reduced_IGM
+        saveDict["cosmo_fid_label"]=self.like.cosmo_fid_label
 
         # Make sure (As,ns,nrun) were defined in standard pivot_scalar
         if hasattr(self.like.theory,"cosmo_model_fid"):

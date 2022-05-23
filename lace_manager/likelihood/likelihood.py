@@ -5,6 +5,7 @@ import math
 from scipy.optimize import minimize
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
+from lace_manager.likelihood import cosmologies
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import linear_power_model
 from lace_manager.likelihood import full_theory
@@ -16,14 +17,13 @@ class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
 
     def __init__(self,data,theory=None,emulator=None,
-                    cosmo_fid=None,
+                    cosmo_fid_label='default',
                     free_param_names=None,
                     free_param_limits=None,
                     verbose=False,
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,
                     emu_cov_factor=1,
-                    use_sim_cosmo=False,
                     include_CMB=False,
                     use_compression=0,
                     reduced_IGM=False,
@@ -33,14 +33,17 @@ class Likelihood(object):
             - theory (optional) if not provided, will setup using emulator and
               list of free parameters
             - emulator (optional) only needed if theory not provided
-            - cosmo_fid (optional) to specify values of fixed parameters
+            - cosmo_fid_label (optional) to specify fiducial cosmology
+                        default: use default Planck-like cosmology
+                        truth: read true cosmology used in simulation
+                        low_omch2: use Omega_c h^2=0.11
+                        high_omch2: use Omega_c h^2=0.13
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
             - if prior_Gauss_rms is None it will use uniform priors
             - ignore k-bins with k > kmin_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
             set between 0 and 1.
-            - use_sim_cosmo to use true sim cosmology as fiducial
             - include_CMB will use the CMB Gaussian likelihood approximation
               from Planck as a prior on each cosmological parameter
             - use_compression: 0 for no compression
@@ -61,19 +64,25 @@ class Likelihood(object):
         self.include_CMB=include_CMB
         self.use_compression=use_compression
         self.reduced_IGM=reduced_IGM
+        self.cosmo_fid_label=cosmo_fid_label
 
         self.data=data
         # (optionally) get rid of low-k data points
         self.data._cull_data(kmin_kms)
 
         if theory:
-            assert not use_sim_cosmo, "wrong settings"
+            assert cosmo_fid_label=='default', "wrong settings"
             self.theory=theory
         else:
-            # use true cosmology as fiducial (mostly for debugging)
-            if use_sim_cosmo:
-                assert not cosmo_fid, "can't set cosmo_fid and use_sim_cosmo"
+            if cosmo_fid_label=='truth':
+                # use true cosmology as fiducial (mostly for debugging)
                 cosmo_fid=self.get_sim_cosmo()
+            elif cosmo_fid_label=='default':
+                cosmo_fid=None
+            else:
+                cosmo_fid=cosmologies.get_cosmology_from_label(cosmo_fid_label)
+                print('specified fiducial cosmology')
+                camb_cosmo.print_info(cosmo_fid)
 
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object

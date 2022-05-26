@@ -22,7 +22,6 @@ from lace.emulator import gp_emulator
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
-from lace_manager.likelihood import likelihood_parameter
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
@@ -495,11 +494,9 @@ class EmceeSampler(object):
             # if datacov_label wasn't recorded, it was PD2013
             data_year="PD2013"
 
-        ## Old chains won't have pivot_scalar saved
+        # Some chains might have pivot_scalar saved
         if "pivot_scalar" in config.keys():
-            pivot_scalar=config["pivot_scalar"]
-        else:
-            pivot_scalar=0.05
+            assert config["pivot_scalar"]==0.05,"non-standard pivot_scalar"
 
         if config["emu_type"]=="k_bin":
             poly=False
@@ -513,7 +510,6 @@ class EmceeSampler(object):
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
                                     data_cov_label=data_year,
-                                    pivot_scalar=pivot_scalar,
                                     polyfit=poly)
 
         if self.verbose: print("Setting up likelihood")
@@ -544,7 +540,6 @@ class EmceeSampler(object):
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
-                            pivot_scalar=pivot_scalar,
                             include_CMB=include_CMB,
                             reduced_IGM=reduced_IGM)
 
@@ -586,7 +581,7 @@ class EmceeSampler(object):
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it
-            if not os.path.isdir(chain_location+subfolder):
+            if not os.path.isdir(chain_location+"/"+subfolder):
                 os.mkdir(chain_location+"/"+subfolder)
             base_string=chain_location+"/"+subfolder+"/chain_"
         else:
@@ -687,13 +682,10 @@ class EmceeSampler(object):
         saveDict["use_compression"]=self.like.use_compression
         saveDict["reduced_IGM"]=self.like.reduced_IGM
 
-        ## If we are sampling primordial power, save the pivot scale
-        ## used to define As, ns
+        # Make sure (As,ns,nrun) were defined in standard pivot_scalar
         if hasattr(self.like.theory,"true_camb_model"):
             pivot_scalar=self.like.theory.true_camb_model.cosmo.InitPower.pivot_scalar
-        else:
-            pivot_scalar=0.05
-        saveDict["pivot_scalar"]=pivot_scalar
+            assert pivot_scalar==0.05,"non-standard pivot_scalar"
 
         free_params_save=[]
         free_param_limits=[]

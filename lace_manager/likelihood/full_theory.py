@@ -25,10 +25,11 @@ class FullTheory(object):
             - use_compression: Three options, 0,1,2
                     if set to 0, will bypass compression
                     if set to 1, will compress into Delta2_star, n_star,
-                                f_star and g_star
+                                f_star and g_star, use fiducial alpha_star
                     if set to 2, will compress into Delta2_star and n_star,
-                                and use a fiducial g_star and f_star
-                                in the reconstruction
+                                use fiducial g_star, f_star and alpha_star
+                    if set to 4, will compress into Delta2_star, n_star,
+                                f_star, g_star and alpha_star
             - cosmo_fid: fiducial cosmology used for fixed parameters, and
                     when compressing the likelihood.
         """
@@ -167,21 +168,22 @@ class FullTheory(object):
             M_of_zs=camb_model.get_M_of_zs()
             if return_blob:
                 blob=self.get_blob(camb_model=camb_model)
-        ## Check if we want to find the emulator calls using compressed
-        ## parameters
-        elif self.use_compression!=0:
+        ## Check if we want to find to use a likelihood compression
+        elif self.use_compression>0:
             camb_model=self.cosmo_model_fid.get_new_model(like_params)
             linP_model=linear_power_model.LinearPowerModel(
                         cosmo=camb_model.cosmo,
                         camb_results=camb_model.get_camb_results(),
                         use_camb_fz=self.use_camb_fz)
-            ## Set alpha_star to fiducial
-            linP_model.linP_params["alpha_star"]=self.fid_linP_params["alpha_star"]
-
-            ## Check if we want to use fiducial g_star, f_star
-            if self.use_compression==2:
+            # figure out which type of compression to use
+            if self.use_compression==1:
+                linP_model.linP_params["alpha_star"]=self.fid_linP_params["alpha_star"]
+            elif self.use_compression==2:
+                linP_model.linP_params["alpha_star"]=self.fid_linP_params["alpha_star"]
                 linP_model.linP_params["f_star"]=self.fid_linP_params["f_star"]
                 linP_model.linP_params["g_star"]=self.fid_linP_params["g_star"]
+            else:
+                assert self.use_compression==4,'wrong use_compression'
 
             linP_Mpc_params=self.recons.get_linP_Mpc_params(linP_model)
             M_of_zs=self.recons.reconstruct_M_of_zs(linP_model)

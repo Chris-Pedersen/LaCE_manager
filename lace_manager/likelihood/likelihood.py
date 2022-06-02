@@ -49,9 +49,9 @@ class Likelihood(object):
             - use_compression: 0 for no compression
                                1 to compress into 4 parameters
                                2 to compress into just 2
-                               3 will use marginalised
-                                 constraints on Delta2_star
-                                 and n_star
+                               3 will use marginalised constraints 
+                                 on Delta2_star and n_star
+                               4 to compress into 5 parameters
             - reduced_IGM: temporary flag to determine in the case of
                            use_compression=3, we want to use the
                            covariance of a full IGM marginalisation

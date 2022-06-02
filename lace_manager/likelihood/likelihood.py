@@ -159,6 +159,7 @@ class Likelihood(object):
             self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,
                                                     self.reduced_IGM,
                                                     self.data.polyfit)
+            print('set marginalised P1D likelihood')
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
@@ -391,21 +392,27 @@ class Likelihood(object):
         """ Get log likelihood from P1D using pre-marginalised
             constraints on Delta2_star and n_star """
 
-        ## Need to get Delta2_star and f_star from a set of values
+        # Need to get Delta2_star and f_star from a set of values
         like_params=self.parameters_from_sampling_point(values)
 
-        camb_model=self.theory.cosmo_model_fid.get_new_model(like_params)
-        linP_model=linear_power_model.LinearPowerModel(
-                        cosmo=camb_model.cosmo,
-                        camb_results=camb_model.get_camb_results(),
-                        use_camb_fz=self.theory.use_camb_fz)
+        # use "blob" function to get Delta2_star and n_star
+        if self.theory.fixed_background(like_params):
+            blob=self.theory.get_blob_fixed_background(like_params)
+        else:
+            camb_model=self.theory.cosmo_model_fid.get_new_model(like_params)
+            blob=self.theory.get_blob(like_params)
 
-        log_like=self.marg_p1d.return_lya_like(np.array([linP_model.linP_params["Delta2_star"],
-                                        linP_model.linP_params["n_star"]]))
+        # make sure that we have not changed the blobs
+        assert self.theory.get_blobs_dtype()[0][0]=='Delta2_star'
+        assert self.theory.get_blobs_dtype()[1][0]=='n_star'
 
-        ## Check if we want blobs
+        Delta2_star=blob[0]
+        n_star=blob[1]
+
+        # compute log-likelihood from marginalised posterior
+        log_like=self.marg_p1d.return_lya_like(np.array([Delta2_star,n_star]))
+
         if return_blob:
-            blob=self.theory.get_blob(camb_model)
             return log_like,blob
         else:
             return log_like
@@ -422,14 +429,7 @@ class Likelihood(object):
         Nz=len(zs)
 
         if self.use_compression==3:
-            if return_blob==True:
-                log_like,blob=self.get_marg_lya_like(values=values,
-                                            return_blob=True)
-                return log_like,blob
-            else:
-                log_like=self.get_marg_lya_like(values=values,
-                                            return_blob=False)
-                return log_like
+            return self.get_marg_lya_like(values=values,return_blob=return_blob)
 
         # ask emulator prediction for P1D in each bin
         if return_blob:

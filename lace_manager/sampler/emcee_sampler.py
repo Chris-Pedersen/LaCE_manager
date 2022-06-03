@@ -377,7 +377,7 @@ class EmceeSampler(object):
         chain,lnprob,blobs=self.get_chain(cube=False,
                     delta_lnprob_cut=delta_lnprob_cut)
 
-        if blobs==None:
+        if blobs is None:
              ## Old chains will have no blobs
              all_params=chain
              all_strings=self.paramstrings

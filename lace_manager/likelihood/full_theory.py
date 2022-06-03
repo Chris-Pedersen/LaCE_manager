@@ -168,7 +168,8 @@ class FullTheory(object):
             M_of_zs=camb_model.get_M_of_zs()
             if return_blob:
                 blob=self.get_blob(camb_model=camb_model)
-        ## Check if we want to find to use a likelihood compression
+        elif self.use_compression==3:
+            raise ValueError('should not call full_theory in compression=3')
         elif self.use_compression>0:
             camb_model=self.cosmo_model_fid.get_new_model(like_params)
             linP_model=linear_power_model.LinearPowerModel(

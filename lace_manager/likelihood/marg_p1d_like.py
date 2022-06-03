@@ -43,16 +43,23 @@ class MargP1DLike(object):
                                 [3.19638330e-05, 1.94088790e-05]])
         else:
             ## Use values for polyfit emulator
-            if sim_label=="nu":
+            if sim_label=="central":
+                self.true=np.array([0.3462,-2.2986])
+            elif sim_label=="nu":
                 self.true=np.array([0.356,-2.3041])
             elif sim_label=="running":
                 self.true=np.array([0.348,-2.3041])
             else:
                 raise Exception("No fits for this sim from polyfit emulator")
-            self.cov=np.array([[1.8e-04, 2e-05],
-                                [2e-05, 6e-05]])
-            if reduced_IGM==True:
-                raise Exception("No fits for reduced IGM runs for polyfit emulator")
+            ## Set covariance - not dependent on simulation
+            if self.reduced_IGM==False:
+                ## Use covariance after a full marginalisation
+                self.cov=np.array([[1.56e-04, 4.67e-05],
+                                [4.67e-05, 5.4e-05]])
+            else:
+            ## Use covariance after a marginalisation over only ln_tau_0
+                self.cov=np.array([[7.75e-05,2.59e-05 ],
+                                [2.59e-05, 1.35e-05]])
 
         self.icov=np.linalg.inv(self.cov)
 

@@ -160,6 +160,8 @@ class Likelihood(object):
                                                     self.reduced_IGM,
                                                     self.data.polyfit)
             print('set marginalised P1D likelihood')
+        else:
+            self.marg_p1d=None
 
         if self.verbose: print(len(self.free_params),'free parameters')
 
@@ -400,7 +402,7 @@ class Likelihood(object):
             blob=self.theory.get_blob_fixed_background(like_params)
         else:
             camb_model=self.theory.cosmo_model_fid.get_new_model(like_params)
-            blob=self.theory.get_blob(like_params)
+            blob=self.theory.get_blob(camb_model)
 
         # make sure that we have not changed the blobs
         assert self.theory.get_blobs_dtype()[0][0]=='Delta2_star'

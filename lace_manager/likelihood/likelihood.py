@@ -10,7 +10,6 @@ from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import linear_power_model
 from lace_manager.likelihood import full_theory
 from lace_manager.likelihood import CAMB_model
-from lace_manager.likelihood import marg_p1d_like
 from lace_manager.likelihood import cmb_like
 
 class Likelihood(object):
@@ -26,7 +25,7 @@ class Likelihood(object):
                     emu_cov_factor=1,
                     include_CMB=False,
                     use_compression=0,
-                    reduced_IGM=False,
+                    marg_p1d=None,
                     extra_p1d_data=None):
         """Setup likelihood from theory and data. Options:
             - data (required) is the data to model
@@ -52,10 +51,7 @@ class Likelihood(object):
                                3 will use marginalised constraints 
                                  on Delta2_star and n_star
                                4 to compress into 5 parameters
-            - reduced_IGM: temporary flag to determine in the case of
-                           use_compression=3, we want to use the
-                           covariance of a full IGM marginalisation
-                           or only ln_tau_0 
+            - marg_p1d: marginalised constraints to be used with compression=3
             - extra_p1d_data: extra P1D data, e.g., from HIRES"""
 
         self.verbose=verbose
@@ -63,7 +59,6 @@ class Likelihood(object):
         self.emu_cov_factor=emu_cov_factor
         self.include_CMB=include_CMB
         self.use_compression=use_compression
-        self.reduced_IGM=reduced_IGM
         self.cosmo_fid_label=cosmo_fid_label
 
         self.data=data
@@ -151,14 +146,9 @@ class Likelihood(object):
                 if "ln_" in par.name:
                     igm=True
             assert igm==False, "Cannot run marginalised P1D with free IGM parameters"
-
-            # for now this only runs on simulated data
-            assert hasattr(self.data,"sim_label"), "cannot run 3rd compression"
-
-            ## Set up marginalised p1d likelihood object
-            self.marg_p1d=marg_p1d_like.MargP1DLike(self.data.sim_label,
-                                                    self.reduced_IGM,
-                                                    self.data.polyfit)
+            # Set up marginalised p1d likelihood object
+            assert marg_p1d is not None,'need to provide marg_p1d'
+            self.marg_p1d=marg_p1d
             print('set marginalised P1D likelihood')
         else:
             self.marg_p1d=None
@@ -178,7 +168,7 @@ class Likelihood(object):
                     emu_cov_factor=1,
                     include_CMB=False,
                     use_compression=use_compression,
-                    reduced_IGM=reduced_IGM,
+                    marg_p1d=None,
                     extra_p1d_data=None)
         else:
             self.extra_p1d_like=None

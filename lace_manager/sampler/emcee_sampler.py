@@ -22,6 +22,7 @@ from lace.emulator import gp_emulator
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
+from lace_manager.likelihood import marg_p1d_like
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
@@ -448,6 +449,7 @@ class EmceeSampler(object):
                             kp_Mpc=kp)
 
         if self.verbose: print("Setting up emulator")
+
         try:
             reduce_var=config["reduce_var"]
         except:
@@ -486,11 +488,6 @@ class EmceeSampler(object):
         if "pivot_scalar" in config.keys():
             assert config["pivot_scalar"]==0.05,"non-standard pivot_scalar"
 
-        if config["emu_type"]=="k_bin":
-            poly=False
-        else:
-            poly=True
-
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_label=config["data_sim_number"],
                                     basedir=config["basedir"],
@@ -498,7 +495,7 @@ class EmceeSampler(object):
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
                                     data_cov_label=data_year,
-                                    polyfit=poly)
+                                    polyfit=(config["emu_type"]=="polyfit"))
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -511,16 +508,10 @@ class EmceeSampler(object):
             free_param_limits=config["free_param_limits"]
         except:
             free_param_limits=None
-
         try:
             include_CMB=config["include_CMB"]
         except:
             include_CMB=False
-
-        try:
-            reduced_IGM=config["reduced_IGM"]
-        except:
-            reduced_IGM=False
 
         # read what type of fiducial cosmology we used
         try:
@@ -528,6 +519,26 @@ class EmceeSampler(object):
         except:
             cosmo_fid_label='default'
 
+        # figure out compression and marginalised P1D (if needed)
+        try:
+            use_compression=config["use_compression"]
+        except:
+            use_compression=0
+        if use_compression==3:
+            if "kde_fname" in config:
+                fname=config["kde_fname"]
+                marg_p1d=marg_p1d_like.MargP1DLike(kde_fname=fname)
+            else:
+                try:
+                    reduced_IGM=config["reduced_IGM"]
+                except:
+                    reduced_IGM=False
+                marg_p1d=marg_p1d_like.MargP1DLike(sim_label=data.sim_label,
+                                reduced_IGM=reduced_IGM,polyfit=data.polyfit)
+        else:
+            marg_p1d=None
+
+        # set up likelihood
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
@@ -535,7 +546,8 @@ class EmceeSampler(object):
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
                             include_CMB=include_CMB,
-                            reduced_IGM=reduced_IGM,
+                            use_compression=use_compression,
+                            marg_p1d=marg_p1d,
                             cosmo_fid_label=cosmo_fid_label)
 
         if self.verbose: print("Load sampler data")
@@ -611,6 +623,53 @@ class EmceeSampler(object):
         return
 
 
+    def write_kde(self,delta_lnprob_cut=None,Nj=100j):
+        """Compute KDE for (Delta2_star,n_star) and save to file.
+            - delta_lnprob_cut: reject low-probability points
+            - Nj (default=100j): number of points in 2D grid. """
+
+        fname='{}/kde.npz'.format(self.save_directory)
+        print('will print KDE to',fname)
+
+        # get chain points and probabilities
+        chain,lnprob,blobs=self.get_chain(cube=False,
+                delta_lnprob_cut=delta_lnprob_cut)
+        # read compressed parameters and set range
+        x=blobs['Delta2_star']
+        y=blobs['n_star']
+        xmin = x.min()
+        xmax = x.max()
+        ymin = y.min()
+        ymax = y.max()
+        print('{:.3f} < Delta2_star < {:.3f}'.format(xmin,xmax))
+        print('{:.3f} < n_star < {:.3f}'.format(ymin,ymax))
+        # maximum likelihood points
+        max_lnprob=np.max(lnprob)
+        imax=np.where(lnprob==max_lnprob)
+        max_like_D2_star=x[imax][0]
+        max_like_n_star=y[imax][0]
+        print('Delta2_star (max like) =',max_like_D2_star)
+        print('n_star (max like) =',max_like_n_star)
+        # setup regular 2D grid for KDE
+        X, Y = np.mgrid[xmin:xmax:Nj, ymin:ymax:Nj]
+        positions = np.vstack([X.ravel(), Y.ravel()])
+        values = np.vstack([x, y])
+        kernel = scipy.stats.gaussian_kde(values,bw_method=None)
+        Z = np.reshape(kernel(positions).T, X.shape)
+        # max-like values from KDE
+        kde_max_D2_star=X[Z==np.max(Z)][0]
+        kde_max_n_star=Y[Z==np.max(Z)][0]
+        print('Delta2_star (max KDE) =',kde_max_D2_star)
+        print('n_star (max KDE) =',kde_max_n_star)
+        # store to file
+        print('x size',X.shape,len(np.unique(X)))
+        print('y size',X.shape,len(np.unique(Y)))
+        print('z size',Z.shape)
+        np.savez(fname,D2_star=np.unique(X),n_star=np.unique(Y),density=Z)
+
+        return
+
+
     def get_best_fit(self,delta_lnprob_cut=None):
         """ Return an array of best fit values (mean) from the MCMC chain,
             in unit likelihood space.
@@ -629,6 +688,10 @@ class EmceeSampler(object):
         """Write flat chain to file"""
 
         saveDict={}
+
+        # we have not yet implemented book-keeping for extra P1D likelihood
+        if self.like.extra_p1d_like:
+            raise ValueError('implement book-keeping for extra_p1d_like')
 
         ## archive settings
         saveDict["basedir"]=self.like.theory.emulator.archive.basedir
@@ -675,9 +738,13 @@ class EmceeSampler(object):
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
         saveDict["include_CMB"]=self.like.include_CMB
-        saveDict["use_compression"]=self.like.use_compression
-        saveDict["reduced_IGM"]=self.like.reduced_IGM
         saveDict["cosmo_fid_label"]=self.like.cosmo_fid_label
+        saveDict["use_compression"]=self.like.use_compression
+        if self.like.use_compression==3:
+            if self.like.marg_p1d.kde_fname:
+                saveDict["kde_fname"]=self.like.marg_p1d.kde_fname
+            else:
+                saveDict["reduced_IGM"]=self.like.marg_p1d.reduced_IGM
 
         # Make sure (As,ns,nrun) were defined in standard pivot_scalar
         if hasattr(self.like.theory,"cosmo_model_fid"):
@@ -707,7 +774,11 @@ class EmceeSampler(object):
         with open(self.save_directory+"/config.json", "w") as json_file:
             json.dump(saveDict,json_file)
 
+        # save config info in plain text as well
         self._write_dict_to_text(saveDict)
+
+        # save KDE for (Delta2_star,n_star), to use as marginalised P1D
+        self.write_kde(delta_lnprob_cut=None,Nj=100j)
 
         ## Save plots
         ## Using try as have latex issues when running on compute

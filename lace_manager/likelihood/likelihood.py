@@ -26,7 +26,8 @@ class Likelihood(object):
                     include_CMB=False,
                     use_compression=0,
                     marg_p1d=None,
-                    extra_p1d_data=None):
+                    extra_p1d_data=None,
+                    min_log_like=-1e100):
         """Setup likelihood from theory and data. Options:
             - data (required) is the data to model
             - theory (optional) if not provided, will setup using emulator and
@@ -52,7 +53,8 @@ class Likelihood(object):
                                  on Delta2_star and n_star
                                4 to compress into 5 parameters
             - marg_p1d: marginalised constraints to be used with compression=3
-            - extra_p1d_data: extra P1D data, e.g., from HIRES"""
+            - extra_p1d_data: extra P1D data, e.g., from HIRES
+            - min_log_like: use this instead of - infinity"""
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
@@ -60,6 +62,7 @@ class Likelihood(object):
         self.include_CMB=include_CMB
         self.use_compression=use_compression
         self.cosmo_fid_label=cosmo_fid_label
+        self.min_log_like=min_log_like
 
         self.data=data
         # (optionally) get rid of low-k data points
@@ -380,7 +383,7 @@ class Likelihood(object):
         return data_covar, emu_covar
 
 
-    def get_marg_lya_like(self,values=None,return_blob=False):
+    def get_marg_p1d_log_like(self,values=None,return_blob=False):
         """ Get log likelihood from P1D using pre-marginalised
             constraints on Delta2_star and n_star """
 
@@ -397,12 +400,16 @@ class Likelihood(object):
         # make sure that we have not changed the blobs
         assert self.theory.get_blobs_dtype()[0][0]=='Delta2_star'
         assert self.theory.get_blobs_dtype()[1][0]=='n_star'
-
         Delta2_star=blob[0]
         n_star=blob[1]
 
+        # we need this to check consistency in the pivot point used
+        z_star = self.theory.recons.z_star
+        kp_kms = self.theory.recons.kp_kms
+
         # compute log-likelihood from marginalised posterior
-        log_like=self.marg_p1d.return_lya_like(np.array([Delta2_star,n_star]))
+        log_like=self.marg_p1d.get_log_like(Delta2_star=Delta2_star,
+                    n_star=n_star,z_star=z_star,kp_kms=kp_kms)
 
         if return_blob:
             return log_like,blob
@@ -420,8 +427,10 @@ class Likelihood(object):
         zs=self.data.z
         Nz=len(zs)
 
+        # check if using marginalised posteriors
         if self.use_compression==3:
-            return self.get_marg_lya_like(values=values,return_blob=return_blob)
+            return self.get_marg_p1d_log_like(values=values,
+                        return_blob=return_blob)
 
         # ask emulator prediction for P1D in each bin
         if return_blob:
@@ -472,6 +481,15 @@ class Likelihood(object):
             return log_like
 
 
+    def regulate_log_like(self,log_like):
+        """Make sure that log_like is not NaN, nor tiny"""
+
+        if (log_like is None) or math.isnan(log_like):
+            return self.min_log_like
+
+        return max(self.min_log_like,log_like)
+
+
     def compute_log_prob(self,values,return_blob=False):
         """Compute log likelihood plus log priors for input values
             - if return_blob==True, it will return also extra information"""
@@ -480,9 +498,9 @@ class Likelihood(object):
         if (max(values) > 1.0) or (min(values) < 0.0):
             if return_blob:
                 dummy_blob=self.theory.get_blob()
-                return -np.inf, dummy_blob
+                return self.min_log_like, dummy_blob
             else:
-                return -np.inf
+                return self.min_log_like
 
         # compute log_prior
         log_prior=self.get_log_prior(values)
@@ -501,13 +519,8 @@ class Likelihood(object):
                         ignore_log_det_cov=False,return_blob=False)
             log_like += extra_log_like
 
-        if log_like == None or math.isnan(log_like)==True:
-            if self.verbose: print('was not able to emulate at least on P1D')
-            if return_blob:
-                dummy_blob=self.theory.get_blob()
-                return -np.inf, dummy_blob
-            else:
-                return -np.inf
+        # regulate log-like (not NaN, not tiny)
+        log_like=self.regulate_log_like(log_like)
 
         if return_blob:
             return log_like + log_prior, blob
@@ -537,9 +550,9 @@ class Likelihood(object):
 
         # Always force parameter to be within range (for now)
         if max(values) > 1.0:
-            return -np.inf
+            return self.min_log_like
         if min(values) < 0.0:
-            return -np.inf
+            return self.min_log_like
 
         ## If we are including CMB information, use this as the prior
         if self.include_CMB==True:

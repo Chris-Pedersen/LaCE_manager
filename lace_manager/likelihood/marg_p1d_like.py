@@ -23,13 +23,13 @@ class MargP1DLike(object):
         if kde_fname:
             print('will setup marg_p1d from KDE file',kde_fname)
             self.kde_fname=kde_fname
-            self.kde_lnprob=read_kde(self.kde_fname)
+            self.kde_prob=read_kde(self.kde_fname)
             self.Gauss_mean=None
             self.Gauss_icov=None
         else:
             print('will setup Gaussian marg_p1d')
             self.kde_fname=None
-            self.kde_lnprob=None
+            self.kde_prob=None
             # need to store this in chain info file
             self.sim_label=sim_label
             self.polyfit=polyfit
@@ -75,49 +75,77 @@ class MargP1DLike(object):
             self.Gauss_icov=np.linalg.inv(cov)
 
 
-    def return_lya_like(self,vals):
-        """ vals is a numpy array of the Delta2_star and n_star
-            values we want to evaluate the likelihood at """
+    def get_log_like(self,Delta2_star,n_star,z_star=3.0,kp_kms=0.009):
+        """ Return (marginalised) log likelihood on compressed parameters"""
 
-        if self.kde_lnprob:
-            return self.get_kde_lnprob(vals)
+        # for now, assume we use the traditional pivot point
+        assert (z_star==3.0) and (kp_kms==0.009), 'update pivot point'
+
+        if self.kde_prob:
+            return np.log(self.get_kde_prob(Delta2_star,n_star))
         else:
-            diff=self.Gauss_mean-vals
+            diff=self.Gauss_mean-np.array([Delta2_star,n_star])
             return -0.5*np.dot(np.dot(self.Gauss_icov,diff),diff)
 
 
-    def get_kde_lnprob(self,vals):
-        """ Compute lnprob from KDE"""
-
-        # get compressed parameters
-        D2_star=vals[0]
-        n_star=vals[1]
+    def get_kde_prob(self,Delta2_star,n_star,min_prob=0.0001):
+        """ Compute probability from KDE"""
 
         # check parameters are within range
-        x,y=self.kde_lnprob.get_knots()
-        if (np.min(x)>D2_star) or (np.max(x)<D2_star):
-            #print('D2_star={:.5f} out of bounds'.format(D2_star))
-            return -np.inf
-        if (np.min(y)>n_star) or (np.max(y)<n_star):
-            #print('n_star={:.5f} out of bounds'.format(n_star))
-            return -np.inf
+        x,y=self.kde_prob.get_knots()
+        if (np.min(x)>np.min(Delta2_star)) or (np.max(x)<np.max(Delta2_star)):
+            return min_prob
+        if (np.min(y)>np.min(n_star)) or (np.max(y)<np.max(n_star)):
+            return min_prob
 
-        return self.kde_lnprob.ev(D2_star,n_star)
+        prob=self.kde_prob.ev(Delta2_star,n_star)
+        return np.fmax(min_prob,prob)
+
+
+    def plot_log_like(self,min_Delta2_star=0.25,max_Delta2_star=0.45,
+                min_n_star=-2.32,max_n_star=-2.28,plot_min_prob=0.01):
+        """Plot 2D contour with marginalised posterior"""
+        import matplotlib.pyplot as plt
+
+        # number of points per dimension
+        Nj=200j
+        X, Y = np.mgrid[min_Delta2_star:max_Delta2_star:Nj,
+                        min_n_star:max_n_star:Nj]
+        # evalute log-likelihood in 2D grid
+        Z = np.empty_like(X)
+        N=int(Nj.imag)
+        assert X.shape==(N,N)
+        for ix in range(N):
+            for iy in range(N):
+                Z[ix,iy] = self.get_log_like(Delta2_star=X[ix,iy],
+                                                        n_star=Y[ix,iy])
+
+        # specify color map and range
+        cmap=plt.cm.gist_earth_r
+        extent=[min_Delta2_star,max_Delta2_star,min_n_star,max_n_star]
+        plt.imshow(np.rot90(Z),cmap=cmap,extent=extent,
+                    vmin=np.log(plot_min_prob),vmax=0.0,label='density')
+        plt.xlabel(r'$\Delta_\star$',fontsize=16)
+        plt.ylabel(r'$n_\star$',fontsize=16)
+        plt.colorbar()
+        plt.show()
 
 
 def read_kde(kde_fname):
     """ Read KDE from file, and setup 2D interpolator"""
 
     # open binary file
+    print('read KDE from file',kde_fname)
     data = np.load(kde_fname)
 
     # read 2D grid of parameters and KDE density
     D2_star=data['D2_star']
     n_star=data['n_star']
-    lnprob=np.log(data['density'])
-    max_lnprob=np.max(lnprob)
+    prob=data['density']
+    max_prob=np.max(prob)
+    print('will divide by max prob =',max_prob)
+    prob/=max_prob
 
     # setup interpolator for normalised log probability
-    return scipy.interpolate.RectBivariateSpline(D2_star,n_star,
-                lnprob-max_lnprob)
+    return scipy.interpolate.RectBivariateSpline(D2_star,n_star,prob)
 

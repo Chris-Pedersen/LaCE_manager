@@ -102,8 +102,8 @@ class MargP1DLike(object):
         return np.fmax(min_prob,prob)
 
 
-    def plot_log_like(self,min_Delta2_star=0.25,max_Delta2_star=0.45,
-                min_n_star=-2.32,max_n_star=-2.28,plot_min_prob=0.01):
+    def plot_log_like(self,min_Delta2_star=0.31,max_Delta2_star=0.38,
+                min_n_star=-2.33,max_n_star=-2.26,plot_min_prob=0.01):
         """Plot 2D contour with marginalised posterior"""
         import matplotlib.pyplot as plt
 

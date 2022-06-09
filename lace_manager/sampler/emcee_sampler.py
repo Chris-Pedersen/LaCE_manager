@@ -334,7 +334,8 @@ class EmceeSampler(object):
             # total number and masked points in chain
             nt=len(lnprob)
             nm=sum(mask)
-            print('will keep {} \ {} points from chain'.format(nm,nt))
+            if self.verbose:
+                print('will keep {} \ {} points from chain'.format(nm,nt))
             chain=chain[mask]
             lnprob=lnprob[mask]
             blobs=blobs[mask]
@@ -623,13 +624,13 @@ class EmceeSampler(object):
         return
 
 
-    def write_kde(self,delta_lnprob_cut=None,Nj=100j):
+    def write_kde(self,delta_lnprob_cut=50,N=40):
         """Compute KDE for (Delta2_star,n_star) and save to file.
             - delta_lnprob_cut: reject low-probability points
-            - Nj (default=100j): number of points in 2D grid. """
+            - N: number of points in 2D grid for KDE. """
 
         fname='{}/kde.npz'.format(self.save_directory)
-        print('will print KDE to',fname)
+        if self.verbose: print('will print KDE to',fname)
 
         # get chain points and probabilities
         chain,lnprob,blobs=self.get_chain(cube=False,
@@ -641,30 +642,25 @@ class EmceeSampler(object):
         xmax = x.max()
         ymin = y.min()
         ymax = y.max()
-        print('{:.3f} < Delta2_star < {:.3f}'.format(xmin,xmax))
-        print('{:.3f} < n_star < {:.3f}'.format(ymin,ymax))
-        # maximum likelihood points
-        max_lnprob=np.max(lnprob)
-        imax=np.where(lnprob==max_lnprob)
-        max_like_D2_star=x[imax][0]
-        max_like_n_star=y[imax][0]
-        print('Delta2_star (max like) =',max_like_D2_star)
-        print('n_star (max like) =',max_like_n_star)
+        if self.verbose:
+            print('{:.3f} < Delta2_star < {:.3f}'.format(xmin,xmax))
+            print('{:.3f} < n_star < {:.3f}'.format(ymin,ymax))
+        if self.verbose:
+            # maximum likelihood points
+            max_lnprob=np.max(lnprob)
+            imax=np.where(lnprob==max_lnprob)
+            max_like_D2_star=x[imax][0]
+            max_like_n_star=y[imax][0]
+            print('Delta2_star (max like) = {:.3f}'.format(max_like_D2_star))
+            print('n_star (max like) = {:.3f}'.format(max_like_n_star))
         # setup regular 2D grid for KDE
+        Nj=complex(0,N)
         X, Y = np.mgrid[xmin:xmax:Nj, ymin:ymax:Nj]
         positions = np.vstack([X.ravel(), Y.ravel()])
         values = np.vstack([x, y])
         kernel = scipy.stats.gaussian_kde(values,bw_method=None)
         Z = np.reshape(kernel(positions).T, X.shape)
-        # max-like values from KDE
-        kde_max_D2_star=X[Z==np.max(Z)][0]
-        kde_max_n_star=Y[Z==np.max(Z)][0]
-        print('Delta2_star (max KDE) =',kde_max_D2_star)
-        print('n_star (max KDE) =',kde_max_n_star)
         # store to file
-        print('x size',X.shape,len(np.unique(X)))
-        print('y size',X.shape,len(np.unique(Y)))
-        print('z size',Z.shape)
         np.savez(fname,D2_star=np.unique(X),n_star=np.unique(Y),density=Z)
 
         return
@@ -778,7 +774,7 @@ class EmceeSampler(object):
         self._write_dict_to_text(saveDict)
 
         # save KDE for (Delta2_star,n_star), to use as marginalised P1D
-        self.write_kde(delta_lnprob_cut=None,Nj=100j)
+        self.write_kde()
 
         ## Save plots
         ## Using try as have latex issues when running on compute

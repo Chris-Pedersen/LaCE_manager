@@ -135,7 +135,6 @@ def read_kde(kde_fname):
     """ Read KDE from file, and setup 2D interpolator"""
 
     # open binary file
-    print('read KDE from file',kde_fname)
     data = np.load(kde_fname)
 
     # read 2D grid of parameters and KDE density
@@ -143,7 +142,6 @@ def read_kde(kde_fname):
     n_star=data['n_star']
     prob=data['density']
     max_prob=np.max(prob)
-    print('will divide by max prob =',max_prob)
     prob/=max_prob
 
     # setup interpolator for normalised log probability

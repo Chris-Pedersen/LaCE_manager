@@ -9,6 +9,7 @@ from lace.emulator import gp_emulator
 from lace.emulator import p1d_archive
 from lace_manager.data import data_MPGADGET
 from lace_manager.likelihood import likelihood
+from lace_manager.likelihood import marg_p1d_like
 from lace_manager.sampler import emcee_sampler
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -32,7 +33,8 @@ parser.add_argument('--data_cov_label', type=str, default='Chabanier2019', help=
 parser.add_argument('--rootdir', type=str, default=None, help='Root directory containing chains')
 parser.add_argument('--include_CMB', action='store_true', help='Include CMB information?')
 parser.add_argument('--use_compression', type=int, default=0, help='Go through compression parameters?')
-parser.add_argument('--extra_p1d_label', type=str, default=None, help='Which extra p1d data covmats to use (Karacayli_HIRES, Chabanier2019, etc.)')
+parser.add_argument('--kde_fname', type=str, default=None, help='full path to KDE file to be used as marginalised P1D (compression=3)')
+parser.add_argument('--extra_p1d_label', type=str, default=None, help='Which extra p1d data covmats to use (e.g., Karacayli_HIRES)')
 parser.add_argument('--free_cosmo_params', nargs="+", help='List of cosmological parameters to sample')
 args = parser.parse_args()
 
@@ -48,10 +50,10 @@ basedir='/lace/emulator/sim_suites/Australia20/'
 
 if args.rootdir:
     rootdir=args.rootdir
+    print('set input rootdir',rootdir)
 else:
     rootdir='/global/cfs/cdirs/desi/users/font/compression/chains/'
-    print('set rootdir',rootdir)
-
+    print('use default rootdir',rootdir)
 
 # compile list of free parameters
 if args.free_cosmo_params:
@@ -112,7 +114,15 @@ else:
 
 # setup marginalised P1D likelihood if needed
 if args.use_compression==3:
-    raise ValueError('implement KDE')
+    if args.kde_fname:
+        print('will use KDE marg_p1d from file',args.kde_fname)
+        marg_p1d=marg_p1d_like.MargP1DLike(kde_fname=args.kde_fname)
+    else:
+        print('will use Gaussian marg_p1d')
+        marg_p1d=marg_p1d_like.MargP1DLike(sim_label=data.sim_label,
+                    reduced_IGM=args.simple_igm,polyfit=data.polyfit)
+else:
+    marg_p1d=None
 
 # create likelihood object from data and emulator
 like=likelihood.Likelihood(data=data,emulator=emu,
@@ -121,6 +131,7 @@ like=likelihood.Likelihood(data=data,emulator=emu,
                         include_CMB=args.include_CMB,
                         cosmo_fid_label=args.cosmo_fid_label,
                         use_compression=args.use_compression,
+                        marg_p1d=marg_p1d,
                         extra_p1d_data=extra_p1d_data)
 
 # pass likelihood to sampler

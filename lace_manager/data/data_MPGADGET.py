@@ -19,7 +19,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     """ Class to load an MP-Gadget simulation as a mock
     data object. Can use PD2013 or Chabanier2019 covmats """
 
-    def __init__(self,basedir="/p1d_emulator/sim_suites/Australia20/",
+    def __init__(self,basedir="/lace/emulator/sim_suites/Australia20/",
             sim_label="central",
             skewers_label='Ns500_wM0.05',
             zmin=None,zmax=None,z_list=None,

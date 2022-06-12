@@ -5,9 +5,10 @@ class MargP1DLike(object):
     """ Object to return a Gaussian approximation to the marginalised
         likelihood on Delta2_star and n_star from a mock simulation """
     
-    def __init__(self,kde_fname=None,
+    def __init__(self,kde_fname=None,Gnedin=False,
                 sim_label=None,reduced_IGM=False,polyfit=False):
         """  - kde_fname: read marginalised P1D from KDE filed (ignore other)
+             - Gnedin: Gaussianize n_star with monotonic function from Nick
              - sim_label: simulation we are using as a mock dataset
              - reduced_IGM: use a covariance matrix after
                marginalising over only ln_tau_0, in the interests
@@ -26,10 +27,26 @@ class MargP1DLike(object):
             self.kde_prob=read_kde(self.kde_fname)
             self.Gauss_mean=None
             self.Gauss_icov=None
+            self.Gnedin=None
+        elif Gnedin:
+            print('will setup Gaussianized marg_p1d')
+            self.kde_fname=None
+            self.kde_prob=None
+            self.Gnedin=True
+            assert polyfit and sim_label=="central" and not reduced_IGM, "Gaussianize"
+            # need to store this in chain info file
+            self.sim_label=sim_label
+            self.polyfit=polyfit
+            self.reduced_IGM=reduced_IGM
+            # When marginalising over 8 IGM parameters
+            self.Gauss_mean=np.array([0.34939,0.19337])
+            cov=np.array([[1.7815e-04, 5.0512e-03], [5.0512e-03, 1.1383e+00]])
+            self.Gauss_icov=np.linalg.inv(cov)
         else:
             print('will setup Gaussian marg_p1d')
             self.kde_fname=None
             self.kde_prob=None
+            self.Gnedin=False
             # need to store this in chain info file
             self.sim_label=sim_label
             self.polyfit=polyfit
@@ -55,7 +72,7 @@ class MargP1DLike(object):
                                     [3.19638330e-05, 1.94088790e-05]])
             else:
                 if sim_label=="central":
-                    self.Gauss_mean=np.array([0.3462,-2.2986])
+                    self.Gauss_mean=np.array([0.3494,-2.3026])
                 elif sim_label=="nu":
                     self.Gauss_mean=np.array([0.356,-2.3041])
                 elif sim_label=="running":
@@ -65,8 +82,8 @@ class MargP1DLike(object):
                 # Covariance should be independent of simulation
                 if reduced_IGM==False:
                     # When marginalising over 8 IGM parameters
-                    cov=np.array([[1.56e-04, 4.67e-05],
-                                    [4.67e-05, 5.4e-05]])
+                    cov=np.array([[1.782e-04, 3.9623e-05],
+                                    [3.9623e-05, 6.5565e-05]])
                 else:
                     # When marginalising only over ln_tau_0
                     cov=np.array([[7.75e-05,2.59e-05 ],
@@ -84,7 +101,16 @@ class MargP1DLike(object):
         if self.kde_prob:
             return np.log(self.get_kde_prob(Delta2_star,n_star))
         else:
-            diff=self.Gauss_mean-np.array([Delta2_star,n_star])
+            if self.Gnedin:
+                # hard-coded for now
+                mean_n_star=-2.302567
+                rms_n_star=0.0080972
+                u=(n_star-mean_n_star)/rms_n_star
+                us=u+0.2
+                uf = us*(3.5-1.5*np.tanh(0.5*us))/3 - 0.03
+                diff=self.Gauss_mean-np.array([Delta2_star,uf])
+            else:
+                diff=self.Gauss_mean-np.array([Delta2_star,n_star])
             return -0.5*np.dot(np.dot(self.Gauss_icov,diff),diff)
 
 

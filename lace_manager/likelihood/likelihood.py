@@ -36,8 +36,7 @@ class Likelihood(object):
             - cosmo_fid_label (optional) to specify fiducial cosmology
                         default: use default Planck-like cosmology
                         truth: read true cosmology used in simulation
-                        low_omch2: use Omega_c h^2=0.11
-                        high_omch2: use Omega_c h^2=0.13
+                        look at cosmologies.py for more options
             - free_param_names is a list of param names, in any order
             - free_param_limits list of tuples, same order than free_param_names
             - if prior_Gauss_rms is None it will use uniform priors
@@ -176,6 +175,9 @@ class Likelihood(object):
         else:
             self.extra_p1d_like=None
 
+        # sometimes we want to know the true theory (when working with mocks)
+        self.set_truth()
+
         return
 
 
@@ -306,6 +308,36 @@ class Likelihood(object):
 
         assert hasattr(self.data,"mock_sim"), "p1d data is not a mock"
         return self.data.mock_sim.sim_cosmo
+
+
+    def set_truth(self):
+        """ Store true cosmology from the simulation used to make mock data"""
+
+        # access true cosmology used in mock data
+        sim_cosmo=self.get_sim_cosmo()
+        camb_results_sim=camb_cosmo.get_camb_results(sim_cosmo)
+
+        # store relevant parameters
+        self.truth={}
+        self.truth["ombh2"]=sim_cosmo.ombh2
+        self.truth["omch2"]=sim_cosmo.omch2
+        self.truth["As"]=sim_cosmo.InitPower.As
+        self.truth["ns"]=sim_cosmo.InitPower.ns
+        self.truth["nrun"]=sim_cosmo.InitPower.nrun
+        self.truth["H0"]=sim_cosmo.H0
+        self.truth["mnu"]=camb_cosmo.get_mnu(sim_cosmo)
+        self.truth["cosmomc_theta"]=camb_results_sim.cosmomc_theta()
+
+        # Store truth for compressed parameters
+        linP_sim=fit_linP.parameterize_cosmology_kms(cosmo=sim_cosmo,
+                        camb_results=camb_results_sim,
+                        z_star=self.theory.recons.z_star,
+                        kp_kms=self.theory.recons.kp_kms)
+        self.truth["Delta2_star"]=linP_sim["Delta2_star"]
+        self.truth["n_star"]=linP_sim["n_star"]
+        self.truth["alpha_star"]=linP_sim["alpha_star"]
+        self.truth["f_star"]=linP_sim["f_star"]
+        self.truth["g_star"]=linP_sim["g_star"]
 
 
     def get_cmb_like(self,values):
@@ -718,8 +750,8 @@ class Likelihood(object):
 
         # ask emulator prediction for P1D in each bin
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
-        emu_calls=self.theory.get_emulator_calls(self.parameters_from_sampling_point(values))
-
+        like_params=self.parameters_from_sampling_point(values)
+        emu_calls=self.theory.get_emulator_calls(like_params)
         if self.verbose: print('got P1D from emulator')
 
         # plot only few redshifts for clarity

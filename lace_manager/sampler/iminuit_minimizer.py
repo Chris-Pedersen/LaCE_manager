@@ -20,7 +20,7 @@ class IminuitMinimizer(object):
         # setup iminuit object (errordef=0.5 if using log-likelihood)
         self.minimizer = Minuit(like.minus_log_prob,ini_values)
         self.minimizer.errordef=0.5
-        self.minimizer.error=error
+        self.minimizer.errors=error
         self.minimizer.print_level=print_level
 
 
@@ -34,18 +34,19 @@ class IminuitMinimizer(object):
             if self.verbose: print('will compute Hessian matrix')
             self.minimizer.hesse()
 
+        return
 
-    def plot_best_fit(self,plot_every_iz=1):
+    def plot_best_fit(self,plot_every_iz=1,residuals=True):
         """Plot best-fit P1D vs data.
             - plot_every_iz (int): skip some redshift bins. """
 
         # get best-fit values from minimizer (should check that it was run)
-        best_fit_values=self.minimizer.np_values()
+        best_fit_values=np.array(self.minimizer.values)
         if self.verbose: print('best-fit values =',best_fit_values)
 
         plt.title("iminuit best fit")
-        self.like.plot_p1d(plot_every_iz=plot_every_iz,values=best_fit_values)
-        plt.show()
+        self.like.plot_p1d(values=best_fit_values,plot_every_iz=plot_every_iz,
+                    residuals=residuals)
 
         return
 
@@ -67,7 +68,7 @@ class IminuitMinimizer(object):
             - return_hess: set to true to return also Gaussian error"""
 
         # get best-fit values from minimizer (in unit cube)
-        cube_values=self.minimizer.np_values()
+        cube_values=np.array(self.minimizer.values)
         if self.verbose: print('cube values =',cube_values)
 
         # get index for this parameter, and normalize value
@@ -77,7 +78,7 @@ class IminuitMinimizer(object):
 
         # check if you were asked for errors as well
         if return_hesse:
-            cube_errors=self.minimizer.np_errors()
+            cube_errors=self.minimizer.errors()
             par_error = cube_errors[ipar] *(par.max_value-par.min_value)
             return par_value, par_error
         else:
@@ -92,16 +93,32 @@ class IminuitMinimizer(object):
         from matplotlib.patches import Ellipse
         from numpy import linalg as LA
 
+        # figure out true values of parameters
+        if self.verbose:
+            print('compute true values for',pname_x,pname_y)
+            if pname_x in self.like.truth:
+                true_x=self.like.truth[pname_x]
+                if pname_x=='As':
+                    true_x*=1e9
+            else:
+                true_x=0.0
+            if pname_y in self.like.truth:
+                true_y=self.like.truth[pname_y]
+                if pname_y=='As':
+                    true_y*=1e9
+            else:
+                true_y=0.0
+
         # figure out order of parameters in free parameters list
         ix=self.index_by_name(pname_x)
         iy=self.index_by_name(pname_y)
 
         # find out best-fit values, errors and covariance for parameters
-        val_x=self.minimizer.np_values()[ix]
-        val_y=self.minimizer.np_values()[iy]
-        sig_x=self.minimizer.np_errors()[ix]
-        sig_y=self.minimizer.np_errors()[iy]
-        r=self.minimizer.np_covariance()[ix,iy]/sig_x/sig_y
+        val_x=self.minimizer.values[ix]
+        val_y=self.minimizer.values[iy]
+        sig_x=self.minimizer.errors[ix]
+        sig_y=self.minimizer.errors[iy]
+        r=self.minimizer.covariance[ix,iy]/sig_x/sig_y
 
         # rescale from cube values (unless asked not to)
         if not cube_values:
@@ -146,3 +163,5 @@ class IminuitMinimizer(object):
         plt.ylabel(pname_y)
         plt.xlim(val_x-(nsig+1)*sig_x,val_x+(nsig+1)*sig_x)
         plt.ylim(val_y-(nsig+1)*sig_y,val_y+(nsig+1)*sig_y)
+        plt.axhline(y=true_y,ls=':',color='gray')
+        plt.axvline(x=true_x,ls=':',color='gray')

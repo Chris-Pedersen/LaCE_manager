@@ -83,37 +83,14 @@ class EmceeSampler(object):
         """ Set up dictionary with true values of cosmological
         likelihood parameters for plotting purposes """
 
-        # this will crash if not running on mock data
-        sim_cosmo=self.like.get_sim_cosmo()
-        camb_results_sim=camb_cosmo.get_camb_results(sim_cosmo)
-        linP_sim=fit_linP.parameterize_cosmology_kms(cosmo=sim_cosmo,
-                        camb_results=camb_results_sim,
-                        z_star=self.like.theory.recons.z_star,
-                        kp_kms=self.like.theory.recons.kp_kms)
+        # likelihood contains true parameters, but not in latex names
+        like_truth=self.like.truth
 
-        ## Get all possible likelihood params
-        all_truth={}
-        all_truth["ombh2"]=sim_cosmo.ombh2
-        all_truth["omch2"]=sim_cosmo.omch2
-        all_truth["As"]=sim_cosmo.InitPower.As
-        all_truth["ns"]=sim_cosmo.InitPower.ns
-        all_truth["nrun"]=sim_cosmo.InitPower.nrun
-        all_truth["H0"]=sim_cosmo.H0
-        all_truth["mnu"]=camb_cosmo.get_mnu(sim_cosmo)
-        all_truth["cosmomc_theta"]=camb_results_sim.cosmomc_theta()
-
-        ## Store truth for compressed parameters
-        all_truth["Delta2_star"]=linP_sim["Delta2_star"]
-        all_truth["n_star"]=linP_sim["n_star"]
-        all_truth["alpha_star"]=linP_sim["alpha_star"]
-        all_truth["f_star"]=linP_sim["f_star"]
-        all_truth["g_star"]=linP_sim["g_star"]
-
-        ## Store truth for all parameters, whether free or not
+        # store truth for all parameters, with LaTeX keywords
         self.truth={}
         for param in cosmo_params:
             param_string=param_dict[param]
-            self.truth[param_string]=all_truth[param]
+            self.truth[param_string]=like_truth[param]
 
         return
 

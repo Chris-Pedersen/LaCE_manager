@@ -18,8 +18,10 @@ class IminuitMinimizer(object):
         ini_values=0.5*np.ones(len(self.like.free_params))
 
         # setup iminuit object (errordef=0.5 if using log-likelihood)
-        self.minimizer = Minuit.from_array_func(like.minus_log_prob,ini_values,
-                error=error,errordef=0.5,print_level=print_level)
+        self.minimizer = Minuit(like.minus_log_prob,ini_values)
+        self.minimizer.errordef=0.5
+        self.minimizer.error=error
+        self.minimizer.print_level=print_level
 
 
     def minimize(self,compute_hesse=True):
@@ -110,11 +112,11 @@ class IminuitMinimizer(object):
             val_y = par_y.value_from_cube(val_y)
             sig_y = sig_y * (par_y.max_value - par_y.min_value)
             # multiply As by 10^9 for now, otherwise ellipse crashes
-            if pname_x is 'As':
+            if pname_x == 'As':
                 val_x *= 1e9
                 sig_x *= 1e9
                 pname_x += ' x 1e9'
-            if pname_y is 'As':
+            if pname_y == 'As':
                 val_y *= 1e9
                 sig_y *= 1e9
                 pname_y += ' x 1e9'

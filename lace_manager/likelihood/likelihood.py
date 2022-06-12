@@ -576,6 +576,9 @@ class Likelihood(object):
     def maximise_posterior(self,initial_values=None,method='nelder-mead',tol=1e-4):
         """Run scipy minimizer to find maximum of posterior"""
 
+        if not initial_values:
+            initial_values=np.ones(len(self.free_params))*0.5
+
         return minimize(self.minus_log_prob, x0=initial_values,method=method,tol=tol)
 
 

@@ -5,7 +5,7 @@ import h5py
 import matplotlib.pyplot as plt
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
-from lace_manager.postprocess import extract_skewers
+from lace_manager.nuisance import thermal_model
 
 class archiveP1D_Nyx(object):
     """Book-keeping of flux P1D measured in a suite of Nyx simulations."""
@@ -143,8 +143,10 @@ class archiveP1D_Nyx(object):
                     T0=thermal_params['T_0']
                     p1d_data['T0']=T0
                     p1d_data['gamma']=thermal_params['gamma']
-                    p1d_data['sigT_Mpc']=extract_skewers.thermal_broadening_Mpc(
-                                T0,dkms_dMpc)
+                    # compute thermal broadening in Mpc
+                    sigma_T_kms=thermal_model.thermal_broadening_kms(T0)
+                    sigma_T_Mpc=sigma_T_kms/dkms_dMpc
+                    p1d_data['sigT_Mpc']=sigma_T_Mpc
                     self.data.append(p1d_data)                
 
         N=len(self.data)

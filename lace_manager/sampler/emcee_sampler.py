@@ -503,9 +503,9 @@ class EmceeSampler(object):
         except:
             use_compression=0
         if use_compression==3:
-            if "kde_fname" in config:
-                fname=config["kde_fname"]
-                marg_p1d=marg_p1d_like.MargP1DLike(kde_fname=fname)
+            if "grid_fname" in config:
+                fname=config["grid_fname"]
+                marg_p1d=marg_p1d_like.MargP1DLike(grid_fname=fname)
             else:
                 try:
                     reduced_IGM=config["reduced_IGM"]
@@ -638,7 +638,7 @@ class EmceeSampler(object):
         kernel = scipy.stats.gaussian_kde(values,bw_method=None)
         Z = np.reshape(kernel(positions).T, X.shape)
         # store to file
-        np.savez(fname,D2_star=np.unique(X),n_star=np.unique(Y),density=Z)
+        np.savez(fname,Delta2_star=np.unique(X),n_star=np.unique(Y),density=Z)
 
         return
 
@@ -714,8 +714,8 @@ class EmceeSampler(object):
         saveDict["cosmo_fid_label"]=self.like.cosmo_fid_label
         saveDict["use_compression"]=self.like.use_compression
         if self.like.use_compression==3:
-            if self.like.marg_p1d.kde_fname:
-                saveDict["kde_fname"]=self.like.marg_p1d.kde_fname
+            if self.like.marg_p1d.grid_fname:
+                saveDict["grid_fname"]=self.like.marg_p1d.grid_fname
             else:
                 saveDict["reduced_IGM"]=self.like.marg_p1d.reduced_IGM
 

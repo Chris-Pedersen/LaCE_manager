@@ -5,9 +5,9 @@ class MargP1DLike(object):
     """ Object to return a Gaussian approximation to the marginalised
         likelihood on Delta2_star and n_star from a mock simulation """
     
-    def __init__(self,kde_fname=None,Gnedin=False,
+    def __init__(self,grid_fname=None,Gnedin=False,
                 sim_label=None,reduced_IGM=False,polyfit=False):
-        """  - kde_fname: read marginalised P1D from KDE filed (ignore other)
+        """  - grid_fname: read 2D grid of marg P1D from file (ignore others)
              - Gnedin: Gaussianize n_star with monotonic function from Nick
              - sim_label: simulation we are using as a mock dataset
              - reduced_IGM: use a covariance matrix after
@@ -21,17 +21,19 @@ class MargP1DLike(object):
             the same for each test sim """
             ### ANDREU: I don't think we should ever use the "truth" here!
 
-        if kde_fname:
-            print('will setup marg_p1d from KDE file',kde_fname)
-            self.kde_fname=kde_fname
-            self.kde_prob=read_kde(self.kde_fname)
+        if grid_fname:
+            print('will setup marg_p1d from grid file',grid_fname)
+            self.grid_fname=grid_fname
+            # setup grid for likelihood or log-likelihood
+            self.setup_grid()
             self.Gauss_mean=None
             self.Gauss_icov=None
             self.Gnedin=None
         elif Gnedin:
             print('will setup Gaussianized marg_p1d')
-            self.kde_fname=None
-            self.kde_prob=None
+            self.grid_fname=None
+            self.grid_like=None
+            self.grid_log_like=None
             self.Gnedin=True
             assert polyfit and sim_label=="central" and not reduced_IGM, "Gaussianize"
             # need to store this in chain info file
@@ -44,8 +46,9 @@ class MargP1DLike(object):
             self.Gauss_icov=np.linalg.inv(cov)
         else:
             print('will setup Gaussian marg_p1d')
-            self.kde_fname=None
-            self.kde_prob=None
+            self.grid_fname=None
+            self.grid_like=None
+            self.grid_log_like=None
             self.Gnedin=False
             # need to store this in chain info file
             self.sim_label=sim_label
@@ -98,8 +101,8 @@ class MargP1DLike(object):
         # for now, assume we use the traditional pivot point
         assert (z_star==3.0) and (kp_kms==0.009), 'update pivot point'
 
-        if self.kde_prob:
-            return np.log(self.get_kde_prob(Delta2_star,n_star))
+        if self.grid_like or self.grid_log_like:
+            return self.get_grid_log_like(Delta2_star,n_star)
         else:
             if self.Gnedin:
                 # hard-coded for now
@@ -114,18 +117,30 @@ class MargP1DLike(object):
             return -0.5*np.dot(np.dot(self.Gauss_icov,diff),diff)
 
 
-    def get_kde_prob(self,Delta2_star,n_star,min_prob=0.0001):
-        """ Compute probability from KDE"""
+    def get_grid_log_like(self,Delta2_star,n_star,min_prob=0.0001):
+        """ Compute log-likelihood from 2D grid"""
+
+        # minimum log-likelihood to avoid numerical noise
+        min_log_like=np.log(min_prob)
 
         # check parameters are within range
-        x,y=self.kde_prob.get_knots()
+        if self.grid_log_like:
+            x,y=self.grid_log_like.get_knots()
+        else:
+             x,y=self.grid_like.get_knots()
         if (np.min(x)>np.min(Delta2_star)) or (np.max(x)<np.max(Delta2_star)):
-            return min_prob
+            return min_log_like
         if (np.min(y)>np.min(n_star)) or (np.max(y)<np.max(n_star)):
-            return min_prob
+            return min_log_like
 
-        prob=self.kde_prob.ev(Delta2_star,n_star)
-        return np.fmax(min_prob,prob)
+        if self.grid_log_like:
+            log_like=self.grid_log_like.ev(Delta2_star,n_star)
+        elif self.grid_like:
+            log_like=np.log(self.grid_like.ev(Delta2_star,n_star))
+        else:
+            raise ValueError('we need either grid_like or grid_log_like')
+
+        return np.fmax(min_log_like,log_like)
 
 
     def plot_log_like(self,min_Delta2_star=0.31,max_Delta2_star=0.38,
@@ -157,19 +172,29 @@ class MargP1DLike(object):
         plt.show()
 
 
-def read_kde(kde_fname):
-    """ Read KDE from file, and setup 2D interpolator"""
+    def setup_grid(self):
+        """ Read 2D grid of (log) likelihood from file, and set interpolator"""
 
-    # open binary file
-    data = np.load(kde_fname)
+        # open binary file
+        data = np.load(self.grid_fname)
 
-    # read 2D grid of parameters and KDE density
-    D2_star=data['D2_star']
-    n_star=data['n_star']
-    prob=data['density']
-    max_prob=np.max(prob)
-    prob/=max_prob
+        # read 2D grid of parameters and KDE density
+        if 'D2_star' in data:
+            Delta2_star=data['D2_star']
+        else:
+            Delta2_star=data['Delta2_star']
+        n_star=data['n_star']
+        if 'density' in data:
+            like=data['density']
+            max_like=np.max(like)
+            self.grid_like=scipy.interpolate.RectBivariateSpline(
+                        Delta2_star,n_star,like/max_like)
+            self.grid_log_like=None
+        elif 'log_like' in data:
+            log_like=data['log_like']
+            max_log_like=np.max(log_like)
+            self.grid_log_like=scipy.interpolate.RectBivariateSpline(
+                        Delta2_star,n_star,log_like-max_log_like)
+            self.grid_like=None
 
-    # setup interpolator for normalised log probability
-    return scipy.interpolate.RectBivariateSpline(D2_star,n_star,prob)
-
+        return

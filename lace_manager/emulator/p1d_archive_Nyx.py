@@ -10,15 +10,15 @@ from lace_manager.nuisance import thermal_model
 class archiveP1D_Nyx(object):
     """Book-keeping of flux P1D measured in a suite of Nyx simulations."""
 
-    def __init__(self,fname=None,kp_Mpc=0.7,verbose=False):
+    def __init__(self,fname=None,kp_Mpc=0.7,verbosity=0):
         """Load archive from models file.
             linP params will be computed around kp_Mpc."""
 
         if not fname:
             assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
-            repo=os.environ['LACE_REPO']
+            repo=os.environ['LACE_REPO_REPO']
             fname=repo+'/lace_manager/emulator/sim_suites/test_nyx/models.hdf5'
-            if verbose:
+            if verbosity>0:
                 print('read Nyx archive from file',fname)
 
         self.fname=fname
@@ -26,7 +26,7 @@ class archiveP1D_Nyx(object):
         self.fulldir='fulldir_Nyx'
         self.p1d_label='p1d_Nyx'
         self.skewers_label='skewers_Nyx'
-        self.verbose=verbose
+        self.verbosity=verbosity
         self.drop_tau_rescalings=False
         self.drop_temp_rescalings=False
         self.nearest_tau=False
@@ -47,7 +47,7 @@ class archiveP1D_Nyx(object):
         self.data=[]
 
         # open Nyx file with all models and measured power
-        if self.verbose:
+        if self.verbosity>0:
             print('will read Nyx file',self.fname)
         f = h5py.File(self.fname, 'r')
 
@@ -61,7 +61,7 @@ class archiveP1D_Nyx(object):
         self.cube_data={'param_names':list(used_attrs_global[0].keys()),
                         'nsamples':self.nsamples,
                         'samples':used_attrs_global}
-        if self.verbose:
+        if self.verbosity>0:
             print('number of samples',self.cube_data['nsamples'])
             print('parameter names',self.cube_data['param_names'])
 
@@ -75,7 +75,7 @@ class archiveP1D_Nyx(object):
         for z in all_redshifts:
             if np.all([z in r for r in redshiftslist]):
                 used_redshifts.append(z)
-        if self.verbose:
+        if self.verbosity>0:
             print('will use redshift grid',used_redshifts)
 
         # get thermal parameters in grid
@@ -84,7 +84,7 @@ class archiveP1D_Nyx(object):
                         for s in used_redshifts]
         #might add a check here for assuring all are same length etc
         thermal_grid_str=thermal_grid_str[0][0] 
-        if self.verbose:
+        if self.verbosity>0:
             print('thermal grid',thermal_grid_str)
 
         #this is for sorting by z first, then cosmology, then thermal state
@@ -103,7 +103,7 @@ class archiveP1D_Nyx(object):
         # loop over cosmo, z, thermal
         for im,sim in enumerate(used_modellist):
             sim_params=used_attrs_global[im]
-            if self.verbose:
+            if self.verbosity>1:
                 print(sim,'params',sim_params)
             # setup CAMB object from sim_params
             sim_cosmo=camb_cosmo.get_Nyx_cosmology(sim_params)
@@ -115,7 +115,7 @@ class archiveP1D_Nyx(object):
             for iz,z in enumerate(used_redshifts):
                 # convert kms to Mpc (should be around 75 km/s/Mpc at z=3)
                 dkms_dMpc=camb_cosmo.dkms_dMpc(sim_cosmo,z=z)
-                if self.verbose:
+                if self.verbosity>2:
                     print('at z = {}, 1 Mpc = {} km/s'.format(z,dkms_dMpc))
 
                 # get linear power parameters describing snapshot
@@ -137,7 +137,7 @@ class archiveP1D_Nyx(object):
                     # add thermal parameters
                     thermal_str=modelgroupstrings[iz][im][it]
                     thermal_params=dict(f[thermal_str].attrs.items())
-                    if self.verbose:
+                    if self.verbosity>3:
                         print(thermal,'params',thermal_params)
                     p1d_data['mF']=thermal_params['Fbar']
                     T0=thermal_params['T_0']
@@ -150,7 +150,7 @@ class archiveP1D_Nyx(object):
                     self.data.append(p1d_data)                
 
         N=len(self.data)
-        if self.verbose:
+        if self.verbosity>0:
             print('archive setup, containing %d entries'%len(self.data))
 
         # create 1D arrays with all entries for a given parameter

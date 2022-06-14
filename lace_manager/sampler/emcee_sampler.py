@@ -19,6 +19,7 @@ from lace_manager.data import data_MPGADGET
 from lace_manager.data import data_PD2013
 from lace.emulator import p1d_archive
 from lace.emulator import gp_emulator
+from lace_manager.emulator import p1d_archive_Nyx
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
@@ -414,8 +415,12 @@ class EmceeSampler(object):
             kp=config["kp_Mpc"]
         except:
             kp=None
-        ## Set up the archive
-        archive=p1d_archive.archiveP1D(basedir=config["basedir"],
+
+        if "nyx_fname" in config:
+            nyx_fname=config["nyx_fname"]
+            archive=p1d_archive_Nyx.archiveP1D_Nyx(fname=nyx_fname,kp_Mpc=kp)
+        else:
+            archive=p1d_archive.archiveP1D(basedir=config["basedir"],
                             drop_tau_rescalings=config["drop_tau_rescalings"],
                             drop_temp_rescalings=config["drop_temp_rescalings"],
                             nearest_tau=config["nearest_tau"],
@@ -666,18 +671,21 @@ class EmceeSampler(object):
         if self.like.extra_p1d_like:
             raise ValueError('implement book-keeping for extra_p1d_like')
 
-        ## archive settings
-        saveDict["basedir"]=self.like.theory.emulator.archive.basedir
-        saveDict["skewers_label"]=self.like.theory.emulator.archive.skewers_label
-        saveDict["p1d_label"]=self.like.theory.emulator.archive.p1d_label
-        saveDict["drop_tau_rescalings"]=self.like.theory.emulator.archive.drop_tau_rescalings
-        saveDict["drop_temp_rescalings"]=self.like.theory.emulator.archive.drop_temp_rescalings
-        saveDict["nearest_tau"]=self.like.theory.emulator.archive.nearest_tau
-        saveDict["z_max"]=self.like.theory.emulator.archive.z_max
-        saveDict["undersample_cube"]=self.like.theory.emulator.archive.undersample_cube
-        saveDict["kp_Mpc"]=self.like.theory.emulator.archive.kp_Mpc
+        # identify Nyx archives
+        if hasattr(self.like.theory.emulator.archive,"fname"):
+            saveDict["nyx_fname"]=self.like.theory.emulator.archive.fname
+        else:
+            saveDict["basedir"]=self.like.theory.emulator.archive.basedir
+            saveDict["skewers_label"]=self.like.theory.emulator.archive.skewers_label
+            saveDict["p1d_label"]=self.like.theory.emulator.archive.p1d_label
+            saveDict["drop_tau_rescalings"]=self.like.theory.emulator.archive.drop_tau_rescalings
+            saveDict["drop_temp_rescalings"]=self.like.theory.emulator.archive.drop_temp_rescalings
+            saveDict["nearest_tau"]=self.like.theory.emulator.archive.nearest_tau
+            saveDict["z_max"]=self.like.theory.emulator.archive.z_max
+            saveDict["undersample_cube"]=self.like.theory.emulator.archive.undersample_cube
 
-        ## Emulator settings
+        # Emulator settings
+        saveDict["kp_Mpc"]=self.like.theory.emulator.archive.kp_Mpc
         saveDict["paramList"]=self.like.theory.emulator.paramList
         saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
 

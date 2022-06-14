@@ -16,7 +16,7 @@ class archiveP1D_Nyx(object):
 
         if not fname:
             assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
-            repo=os.environ['LACE_REPO_REPO']
+            repo=os.environ['LACE_MANAGER_REPO']
             fname=repo+'/lace_manager/emulator/sim_suites/test_nyx/models.hdf5'
             if verbosity>0:
                 print('read Nyx archive from file',fname)

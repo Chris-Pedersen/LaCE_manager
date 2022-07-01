@@ -579,13 +579,22 @@ class EmceeSampler(object):
         
         ## Create a new folder for this chain
         chain_count=1
-        sampler_directory=base_string+str(chain_count)
-        while os.path.isdir(sampler_directory):
-            chain_count+=1
+        while True:
             sampler_directory=base_string+str(chain_count)
-
-        os.mkdir(sampler_directory)
-        print("Made directory: ", sampler_directory)
+            if os.path.isdir(sampler_directory):
+                chain_count+=1
+                continue
+            else:
+                try:
+                    os.mkdir(sampler_directory)
+                    print('Created directory:',sampler_directory)
+                    break
+                except FileExistsError:
+                    print('Race condition for:',sampler_directory)
+                    # try again after one mili-second
+                    time.sleep(0.001)
+                    chain_count+=1
+                    continue
         self.save_directory=sampler_directory
 
         return 

@@ -24,16 +24,17 @@ parser.add_argument('--sim_label', type=str, default='central', help='Which sim 
 parser.add_argument('--kmax_Mpc', type=float, default=8, help='Maximum k to train emulator')
 parser.add_argument('--z_max', type=float, default=4.5, help='Maximum redshift')
 parser.add_argument('--simple_igm', action='store_true', help='Use a one-parameter IGM model for testing')
+parser.add_argument('--no_igm', action='store_true', help='Do not vary IGM parameters at all')
 parser.add_argument('--cosmo_fid_label', type=str, default='default', help='Fiducial cosmology to use (default,truth)')
 parser.add_argument('--nwalkers', type=int, default=64, help='Number of walkers to sample')
 parser.add_argument('--burn_in', type=int, default=200, help='Number of burn in steps')
 parser.add_argument('--prior_Gauss_rms', type=float, default=0.5,help='Width of Gaussian prior')
 parser.add_argument('--data_cov_factor', type=float, default=0.2, help='Factor to multiply the data covariance by')
-parser.add_argument('--data_cov_label', type=str, default='Chabanier2019', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
+parser.add_argument('--data_cov_label', type=str, default='Chabanier2019', help='Data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--rootdir', type=str, default=None, help='Root directory containing chains')
 parser.add_argument('--include_CMB', action='store_true', help='Include CMB information?')
 parser.add_argument('--use_compression', type=int, default=0, help='Go through compression parameters?')
-parser.add_argument('--kde_fname', type=str, default=None, help='full path to KDE file to be used as marginalised P1D (compression=3)')
+parser.add_argument('--grid_fname', type=str, default=None, help='full path to grid file (scan or KDE) to be used as marginalised P1D (compression=3)')
 parser.add_argument('--extra_p1d_label', type=str, default=None, help='Which extra p1d data covmats to use (e.g., Karacayli_HIRES)')
 parser.add_argument('--free_cosmo_params', nargs="+", help='List of cosmological parameters to sample')
 args = parser.parse_args()
@@ -62,8 +63,8 @@ else:
     free_parameters=['As','ns']
 
 # do not add IGM parameters when using marginalised likelihoods
-if args.use_compression==3:
-    print('running with marginalised likelihoods')
+if args.use_compression==3 or args.no_igm:
+    print('running without IGM parameters')
 else:
     if args.simple_igm:
         free_parameters+=['ln_tau_0']
@@ -114,9 +115,9 @@ else:
 
 # setup marginalised P1D likelihood if needed
 if args.use_compression==3:
-    if args.kde_fname:
-        print('will use KDE marg_p1d from file',args.kde_fname)
-        marg_p1d=marg_p1d_like.MargP1DLike(kde_fname=args.kde_fname)
+    if args.grid_fname:
+        print('will use grid marg_p1d from file',args.grid_fname)
+        marg_p1d=marg_p1d_like.MargP1DLike(grid_fname=args.grid_fname)
     else:
         print('will use Gaussian marg_p1d')
         marg_p1d=marg_p1d_like.MargP1DLike(sim_label=data.sim_label,

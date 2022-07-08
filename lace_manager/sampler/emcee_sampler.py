@@ -25,6 +25,7 @@ from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
 from lace_manager.likelihood import marg_p1d_like
 
+
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
 
@@ -32,12 +33,14 @@ class EmceeSampler(object):
                         nwalkers=None,read_chain_file=None,verbose=False,
                         subfolder=None,rootdir=None,
                         save_chain=True,progress=False,
-                        train_when_reading=True):
+                        train_when_reading=True,
+                        ignore_grid_when_reading=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain.
             rootdir allows user to search for saved chains in a different
             location to the code itself.
-            If not train_when_reading, emulator can not be used when reading."""
+            If not train_when_reading, emulator can not be used when reading.
+            Use ignore_grid_when_reading for plotting marginalised chains."""
 
         self.verbose=verbose
         self.progress=progress
@@ -46,7 +49,7 @@ class EmceeSampler(object):
             if self.verbose: print('will read chain from file',read_chain_file)
             assert not like, "likelihood specified but reading chain from file"
             self.read_chain_from_file(read_chain_file,rootdir,subfolder,
-                        train_when_reading)
+                        train_when_reading,ignore_grid_when_reading)
             self.burnin_pos=None
         else: 
             self.like=like
@@ -394,7 +397,7 @@ class EmceeSampler(object):
 
 
     def read_chain_from_file(self,chain_number,rootdir,subfolder,
-                train_when_reading):
+                train_when_reading,ignore_grid_when_reading):
         """Read chain from file, check parameters and setup likelihood"""
         
         if rootdir:
@@ -508,7 +511,7 @@ class EmceeSampler(object):
         except:
             use_compression=0
         if use_compression==3:
-            if "grid_fname" in config:
+            if "grid_fname" in config and not ignore_grid_when_reading:
                 fname=config["grid_fname"]
                 marg_p1d=marg_p1d_like.MargP1DLike(grid_fname=fname)
             else:
@@ -546,14 +549,12 @@ class EmceeSampler(object):
                                         backend=self.backend)
 
         self.burnin_nsteps=config["burn_in"]
-
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
         self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
-        self.burnin_nsteps=config["burn_in"]
         self.autocorr=np.asarray(config["autocorr"])
 
         return

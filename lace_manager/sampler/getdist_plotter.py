@@ -63,7 +63,6 @@ def read_chain_for_getdist(rootdir,subfolder,chain_num,label,
     ranges={}
     for par in sampler.like.free_params:
         ranges[par.name]=[par.min_value,par.max_value]
-        print(par.name,par.min_value,par.max_value)
 
     # setup getdist object
     samples=MCSamples(samples=run['values'],label=run['label'],

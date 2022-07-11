@@ -59,11 +59,11 @@ def read_chain_for_getdist(rootdir,subfolder,chain_num,label,
     blob_values=np.array([blobs[key] for key in blob_names]).transpose()
     run['values']=np.hstack([free_values,blob_values])
 
-    # neutrino masses can not be negative
-    if 'mnu' in param_names:
-        ranges={'mnu':[0.0,None]}
-    else:
-        ranges=None
+    # figure out range of allowed values
+    ranges={}
+    for par in sampler.like.free_params:
+        ranges[par.name]=[par.min_value,par.max_value]
+        print(par.name,par.min_value,par.max_value)
 
     # setup getdist object
     samples=MCSamples(samples=run['values'],label=run['label'],

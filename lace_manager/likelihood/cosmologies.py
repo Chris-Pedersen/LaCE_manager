@@ -16,6 +16,8 @@ def get_cosmology_from_label(cosmo_label='default'):
         return camb_cosmo.get_cosmology(mnu=0.3)
     elif cosmo_label=='mnu_06':
         return camb_cosmo.get_cosmology(mnu=0.6)
+    elif cosmo_label=='SHOES':
+        return camb_cosmo.get_cosmology(H0=73.0)
     else:
         raise ValueError('implement cosmo_label '+cosmo_label)
 

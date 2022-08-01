@@ -25,7 +25,8 @@ param_latex_dict={"Delta2_star":"\Delta^2_\star",
             "nrun":"\\alpha_s",
             "ombh2":"\omega_b",
             "omch2":"\omega_c",
-            "cosmomc_theta":"\theta_{MC}"
+            "cosmomc_theta":"\theta_{MC}",
+            "lnprob":"log(prob)"
             }
 
 
@@ -48,22 +49,26 @@ def read_chain_for_getdist(rootdir,subfolder,chain_num,label,
         blob_names=['Delta2_star','n_star','alpha_star','f_star','g_star']
     else:
         blob_names=['Delta2_star','n_star','alpha_star','f_star','g_star','H0']
-    param_names+=blob_names
-    run['param_names']=param_names
-    print(label,param_names)
-    run['param_labels']=[param_latex_dict[par] for par in param_names]
 
     # read value of free and derived parameters
     free_values,lnprob,blobs=sampler.get_chain(cube=False,
             delta_lnprob_cut=delta_lnprob_cut)
     blob_values=np.array([blobs[key] for key in blob_names]).transpose()
-    run['values']=np.hstack([free_values,blob_values])
+    # stack all values, including log(prob)
+    run['values']=np.hstack([free_values,
+                                np.column_stack((blob_values,lnprob))])
 
-    # neutrino masses can not be negative
-    if 'mnu' in param_names:
-        ranges={'mnu':[0.0,None]}
-    else:
-        ranges=None
+    # stack all parameter names, including log(prob)
+    param_names+=blob_names
+    param_names.append('lnprob')
+    run['param_names']=param_names
+    print(label,param_names)
+    run['param_labels']=[param_latex_dict[par] for par in param_names]
+
+    # figure out range of allowed values
+    ranges={}
+    for par in sampler.like.free_params:
+        ranges[par.name]=[par.min_value,par.max_value]
 
     # setup getdist object
     samples=MCSamples(samples=run['values'],label=run['label'],

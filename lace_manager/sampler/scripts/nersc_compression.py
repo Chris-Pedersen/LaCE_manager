@@ -126,10 +126,17 @@ if args.use_compression==3:
 else:
     marg_p1d=None
 
+# setup Gaussian priors for all parameters
+if args.prior_Gauss_rms > 0:
+    prior_Gauss_rms=args.prior_Gauss_rms
+else:
+    print('no Gaussian prior used')
+    prior_Gauss_rms=None
+
 # create likelihood object from data and emulator
 like=likelihood.Likelihood(data=data,emulator=emu,
                         free_param_names=free_parameters,
-                        prior_Gauss_rms=args.prior_Gauss_rms,
+                        prior_Gauss_rms=prior_Gauss_rms,
                         include_CMB=args.include_CMB,
                         cosmo_fid_label=args.cosmo_fid_label,
                         use_compression=args.use_compression,

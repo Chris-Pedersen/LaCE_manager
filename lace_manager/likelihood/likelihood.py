@@ -167,7 +167,7 @@ class Likelihood(object):
                     verbose=verbose,
                     prior_Gauss_rms=prior_Gauss_rms,
                     kmin_kms=kmin_kms,
-                    emu_cov_factor=1,
+                    emu_cov_factor=emu_cov_factor,
                     include_CMB=False,
                     use_compression=use_compression,
                     marg_p1d=None,

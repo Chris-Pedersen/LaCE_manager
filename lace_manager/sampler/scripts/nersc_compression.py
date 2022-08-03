@@ -29,6 +29,7 @@ parser.add_argument('--cosmo_fid_label', type=str, default='default', help='Fidu
 parser.add_argument('--nwalkers', type=int, default=64, help='Number of walkers to sample')
 parser.add_argument('--burn_in', type=int, default=200, help='Number of burn in steps')
 parser.add_argument('--prior_Gauss_rms', type=float, default=0.5,help='Width of Gaussian prior')
+parser.add_argument('--emu_cov_factor', type=float, default=1.0, help='Factor to multiply the emulator covariance by')
 parser.add_argument('--data_cov_factor', type=float, default=0.2, help='Factor to multiply the data covariance by')
 parser.add_argument('--data_cov_label', type=str, default='Chabanier2019', help='Data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--rootdir', type=str, default=None, help='Root directory containing chains')
@@ -84,7 +85,7 @@ else:
 # generate mock P1D measurement
 data=data_MPGADGET.P1D_MPGADGET(basedir=basedir,
                         sim_label=args.sim_label,
-			zmax=args.z_max,
+			            zmax=args.z_max,
                         data_cov_factor=args.data_cov_factor,
                         data_cov_label=args.data_cov_label,
                         polyfit=(args.emu_type=='polyfit'))
@@ -133,6 +134,7 @@ like=likelihood.Likelihood(data=data,emulator=emu,
                         cosmo_fid_label=args.cosmo_fid_label,
                         use_compression=args.use_compression,
                         marg_p1d=marg_p1d,
+                        emu_cov_factor=args.emu_cov_factor,
                         extra_p1d_data=extra_p1d_data)
 
 # pass likelihood to sampler

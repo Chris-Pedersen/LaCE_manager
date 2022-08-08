@@ -44,22 +44,29 @@ def read_chain_for_getdist(rootdir,subfolder,chain_num,label,
 
     print('figure out free parameters for',label)
     param_names=[param.name for param in sampler.like.free_params]
-    vary_H0=('H0' in param_names)
-    if vary_H0:
-        blob_names=['Delta2_star','n_star','alpha_star','f_star','g_star']
+    if 'n_star'in param_names:
+        print('sampling compressed parameters')
+        blob_names=None
     else:
-        blob_names=['Delta2_star','n_star','alpha_star','f_star','g_star','H0']
+        print('sampling cosmo parameters')
+        blob_names=['Delta2_star','n_star','alpha_star','f_star','g_star']
+        if 'H0' not in param_names:
+            blob_names.append('H0')
 
     # read value of free and derived parameters
     free_values,lnprob,blobs=sampler.get_chain(cube=False,
             delta_lnprob_cut=delta_lnprob_cut)
-    blob_values=np.array([blobs[key] for key in blob_names]).transpose()
-    # stack all values, including log(prob)
-    run['values']=np.hstack([free_values,
+    if blob_names:
+        blob_values=np.array([blobs[key] for key in blob_names]).transpose()
+        # stack all values, including log(prob)
+        run['values']=np.hstack([free_values,
                                 np.column_stack((blob_values,lnprob))])
+    else:
+        run['values']=np.column_stack((free_values,lnprob))
 
     # stack all parameter names, including log(prob)
-    param_names+=blob_names
+    if blob_names:
+        param_names+=blob_names
     param_names.append('lnprob')
     run['param_names']=param_names
     print(label,param_names)

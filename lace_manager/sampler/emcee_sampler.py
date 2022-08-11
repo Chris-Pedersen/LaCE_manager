@@ -524,6 +524,13 @@ class EmceeSampler(object):
         else:
             marg_p1d=None
 
+        # figure out emulator covariance
+        if "old_emu_cov" in config:
+            old_emu_cov=config["old_emu_cov"]
+        else:
+            # old chains used old emulator covariance
+            old_emu_cov=True
+
         # set up likelihood
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
@@ -531,6 +538,7 @@ class EmceeSampler(object):
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
+                            old_emu_cov=old_emu_cov,
                             include_CMB=include_CMB,
                             use_compression=use_compression,
                             marg_p1d=marg_p1d,
@@ -724,6 +732,7 @@ class EmceeSampler(object):
         saveDict["prior_Gauss_rms"]=self.like.prior_Gauss_rms
         saveDict["z_list"]=self.like.theory.zs.tolist()
         saveDict["emu_cov_factor"]=self.like.emu_cov_factor
+        saveDict["old_emu_cov"]=self.like.old_emu_cov
         saveDict["data_basedir"]=self.like.data.basedir
         saveDict["data_sim_number"]=self.like.data.sim_label
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor

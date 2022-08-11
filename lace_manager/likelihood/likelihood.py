@@ -23,6 +23,7 @@ class Likelihood(object):
                     prior_Gauss_rms=0.2,
                     kmin_kms=None,
                     emu_cov_factor=1,
+                    old_emu_cov=False,
                     include_CMB=False,
                     use_compression=0,
                     marg_p1d=None,
@@ -43,6 +44,7 @@ class Likelihood(object):
             - ignore k-bins with k > kmin_kms
             - emu_cov_factor adjusts the contribution from emulator covariance
             set between 0 and 1.
+            - old_emu_cov to use old (wrong) polyfit emulator covariance
             - include_CMB will use the CMB Gaussian likelihood approximation
               from Planck as a prior on each cosmological parameter
             - use_compression: 0 for no compression
@@ -58,6 +60,7 @@ class Likelihood(object):
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
         self.emu_cov_factor=emu_cov_factor
+        self.old_emu_cov=old_emu_cov
         self.include_CMB=include_CMB
         self.use_compression=use_compression
         self.cosmo_fid_label=cosmo_fid_label
@@ -168,6 +171,7 @@ class Likelihood(object):
                     prior_Gauss_rms=prior_Gauss_rms,
                     kmin_kms=kmin_kms,
                     emu_cov_factor=emu_cov_factor,
+                    old_emu_cov=old_emu_cov,
                     include_CMB=False,
                     use_compression=use_compression,
                     marg_p1d=None,
@@ -356,8 +360,10 @@ class Likelihood(object):
 
 
     def get_p1d_kms(self,k_kms=None,values=None,return_covar=False,
-                    camb_evaluation=None,return_blob=False):
-        """Compute theoretical prediction for 1D P(k)"""
+                    camb_evaluation=None,return_blob=False,
+                    old_emu_cov=False):
+        """Compute theoretical prediction for 1D P(k).
+            old_emu_cov to use old (wrong) emulator covariance."""
 
         if k_kms is None:
             k_kms=self.data.k
@@ -371,7 +377,8 @@ class Likelihood(object):
         return self.theory.get_p1d_kms(k_kms,like_params=like_params,
                                             return_covar=return_covar,
                                             camb_evaluation=camb_evaluation,
-                                            return_blob=return_blob)
+                                            return_blob=return_blob,
+                                            old_emu_cov=self.old_emu_cov)
 
 
     def get_chi2(self,values=None):
@@ -396,7 +403,8 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        emu_p1d, emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True,
+                                            old_emu_cov=self.old_emu_cov)
         if self.verbose: print('got P1D from emulator')
 
         data_covar=[]
@@ -468,11 +476,11 @@ class Likelihood(object):
         if return_blob:
             emu_p1d,emu_covar,blob=self.get_p1d_kms(k_kms,values,
                             return_covar=True,camb_evaluation=camb_evaluation,
-                            return_blob=True)
+                            return_blob=True,old_emu_cov=self.old_emu_cov)
         else:
             emu_p1d,emu_covar=self.get_p1d_kms(k_kms,values,
                             return_covar=True,camb_evaluation=camb_evaluation,
-                            return_blob=False)
+                            return_blob=False,old_emu_cov=self.old_emu_cov)
 
         if self.verbose: print('got P1D from emulator')
 
@@ -655,7 +663,8 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True)
+        emu_p1d,emu_covar = self.get_p1d_kms(k_kms,values,return_covar=True,
+                                            old_emu_cov=self.old_emu_cov)
         if self.verbose: print('got P1D from emulator')
 
         # compute log like contribution from each redshift bin
@@ -749,7 +758,8 @@ class Likelihood(object):
         Nz=len(zs)
 
         # ask emulator prediction for P1D in each bin
-        emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True)
+        emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True,
+                                            old_emu_cov=self.old_emu_cov)
         like_params=self.parameters_from_sampling_point(values)
         emu_calls=self.theory.get_emulator_calls(like_params)
         if self.verbose: print('got P1D from emulator')

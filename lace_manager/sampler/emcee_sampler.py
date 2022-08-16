@@ -531,6 +531,16 @@ class EmceeSampler(object):
             # old chains used old emulator covariance
             old_emu_cov=True
 
+        # special likelihood settings
+        if "prior_only" in config:
+            prior_only=config["prior_only"]
+        else:
+            prior_only=False
+        if "ignore_chi2" in config:
+            ignore_chi2=config["ignore_chi2"]
+        else:
+            ignore_chi2=False
+
         # set up likelihood
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
@@ -542,7 +552,9 @@ class EmceeSampler(object):
                             include_CMB=include_CMB,
                             use_compression=use_compression,
                             marg_p1d=marg_p1d,
-                            cosmo_fid_label=cosmo_fid_label)
+                            cosmo_fid_label=cosmo_fid_label,
+                            prior_only=prior_only,
+                            ignore_chi2=ignore_chi2)
 
         if self.verbose: print("Load sampler data")
 
@@ -738,6 +750,8 @@ class EmceeSampler(object):
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
         saveDict["include_CMB"]=self.like.include_CMB
+        saveDict["prior_only"]=self.like.prior_only
+        saveDict["ignore_chi2"]=self.like.ignore_chi2
         saveDict["cosmo_fid_label"]=self.like.cosmo_fid_label
         saveDict["use_compression"]=self.like.use_compression
         if self.like.use_compression==3:

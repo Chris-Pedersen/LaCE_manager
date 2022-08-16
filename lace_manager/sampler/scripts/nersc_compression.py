@@ -31,6 +31,8 @@ parser.add_argument('--burn_in', type=int, default=200, help='Number of burn in 
 parser.add_argument('--prior_Gauss_rms', type=float, default=0.5,help='Width of Gaussian prior')
 parser.add_argument('--emu_cov_factor', type=float, default=1.0, help='Factor to multiply the emulator covariance by')
 parser.add_argument('--old_emu_cov', action='store_true', help='Use old (wrong) polyfit emulator covariance')
+parser.add_argument('--ignore_chi2', action='store_true', help='Use only log(det(C)) in log_like (debugging)')
+parser.add_argument('--prior_only', action='store_true', help='Use only prior in compute_log_prob')
 parser.add_argument('--data_cov_factor', type=float, default=0.2, help='Factor to multiply the data covariance by')
 parser.add_argument('--data_cov_label', type=str, default='Chabanier2019', help='Data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--rootdir', type=str, default=None, help='Root directory containing chains')
@@ -144,6 +146,8 @@ like=likelihood.Likelihood(data=data,emulator=emu,
                         marg_p1d=marg_p1d,
                         emu_cov_factor=args.emu_cov_factor,
                         old_emu_cov=args.old_emu_cov,
+                        prior_only=args.prior_only,
+                        ignore_chi2=args.ignore_chi2,
                         extra_p1d_data=extra_p1d_data)
 
 # pass likelihood to sampler

@@ -27,6 +27,8 @@ class Likelihood(object):
                     include_CMB=False,
                     use_compression=0,
                     marg_p1d=None,
+                    prior_only=False,
+                    ignore_chi2=False,
                     extra_p1d_data=None,
                     min_log_like=-1e100):
         """Setup likelihood from theory and data. Options:
@@ -54,6 +56,8 @@ class Likelihood(object):
                                  on Delta2_star and n_star
                                4 to compress into 5 parameters
             - marg_p1d: marginalised constraints to be used with compression=3
+            - prior_only: ignore log_like in compute_log_prob
+            - ignore_chi2: use only log(det(C)) in log_like (for debugging)
             - extra_p1d_data: extra P1D data, e.g., from HIRES
             - min_log_like: use this instead of - infinity"""
 
@@ -64,6 +68,8 @@ class Likelihood(object):
         self.include_CMB=include_CMB
         self.use_compression=use_compression
         self.cosmo_fid_label=cosmo_fid_label
+        self.prior_only=prior_only
+        self.ignore_chi2=ignore_chi2
         self.min_log_like=min_log_like
 
         self.data=data
@@ -175,7 +181,10 @@ class Likelihood(object):
                     include_CMB=False,
                     use_compression=use_compression,
                     marg_p1d=None,
-                    extra_p1d_data=None)
+                    extra_p1d_data=None,
+                    ignore_chi2=ignore_chi2,
+                    prior_only=prior_only,
+                    min_log_like=min_log_like)
         else:
             self.extra_p1d_like=None
 
@@ -505,12 +514,18 @@ class Likelihood(object):
             icov = np.linalg.inv(cov)
             diff = (p1d-emu_p1d[iz])
             chi2_z = np.dot(np.dot(icov,diff),diff)
-            # check whether to add determinant of covariance as well
-            if ignore_log_det_cov:
-                log_like_z = -0.5*chi2_z
+
+            # add components to log-likelihood
+            if self.ignore_chi2:
+                log_like_z = 0
             else:
+                log_like_z = -0.5*chi2_z
+
+            # check whether to add determinant of covariance as well
+            if not ignore_log_det_cov:
                 (_, log_det_cov) = np.linalg.slogdet(cov)
-                log_like_z = -0.5*(chi2_z + log_det_cov)
+                log_like_z += -0.5*log_det_cov
+
             log_like += log_like_z
             if self.verbose: print('added {} to log_like'.format(log_like_z))
 
@@ -563,9 +578,15 @@ class Likelihood(object):
         log_like=self.regulate_log_like(log_like)
 
         if return_blob:
-            return log_like + log_prior, blob
+            if self.prior_only:
+                return log_prior, blob
+            else:
+                return log_like + log_prior, blob
         else:
-            return log_like + log_prior
+            if self.prior_only:
+                return log_prior
+            else:
+                return log_like + log_prior
 
 
     def log_prob(self,values):

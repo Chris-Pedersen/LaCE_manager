@@ -12,6 +12,7 @@ from lace_manager.data import data_Karacayli_HIRES
 from lace.emulator import poly_p1d
 from lace.emulator import p1d_archive
 from lace_manager.emulator import test_simulation
+from lace_manager.emulator import test_nyx_simulation
 from lace.setup_simulations import read_genic
 from lace.cosmo import camb_cosmo
 
@@ -25,7 +26,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             zmin=None,zmax=None,z_list=None,
             kp_Mpc=0.7,
             data_cov_label="Chabanier2019",data_cov_factor=0.2,
-            add_syst=True,polyfit=True):
+            add_syst=True,polyfit=True,nyx_fname=None):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
@@ -40,6 +41,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             - data_cov_factor: multiply covariance by this factor
             - add_syst: Include systematic estimates in covariance matrices
             - polyfit: Smooth the mock data by using a polynomial fit to the P1D
+            - nyx_fname: If provided, use Nyx sim instead of MPGadget
         """
 
         self.basedir=basedir
@@ -48,6 +50,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.data_cov_factor=data_cov_factor
         self.data_cov_label=data_cov_label
         self.polyfit=polyfit
+        self.nyx_fname=nyx_fname
 
         # read P1D from simulation
         z,k,Pk,cov=self._load_p1d(add_syst,kp_Mpc=kp_Mpc)
@@ -82,7 +85,12 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         z_data=data_file.z
 
         # setup TestSimulation object to read json files from sim directory
-        self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
+        if self.nyx_fname:
+            self.mock_sim=test_nyx_simulation.TestNyxSimulation(
+                        fname=self.nyx_fname,sim_label=self.sim_label,
+                        z_max=10,kp_Mpc=kp_Mpc,verbosity=1)
+        else:
+            self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
                 sim_label=self.sim_label,skewers_label=self.skewers_label,
                 z_max=10,kp_Mpc=kp_Mpc)
 
@@ -92,14 +100,16 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
         # get cosmology in simulation to convert units
         sim_cosmo=self.mock_sim.sim_cosmo
-        camb_cosmo.print_info(sim_cosmo)
+        #camb_cosmo.print_info(sim_cosmo)
         sim_camb_results=camb_cosmo.get_camb_results(sim_cosmo)
 
         # unit conversion, at zmin to get lowest possible k_min_kms
         dkms_dMpc_zmin=sim_camb_results.hubble_parameter(zmin_sim)/(1+zmin_sim)
 
         # Get k_min for the sim data, & cut k values below that
-        k_min_Mpc=self.mock_sim.k_Mpc[1]
+        k_min_Mpc=self.mock_sim.k_Mpc[0]
+        if k_min_Mpc==0:
+            k_min_Mpc=self.mock_sim.k_Mpc[1]
         k_min_kms=k_min_Mpc/dkms_dMpc_zmin
         Ncull=np.sum(k_kms<k_min_kms)
         k_kms=k_kms[Ncull:]
@@ -121,8 +131,13 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
                 # evalute polyfit to data wavenumbers
                 sim_p1d_kms=fit_p1d.P_Mpc(data_k_Mpc)*dkms_dMpc
             else:
-                sim_p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
-                sim_k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
+                # for Nyx sims, this might remove first k bin
+                if self.mock_sim.k_Mpc[0]==0:
+                    sim_p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
+                    sim_k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
+                else:
+                    sim_p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz])
+                    sim_k_Mpc=np.asarray(self.mock_sim.k_Mpc)
                 # evaluate P1D in data wavenumbers (in velocity units)
                 interp_sim_Mpc=interp1d(sim_k_Mpc,sim_p1d_Mpc,"cubic")
                 sim_p1d_kms=interp_sim_Mpc(data_k_Mpc)*dkms_dMpc
@@ -143,7 +158,10 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
 
         # Dictionary to hold true values
         self.truth={} 
-        paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p","n_p"]
+        if self.nyx_fname:
+            paramList=["mF","sigT_Mpc","gamma","Delta2_p","n_p"]
+        else:
+            paramList=["mF","sigT_Mpc","gamma","kF_Mpc","Delta2_p","n_p"]
         for param in paramList:
             self.truth[param]=[]
         

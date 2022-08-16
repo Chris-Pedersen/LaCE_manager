@@ -11,6 +11,9 @@ from lace_manager.likelihood import linear_power_model
 from lace_manager.likelihood import full_theory
 from lace_manager.likelihood import CAMB_model
 from lace_manager.likelihood import cmb_like
+from lace_manager.nuisance import mean_flux_model
+from lace_manager.nuisance import thermal_model
+from lace_manager.nuisance import pressure_model
 
 class Likelihood(object):
     """Likelihood class, holds data, theory, and knows about parameters"""
@@ -27,7 +30,8 @@ class Likelihood(object):
                     use_compression=0,
                     marg_p1d=None,
                     extra_p1d_data=None,
-                    min_log_like=-1e100):
+                    min_log_like=-1e100,
+                    fid_igm_fname=None):
         """Setup likelihood from theory and data. Options:
             - data (required) is the data to model
             - theory (optional) if not provided, will setup using emulator and
@@ -53,7 +57,8 @@ class Likelihood(object):
                                4 to compress into 5 parameters
             - marg_p1d: marginalised constraints to be used with compression=3
             - extra_p1d_data: extra P1D data, e.g., from HIRES
-            - min_log_like: use this instead of - infinity"""
+            - min_log_like: use this instead of - infinity
+            - fid_igm_fname: specify file with fiducial IGM models """
 
         self.verbose=verbose
         self.prior_Gauss_rms=prior_Gauss_rms
@@ -62,6 +67,7 @@ class Likelihood(object):
         self.use_compression=use_compression
         self.cosmo_fid_label=cosmo_fid_label
         self.min_log_like=min_log_like
+        self.fid_igm_fname=fid_igm_fname
 
         self.data=data
         # (optionally) get rid of low-k data points
@@ -74,12 +80,25 @@ class Likelihood(object):
             if cosmo_fid_label=='truth':
                 # use true cosmology as fiducial (mostly for debugging)
                 cosmo_fid=self.get_sim_cosmo()
+                print('use true cosmo')
+                camb_cosmo.print_info(cosmo_fid)
             elif cosmo_fid_label=='default':
                 cosmo_fid=None
             else:
                 cosmo_fid=cosmologies.get_cosmology_from_label(cosmo_fid_label)
                 print('specified fiducial cosmology')
                 camb_cosmo.print_info(cosmo_fid)
+
+            # figure out which IGM fiducial model to use
+            if fid_igm_fname:
+                print('create Nyx IGM models')
+                mf_fid=mean_flux_model.MeanFluxModel(fid_fname=fid_igm_fname)
+                T_fid=thermal_model.ThermalModel(fid_fname=fid_igm_fname)
+                kF_fid=pressure_model.PressureModel(fid_fname=fid_igm_fname)
+            else:
+                mf_fid=None
+                T_fid=None
+                kF_fid=None
 
             ## Use the free_param_names to determine whether to use
             ## a LyaTheory or FullTheory object
@@ -103,14 +122,17 @@ class Likelihood(object):
             if compressed:
                 ## Set up a compressed LyaTheory object
                 self.theory=lya_theory.LyaTheory(self.data.z,emulator=emulator,
-                        cosmo_fid=cosmo_fid,verbose=self.verbose)
+                        cosmo_fid=cosmo_fid,mf_model_fid=mf_fid,
+                        T_model_fid=T_fid,kF_model_fid=kF_fid,
+                        verbose=self.verbose)
             else:
                 ## Set up a FullTheory object
                 self.theory=full_theory.FullTheory(zs=self.data.z,
                         emulator=emulator,verbose=self.verbose,
                         theta_MC=("cosmomc_theta" in free_param_names),
                         use_compression=use_compression,
-                        cosmo_fid=cosmo_fid)
+                        cosmo_fid=cosmo_fid,mf_model_fid=mf_fid,
+                        T_model_fid=T_fid,kF_model_fid=kF_fid)
 
                 if not full:
                     print("No cosmology parameters are varied")
@@ -809,6 +831,7 @@ class Likelihood(object):
         plt.xlabel(r'$k_\parallel$ [s/km]')
         plt.xlim(min(k_kms)-0.001,max(k_kms)+0.001)
         plt.tight_layout()
+        plt.savefig('p1d.pdf')
         plt.show()
 
         return

@@ -18,15 +18,19 @@ class MeanFluxModel(object):
          For now, we use a polynomial to describe log(tau_eff) around z_tau.
          """
 
-    def __init__(self,z_tau=3.0,ln_tau_coeff=None,
-                    basedir="/lace/emulator/sim_suites/Australia20/"):
-        """Construct model as a rescaling around a fiducial mean flux evolution"""
+    def __init__(self,z_tau=3.0,ln_tau_coeff=None,fid_fname=None):
+        """Construct model as a rescaling around a fiducial mean flux"""
 
-        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-        repo=os.environ['LACE_REPO']
+        # figure out filename
+        if not fid_fname:
+            basedir="/lace/emulator/sim_suites/Australia20/"
+            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            repo=os.environ['LACE_REPO']
+            fid_fname="{}/{}/fiducial_igm_evolution.txt".format(repo,basedir)
 
-        ## Load fiducial model
-        fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
+        # load fiducial model
+        self.fid_fname=fid_fname
+        fiducial=np.loadtxt(fid_fname)
         self.fid_z=fiducial[0]
         self.fid_tau_eff=fiducial[1] ## tau_eff(z)
         self.fid_tau_interp=interp1d(self.fid_z,self.fid_tau_eff,kind="cubic")
@@ -117,7 +121,7 @@ class MeanFluxModel(object):
     def get_new_model(self,parameters=[]):
         """Return copy of model, updating values from list of parameters"""
 
-        mf = MeanFluxModel(z_tau=self.z_tau,
+        mf = MeanFluxModel(fid_fname=self.fid_fname,z_tau=self.z_tau,
                             ln_tau_coeff=copy.deepcopy(self.ln_tau_coeff))
         mf.update_parameters(parameters)
         return mf

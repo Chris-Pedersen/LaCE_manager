@@ -1,11 +1,13 @@
 import json
 import numpy as np
 import os
-from lace_manager.setup_simulations import read_gadget
 from lace.setup_simulations import read_genic
 from lace.cosmo import camb_cosmo
 from lace.cosmo import fit_linP
 from lace.emulator import poly_p1d
+from lace_manager.setup_simulations import read_gadget
+from lace_manager.nuisance import thermal_model
+
 
 class TestSimulation(object):
     """ Object to store parameters and data for one
@@ -67,7 +69,6 @@ class TestSimulation(object):
             self.fulldir=repo+basedir+"curved_sim"
         elif sim_label=="diff_z":
             self.fulldir=repo+basedir+"diff_z"
-
         else:
             print("Simulation not found")
             
@@ -125,6 +126,7 @@ class TestSimulation(object):
         ## Now loop over each p1d.json file
         ## in reverse order to have smallest redshift first
         for aa in reversed(range(len(drop),len(zs))):
+            z=zs[aa]
             ## Load json files
             json_path_plus=self.fulldir+"/sim_plus/{}_{}_{}.json".format(
                                 self.p1d_label,aa,self.skewers_label)
@@ -172,12 +174,17 @@ class TestSimulation(object):
             self.p1d_Mpc.append(p1d_combined[k_Mpc_plus<kmax_Mpc])
             
             ## Save emulator parameters
-            emu_dict={}
+            emu_dict={"z":z}
             ## Add IGM parameters
             emu_dict["mF"]=pair_mf
             emu_dict["gamma"]=gamma
             emu_dict["kF_Mpc"]=kF_Mpc
             emu_dict["sigT_Mpc"]=sigT_Mpc
+            # compute also T_0 from thermal broadening (in km/s)
+            dkms_dMpc=camb_cosmo.dkms_dMpc(self.sim_cosmo,z=z)
+            sigT_kms=sigT_Mpc*dkms_dMpc
+            T0=thermal_model.T0_from_broadening_kms(sigT_kms)
+            emu_dict["T0"]=T0
             ## Add linear power parameters
             ## These are stored starting earliest redshift first
             ## so we flip the ordering of the index

@@ -12,19 +12,22 @@ class PressureModel(object):
         We use a power law rescaling around a fiducial simulation at the centre
         of the initial Latin hypercube in simulation space."""
 
-    def __init__(self,z_kF=3.0,ln_kF_coeff=None,
-                    basedir="/lace/emulator/sim_suites/Australia20/"):
+    def __init__(self,z_kF=3.0,ln_kF_coeff=None,fid_fname=None):
         """Construct model with central redshift and (x2,x1,x0) polynomial."""
 
-        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-        repo=os.environ['LACE_REPO']
-
-        ## Load fiducial model
-        fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
+        # figure out filename
+        if not fid_fname:
+            basedir="/lace/emulator/sim_suites/Australia20/"
+            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            repo=os.environ['LACE_REPO']
+            fid_fname="{}/{}/fiducial_igm_evolution.txt".format(repo,basedir)
+            
+        # load fiducial model
+        self.fid_fname=fid_fname
+        fiducial=np.loadtxt(fid_fname)
         self.fid_z=fiducial[0]
         self.fid_kF=fiducial[4] ## kF_kms(z)
         self.fid_kF_interp=interp1d(self.fid_z,self.fid_kF,kind="cubic")
-
 
         self.z_kF=z_kF
         if not ln_kF_coeff:
@@ -107,7 +110,7 @@ class PressureModel(object):
     def get_new_model(self,parameters=[]):
         """Return copy of model, updating values from list of parameters"""
 
-        kF = PressureModel(z_kF=self.z_kF,
+        kF = PressureModel(fid_fname=self.fid_fname,z_kF=self.z_kF,
                             ln_kF_coeff=copy.deepcopy(self.ln_kF_coeff))
         kF.update_parameters(parameters)
         return kF

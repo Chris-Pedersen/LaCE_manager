@@ -15,7 +15,7 @@ class archiveP1D_Nyx(object):
             linP params will be computed around kp_Mpc."""
 
         if not fname:
-            assert ('LACE_MANAGER_REPO' in os.environ),'export LACE_MANAGER_REPO'
+            assert 'LACE_MANAGER_REPO' in os.environ,'export LACE_MANAGER_REPO'
             repo=os.environ['LACE_MANAGER_REPO']
             fname=repo+'/lace_manager/emulator/sim_suites/test_nyx/models.hdf5'
             if verbosity>0:
@@ -55,7 +55,7 @@ class archiveP1D_Nyx(object):
         modellist=list(f.keys())
         redshiftstrlist=list((f[m].keys() for m in modellist))
         used_modellist= [m for m,r in zip(modellist,redshiftstrlist) \
-                        if len(r)>0 and 'grid' in m]
+                        if len(r)>0 and 'cosmo_grid' in m]
         used_attrs_global=[dict(f[m].attrs.items())  for m in used_modellist]
         self.nsamples=len(used_attrs_global)
         self.cube_data={'param_names':list(used_attrs_global[0].keys()),

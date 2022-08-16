@@ -11,16 +11,21 @@ class ThermalModel(object):
         of the initial Latin hypercube in simulation space."""
 
     def __init__(self,z_T=3.0,ln_sigT_kms_coeff=None,ln_gamma_coeff=None,
-                            basedir="/lace/emulator/sim_suites/Australia20/"):
+                fid_fname=None):
         """ Model the redshift evolution of the thermal broadening scale and gamma.
         We use a power law rescaling around a fiducial simulation at the centre
         of the initial Latin hypercube in simulation space."""
 
-        assert ('LACE_REPO' in os.environ),'export LACE_REPO'
-        repo=os.environ['LACE_REPO']
+        # figure out filename
+        if not fid_fname:
+            basedir="/lace/emulator/sim_suites/Australia20/"
+            assert ('LACE_REPO' in os.environ),'export LACE_REPO'
+            repo=os.environ['LACE_REPO']
+            fid_fname="{}/{}/fiducial_igm_evolution.txt".format(repo,basedir)
 
         ## Load fiducial model
-        fiducial=np.loadtxt(repo+basedir+"fiducial_igm_evolution.txt")
+        self.fid_fname=fid_fname
+        fiducial=np.loadtxt(fid_fname)
         self.fid_z=fiducial[0]
         self.fid_gamma=fiducial[2] ## gamma(z)
         self.fid_sigT_kms=fiducial[3] ## sigT_kms(z)
@@ -167,7 +172,7 @@ class ThermalModel(object):
     def get_new_model(self,parameters=[]):
         """Return copy of model, updating values from list of parameters"""
 
-        T = ThermalModel(z_T=self.z_T,
+        T = ThermalModel(fid_fname=self.fid_fname,z_T=self.z_T,
                             ln_sigT_kms_coeff=copy.deepcopy(self.ln_sigT_kms_coeff),
                             ln_gamma_coeff=copy.deepcopy(self.ln_gamma_coeff))
         T.update_parameters(parameters)
@@ -179,4 +184,10 @@ def thermal_broadening_kms(T_0):
 
     sigma_T_kms=9.1 * np.sqrt(T_0/1.e4)
     return sigma_T_kms
+
+def T0_from_broadening_kms(sigma_T_kms):
+    """T0 given thermal broadening RMS in velocity units"""
+
+    T_0 = 1.e4 * (sigma_T_kms/9.1)**2
+    return T_0
 

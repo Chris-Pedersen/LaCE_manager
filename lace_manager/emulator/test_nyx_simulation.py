@@ -28,19 +28,21 @@ class TestNyxSimulation(object):
             assert 'LACE_MANAGER_REPO' in os.environ,'export LACE_MANAGER_REPO'
             repo=os.environ['LACE_MANAGER_REPO']
             fname=repo+'/lace_manager/emulator/sim_suites/test_nyx/models.hdf5'
-            if verbosity>0:
-                print('read Nyx archive from file',fname)
+            if verbosity>0: print('read Nyx archive from file',fname)
         self.fname=fname
         self.verbosity=verbosity
 
         if type(sim_label)==int:
             self.model_key='cosmo_grid_{}'.format(sim_label)
             self.thermal_key='thermal_grid_0'
+        elif sim_label[0].isdigit():
+            self.model_key='cosmo_grid_{}'.format(sim_label)
+            self.thermal_key='thermal_grid_0'
         elif sim_label=='central':
             self.model_key='fiducial'
             self.thermal_key='rescale_Fbar_fiducial'
         else:
-            print(sim_label," simulation not found")
+            raise ValueError("{} simulation not found".format(sim_label))
             
         self._read_file(z_max,kp_Mpc)
 
@@ -58,8 +60,8 @@ class TestNyxSimulation(object):
 
         # figure out redshifts in the simulation
         redshiftstrlist=list(f[self.model_key].keys())
-        self.zs=[float(s.split('_')[1]) for s in redshiftstrlist]
-        if self.verbosity>0: print('zs =',self.zs)
+        zs=np.asarray([float(s.split('_')[1]) for s in redshiftstrlist])
+        if self.verbosity>0: print('zs =',zs)
 
         # setup simulation cosmology
         attrs_global=dict(f[self.model_key].attrs.items())
@@ -70,20 +72,22 @@ class TestNyxSimulation(object):
         if self.verbosity>0: camb_cosmo.print_info(self.sim_cosmo)
 
         # compute linear power parameters at each z (in Mpc units)
-        linP_zs=fit_linP.get_linP_Mpc_zs(self.sim_cosmo,self.zs,kp_Mpc,
+        linP_zs=fit_linP.get_linP_Mpc_zs(self.sim_cosmo,zs,kp_Mpc,
                 include_f_p=True)
         if self.verbosity>1: print('linP_zs',linP_zs)
-        linP_values=list(linP_zs)
 
         # store metadata and measurements at each redshift
         self.p1d_Mpc=[]
         self.k_Mpc=[] 
         self.emu_calls=[]
+        self.zs=[]
 
-        for iz,z in enumerate(self.zs):
-            print(iz,'z',z)
+        for iz,z in enumerate(zs):
+            if z>z_max:
+                continue
+            self.zs.append(z)
+            # string used in HDF5 for this redshift
             zstr=redshiftstrlist[iz]
-            print(zstr)
 
             # convertion factor from Mpc to km/s
             dkms_dMpc=camb_cosmo.dkms_dMpc(self.sim_cosmo,z=z)
@@ -92,7 +96,7 @@ class TestNyxSimulation(object):
 
             # get linear power parameters describing snapshot
             linP_params = linP_zs[iz]
-            emu_call = {}
+            emu_call = {'z':z}
             emu_call['Delta2_p'] = linP_params['Delta2_p']
             emu_call['n_p'] = linP_params['n_p']
             emu_call['alpha_p'] = linP_params['alpha_p']
@@ -100,9 +104,7 @@ class TestNyxSimulation(object):
 
             # read IGM parameters for a particular thermal rescaling
             thermal_str='{}/{}/{}'.format(self.model_key,zstr,self.thermal_key)
-            print('thermal string',thermal_str)
             thermal_params=dict(f[thermal_str].attrs.items())
-            print(thermal_params)
             emu_call['mF']=thermal_params['Fbar']
             T0=thermal_params['T_0']
             emu_call['T0']=T0
@@ -113,14 +115,13 @@ class TestNyxSimulation(object):
             emu_call['sigT_Mpc']=sigma_T_Mpc
 
             # store emulator call for this redshift
-            print('emulator call',emu_call)
+            if self.verbosity>1: print('emulator call',emu_call)
             self.emu_calls.append(emu_call)
 
             ## store 1D power spectrum (cut higher than k_max=30 1/Mpc)
             kmax_Mpc=30.0
             p1d_data=f[thermal_str]['1d power']
             k_Mpc=p1d_data['k']
-            print('k_0',k_Mpc[0])
             p1d_Mpc=p1d_data['Pk1d']
             self.k_Mpc.append(k_Mpc[k_Mpc<kmax_Mpc])
             self.p1d_Mpc.append(p1d_Mpc[k_Mpc<kmax_Mpc])

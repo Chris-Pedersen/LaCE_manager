@@ -782,7 +782,6 @@ class Likelihood(object):
         emu_p1d, emu_cov = self.get_p1d_kms(k_emu_kms,values,return_covar=True,
                                             old_emu_cov=self.old_emu_cov)
         like_params=self.parameters_from_sampling_point(values)
-        emu_calls=self.theory.get_emulator_calls(like_params)
         if self.verbose: print('got P1D from emulator')
 
         # plot only few redshifts for clarity
@@ -846,7 +845,7 @@ class Likelihood(object):
 
 
     def overplot_emulator_calls(self,param_1,param_2,values=None,
-                                tau_scalings=True,temp_scalings=True):
+                                tau_scalings=False,temp_scalings=False):
         """For parameter pair (param1,param2), overplot emulator calls
             with values stored in archive, color coded by redshift"""
 
@@ -874,8 +873,9 @@ class Likelihood(object):
             like_params= self.parameters_from_sampling_point(values)
         else:
             like_params=[]
-        emu_calls=self.theory.get_emulator_calls(like_params=like_params)
+
         # figure out values of param_1,param_2 called
+        emu_calls=self.theory.get_emulator_calls(like_params=like_params)[0]
         call_1=[emu_call[param_1] for emu_call in emu_calls]
         call_2=[emu_call[param_2] for emu_call in emu_calls]
 

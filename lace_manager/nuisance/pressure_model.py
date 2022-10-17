@@ -65,8 +65,8 @@ class PressureModel(object):
                 xmin=-0.2
                 xmax=0.2
             else:
-                xmin=-0.2
-                xmax=0.2
+                xmin=-0.4
+                xmax=0.4
             # note non-trivial order in coefficients
             value=self.ln_kF_coeff[Npar-i-1]
             par = likelihood_parameter.LikelihoodParameter(name=name,

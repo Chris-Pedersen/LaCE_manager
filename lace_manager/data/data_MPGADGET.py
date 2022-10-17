@@ -9,6 +9,7 @@ from lace_manager.data import data_PD2013
 from lace_manager.data import data_Chabanier2019
 from lace_manager.data import data_Karacayli_DESI
 from lace_manager.data import data_Karacayli_HIRES
+from lace.emulator import poly_p1d
 from lace.emulator import p1d_archive
 from lace_manager.emulator import test_simulation
 from lace.setup_simulations import read_genic
@@ -18,13 +19,13 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
     """ Class to load an MP-Gadget simulation as a mock
     data object. Can use PD2013 or Chabanier2019 covmats """
 
-    def __init__(self,basedir="/p1d_emulator/sim_suites/Australia20/",
+    def __init__(self,basedir="/lace/emulator/sim_suites/Australia20/",
             sim_label="central",
             skewers_label='Ns500_wM0.05',
             zmin=None,zmax=None,z_list=None,
             kp_Mpc=0.7,
             data_cov_label="Chabanier2019",data_cov_factor=0.2,
-            add_syst=True,pivot_scalar=0.05,polyfit=True):
+            add_syst=True,polyfit=True):
         """ Read mock P1D from MP-Gadget sims, and returns mock measurement:
             - basedir: directory with simulations outputs for a given suite
             - sim_label: can be either:
@@ -49,7 +50,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self.polyfit=polyfit
 
         # read P1D from simulation
-        z,k,Pk,cov=self._load_p1d(add_syst,kp_Mpc=kp_Mpc,pivot_scalar=pivot_scalar)
+        z,k,Pk,cov=self._load_p1d(add_syst,kp_Mpc=kp_Mpc)
 
         # drop low-z or high-z bins
         if zmin or zmax:
@@ -63,7 +64,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         self._set_true_values()
 
 
-    def _load_p1d(self,add_syst,kp_Mpc,pivot_scalar):
+    def _load_p1d(self,add_syst,kp_Mpc):
 
         if self.data_cov_label=="Chabanier2019":
             data_file=data_Chabanier2019.P1D_Chabanier2019(add_syst=add_syst)
@@ -77,13 +78,13 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             print("Unknown data_cov_label",self.data_cov_label)
             quit()
 
-        k=data_file.k
+        k_kms=data_file.k
         z_data=data_file.z
 
         # setup TestSimulation object to read json files from sim directory
         self.mock_sim=test_simulation.TestSimulation(basedir=self.basedir,
                 sim_label=self.sim_label,skewers_label=self.skewers_label,
-                z_max=10,kp_Mpc=kp_Mpc,pivot_scalar=pivot_scalar)
+                z_max=10,kp_Mpc=kp_Mpc)
 
         # get redshifts in simulation
         z_sim=self.mock_sim.zs
@@ -100,31 +101,32 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
         # Get k_min for the sim data, & cut k values below that
         k_min_Mpc=self.mock_sim.k_Mpc[1]
         k_min_kms=k_min_Mpc/dkms_dMpc_zmin
-        Ncull=np.sum(k<k_min_kms)
-        k=k[Ncull:]
+        Ncull=np.sum(k_kms<k_min_kms)
+        k_kms=k_kms[Ncull:]
 
-        Pk=[]
+        Pk_kms=[]
         cov=[]
         ## Set P1D and covariance for each redshift
         for iz,z in enumerate(z_sim):
+            # convert Mpc to km/s
+            dkms_dMpc=sim_camb_results.hubble_parameter(z)/(1+z)
+            data_k_Mpc=k_kms*dkms_dMpc
+
             # store P1D in Mpc, except k=0
             if self.polyfit==True:
-                ## Get "smoothed" polyfit p1d
-                k_Mpc,p1d_Mpc=self.mock_sim.get_polyfit_p1d_Mpc(z,
-                            fit_kmax_Mpc=8)
-                p1d_Mpc=p1d_Mpc[1:]
-                k_Mpc=k_Mpc[1:]
+                # Get "smoothed" polyfit p1d
+                fit_p1d=poly_p1d.PolyP1D(self.mock_sim.k_Mpc,
+                            self.mock_sim.p1d_Mpc[iz],kmin_Mpc=1.e-3,
+                            kmax_Mpc=8,deg=4)
+                # evalute polyfit to data wavenumbers
+                sim_p1d_kms=fit_p1d.P_Mpc(data_k_Mpc)*dkms_dMpc
             else:
-                p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
-                k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
-            conversion_factor=sim_camb_results.hubble_parameter(z)/(1+z)
-            
-            # evaluate P1D in data wavenumbers (in velocity units)
-            interpolator=interp1d(k_Mpc,p1d_Mpc,"cubic")
-            k_interp=k*conversion_factor
-            interpolated_P=interpolator(k_interp)
-            p1d_sim=interpolated_P*conversion_factor
-            Pk.append(p1d_sim)
+                sim_p1d_Mpc=np.asarray(self.mock_sim.p1d_Mpc[iz][1:])
+                sim_k_Mpc=np.asarray(self.mock_sim.k_Mpc[1:])
+                # evaluate P1D in data wavenumbers (in velocity units)
+                interp_sim_Mpc=interp1d(sim_k_Mpc,sim_p1d_Mpc,"cubic")
+                sim_p1d_kms=interp_sim_Mpc(data_k_Mpc)*dkms_dMpc
+            Pk_kms.append(sim_p1d_kms)
 
             # Now get covariance from the nearest z bin in data
             cov_mat=data_file.get_cov_iz(np.argmin(abs(z_data-z)))
@@ -132,7 +134,7 @@ class P1D_MPGADGET(base_p1d_data.BaseDataP1D):
             cov_mat=self.data_cov_factor*cov_mat[Ncull:,Ncull:]
             cov.append(cov_mat)
 
-        return z_sim,k,Pk,cov
+        return z_sim,k_kms,Pk_kms,cov
     
 
     def _set_true_values(self):

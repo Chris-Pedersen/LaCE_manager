@@ -46,7 +46,6 @@ parser.add_argument('--timeout',default=47,type=float,help='Stop chain after the
 parser.add_argument('--data_cov_factor',type=float,help='Factor to multiply the data covariance by')
 parser.add_argument('--data_year', help='Which version of the data covmats and k bins to use, PD2013 or Chabanier2019')
 parser.add_argument('--subfolder',default=None, help='Subdirectory to save chain file in')
-parser.add_argument('--pivot_scalar',default=0.05,type=float, help='Primordial power spectrum pivot scale in 1/Mpc')
 parser.add_argument('--include_CMB',action='store_true', help='Include CMB information?')
 parser.add_argument('--reduced_IGM',action='store_true', help='Reduce IGM marginalisation in the case of use_compression=3?')
 parser.add_argument('--use_compression',type=int, help='Go through compression parameters?')
@@ -73,44 +72,33 @@ print("----------")
 
 ## Sample compressed parameters
 if 'Delta2_star' in args.free_parameters:
-    ## Some template limits below
-    ## for reference, the default primordial limits I have been using are
-    ## (for a pivot_scalar of 0.7)
-    ## [[1.1e-09, 3.19e-09], [0.89, 1.05],
-    ## And for compressed params,
-    ## [["Delta2_star", 0.24, 0.47], ["n_star", -2.352, -2.25]]
-
-    if 'ln_tau_1' in args.free_parameters:
-        ## 8 IGM parameters (standard)
-        free_param_limits=[[0.24, 0.47], [-2.352, -2.25],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4],
-                    [-0.4, 0.4]]
-    else:
-        ## 1 IGM parameter (debugging)
-        free_param_limits=[[0.24, 0.47], [-2.352, -2.25],
-                    [-0.4, 0.4]]
-else:
-    ## Sample CMB parameters:
-    assert 'cosmomc_theta' in args.free_parameters
+    # compressed params (Delta2_*,n_*)
+    free_param_limits=[[0.24, 0.47], [-2.352, -2.25]]
+elif 'cosmomc_theta' in args.free_parameters:
+    # CMB parameters
     free_param_limits=[[0.0099,0.0109],
                 [1.1e-09, 3.19e-09],
                 [0.89, 1.05],
                 [0.018, 0.026],
-                [0.1,0.13],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4],
-                [-0.4, 0.4]]
+                [0.1,0.13]]
+elif 'H0' in args.free_parameters:
+    # direct fits (As,ns,H0)
+    free_param_limits=[[1e-9, 3.2e-9], [0.85,1.05], [50,100]]
+else:
+    # fixed background parameters (As,ns)
+    free_param_limits=[[1e-9, 3.2e-9], [0.85,1.05]]
+
+print('cosmo params',free_param_limits)
+
+# figure out IGM parameters
+if 'ln_tau_1' in args.free_parameters:
+    ## 8 IGM parameters (standard)
+    free_param_limits += 8*[[-0.4, 0.4]]
+else:
+    # 1 IGM parameter (debugging)
+    free_param_limits += [[-0.4, 0.4]]
+
+print('total params',free_param_limits)
 
 skewers_label=args.skewers_label
 p1d_label=None
@@ -137,7 +125,6 @@ data=data_MPGADGET.P1D_MPGADGET(sim_label=test_sim_number,
 				                zmax=args.z_max,
                                 data_cov_factor=args.data_cov_factor,
                                 data_cov_label=args.data_year,
-                                pivot_scalar=args.pivot_scalar,
                                 polyfit=poly)
 zs=data.z
 
@@ -174,7 +161,6 @@ like=likelihood.Likelihood(data=data,emulator=emu,
 			                verbose=False,
                             prior_Gauss_rms=prior,
                             emu_cov_factor=args.emu_cov_factor,
-                            pivot_scalar=args.pivot_scalar,
                             include_CMB=args.include_CMB,
                             use_compression=args.use_compression,
                             reduced_IGM=args.reduced_IGM)

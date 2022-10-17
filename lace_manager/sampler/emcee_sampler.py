@@ -19,10 +19,12 @@ from lace_manager.data import data_MPGADGET
 from lace_manager.data import data_PD2013
 from lace.emulator import p1d_archive
 from lace.emulator import gp_emulator
+from lace_manager.emulator import p1d_archive_Nyx
 from lace_manager.emulator import z_emulator
 from lace_manager.likelihood import lya_theory
 from lace_manager.likelihood import likelihood
-from lace_manager.likelihood import likelihood_parameter
+from lace_manager.likelihood import marg_p1d_like
+
 
 class EmceeSampler(object):
     """Wrapper around an emcee sampler for Lyman alpha likelihood"""
@@ -31,12 +33,14 @@ class EmceeSampler(object):
                         nwalkers=None,read_chain_file=None,verbose=False,
                         subfolder=None,rootdir=None,
                         save_chain=True,progress=False,
-                        train_when_reading=True):
+                        train_when_reading=True,
+                        ignore_grid_when_reading=False):
         """Setup sampler from likelihood, or use default.
             If read_chain_file is provided, read pre-computed chain.
             rootdir allows user to search for saved chains in a different
             location to the code itself.
-            If not train_when_reading, emulator can not be used when reading."""
+            If not train_when_reading, emulator can not be used when reading.
+            Use ignore_grid_when_reading for plotting marginalised chains."""
 
         self.verbose=verbose
         self.progress=progress
@@ -45,7 +49,7 @@ class EmceeSampler(object):
             if self.verbose: print('will read chain from file',read_chain_file)
             assert not like, "likelihood specified but reading chain from file"
             self.read_chain_from_file(read_chain_file,rootdir,subfolder,
-                        train_when_reading)
+                        train_when_reading,ignore_grid_when_reading)
             self.burnin_pos=None
         else: 
             self.like=like
@@ -72,6 +76,7 @@ class EmceeSampler(object):
         for param in self.like.free_params:
             self.paramstrings.append(param_dict[param.name])
 
+        # when running on simulated data, we can store true cosmo values
         self.set_truth()
 
         # Figure out what extra information will be provided as blobs
@@ -82,49 +87,14 @@ class EmceeSampler(object):
         """ Set up dictionary with true values of cosmological
         likelihood parameters for plotting purposes """
 
-        test_sim_cosmo=self.like.data.mock_sim.sim_cosmo
-        test_results=camb_cosmo.get_camb_results(test_sim_cosmo)
+        # likelihood contains true parameters, but not in latex names
+        like_truth=self.like.truth
+
+        # store truth for all parameters, with LaTeX keywords
         self.truth={}
-
-        linP_truth=fit_linP.parameterize_cosmology_kms(
-                        cosmo=test_sim_cosmo,
-                        camb_results=test_results,
-                        z_star=3.0, ## Hardcoding for now!!!
-                        kp_kms=0.009)
-
-        ## Are we using full theory or compressed theory
-        if hasattr(self.like.theory,"emu_kp_Mpc"):
-            ## Get all possible likelihood params
-            all_truth={}
-            all_truth["ombh2"]=test_sim_cosmo.ombh2
-            all_truth["omch2"]=test_sim_cosmo.omch2
-            all_truth["As"]=test_sim_cosmo.InitPower.As
-            all_truth["ns"]=test_sim_cosmo.InitPower.ns
-            all_truth["nrun"]=test_sim_cosmo.InitPower.nrun
-            all_truth["H0"]=test_sim_cosmo.H0
-            all_truth["mnu"]=camb_cosmo.get_mnu(test_sim_cosmo)
-            all_truth["cosmomc_theta"]=test_results.cosmomc_theta()
-            ## Store truth for compressed parameters in case we want to
-            ## plot them as derived parameters
-            all_truth["Delta2_star"]=linP_truth["Delta2_star"]
-            all_truth["n_star"]=linP_truth["n_star"]
-            all_truth["alpha_star"]=linP_truth["alpha_star"]
-            all_truth["f_star"]=linP_truth["f_star"]
-            all_truth["g_star"]=linP_truth["g_star"]
-            ## Store truth for all parameters, whether free or not
-            ## in the full_theory case
-            for param in cosmo_params:
-                param_string=param_dict[param]
-                self.truth[param_string]=all_truth[param]
-        else:
-            ## True compressed parameters
-            all_truth=linP_truth
-            ## Take only free parameters, and store values
-            ## along with LaTeX strings
-            for param in self.like.free_params:
-                if param.name in cosmo_params:
-                    param_string=param_dict[param.name]
-                    self.truth[param_string]=all_truth[param.name]
+        for param in cosmo_params:
+            param_string=param_dict[param]
+            self.truth[param_string]=like_truth[param]
 
         return
 
@@ -137,7 +107,6 @@ class EmceeSampler(object):
               sampler for
             - force_timeout will continue to run the chains
               until timeout, regardless of convergence """
-
 
         self.burnin_nsteps=burn_in
         # We'll track how the average autocorrelation time estimate changes
@@ -346,7 +315,8 @@ class EmceeSampler(object):
             # total number and masked points in chain
             nt=len(lnprob)
             nm=sum(mask)
-            print('will keep {} \ {} points from chain'.format(nm,nt))
+            if self.verbose:
+                print('will keep {} \ {} points from chain'.format(nm,nt))
             chain=chain[mask]
             lnprob=lnprob[mask]
             blobs=blobs[mask]
@@ -390,7 +360,7 @@ class EmceeSampler(object):
         chain,lnprob,blobs=self.get_chain(cube=False,
                     delta_lnprob_cut=delta_lnprob_cut)
 
-        if blobs==None:
+        if blobs is None:
              ## Old chains will have no blobs
              all_params=chain
              all_strings=self.paramstrings
@@ -427,7 +397,7 @@ class EmceeSampler(object):
 
 
     def read_chain_from_file(self,chain_number,rootdir,subfolder,
-                train_when_reading):
+                train_when_reading,ignore_grid_when_reading):
         """Read chain from file, check parameters and setup likelihood"""
         
         if rootdir:
@@ -448,8 +418,12 @@ class EmceeSampler(object):
             kp=config["kp_Mpc"]
         except:
             kp=None
-        ## Set up the archive
-        archive=p1d_archive.archiveP1D(basedir=config["basedir"],
+
+        if "nyx_fname" in config:
+            nyx_fname=config["nyx_fname"]
+            archive=p1d_archive_Nyx.archiveP1D_Nyx(fname=nyx_fname,kp_Mpc=kp)
+        else:
+            archive=p1d_archive.archiveP1D(basedir=config["basedir"],
                             drop_tau_rescalings=config["drop_tau_rescalings"],
                             drop_temp_rescalings=config["drop_temp_rescalings"],
                             nearest_tau=config["nearest_tau"],
@@ -461,6 +435,7 @@ class EmceeSampler(object):
                             kp_Mpc=kp)
 
         if self.verbose: print("Setting up emulator")
+
         try:
             reduce_var=config["reduce_var"]
         except:
@@ -495,16 +470,9 @@ class EmceeSampler(object):
             # if datacov_label wasn't recorded, it was PD2013
             data_year="PD2013"
 
-        ## Old chains won't have pivot_scalar saved
+        # Some chains might have pivot_scalar saved
         if "pivot_scalar" in config.keys():
-            pivot_scalar=config["pivot_scalar"]
-        else:
-            pivot_scalar=0.05
-
-        if config["emu_type"]=="k_bin":
-            poly=False
-        else:
-            poly=True
+            assert config["pivot_scalar"]==0.05,"non-standard pivot_scalar"
 
         ## Set up mock data
         data=data_MPGADGET.P1D_MPGADGET(sim_label=config["data_sim_number"],
@@ -513,8 +481,7 @@ class EmceeSampler(object):
                                     z_list=np.asarray(config["z_list"]),
                                     data_cov_factor=data_cov,
                                     data_cov_label=data_year,
-                                    pivot_scalar=pivot_scalar,
-                                    polyfit=poly)
+                                    polyfit=(config["emu_type"]=="polyfit"))
 
         if self.verbose: print("Setting up likelihood")
         ## Set up likelihood
@@ -527,26 +494,67 @@ class EmceeSampler(object):
             free_param_limits=config["free_param_limits"]
         except:
             free_param_limits=None
-
         try:
             include_CMB=config["include_CMB"]
         except:
             include_CMB=False
 
+        # read what type of fiducial cosmology we used
         try:
-            reduced_IGM=config["reduced_IGM"]
+            cosmo_fid_label=config["cosmo_fid_label"]
         except:
-            reduced_IGM=False
+            cosmo_fid_label='default'
 
+        # figure out compression and marginalised P1D (if needed)
+        try:
+            use_compression=config["use_compression"]
+        except:
+            use_compression=0
+        if use_compression==3:
+            if "grid_fname" in config and not ignore_grid_when_reading:
+                fname=config["grid_fname"]
+                marg_p1d=marg_p1d_like.MargP1DLike(grid_fname=fname)
+            else:
+                try:
+                    reduced_IGM=config["reduced_IGM"]
+                except:
+                    reduced_IGM=False
+                marg_p1d=marg_p1d_like.MargP1DLike(sim_label=data.sim_label,
+                                reduced_IGM=reduced_IGM,polyfit=data.polyfit)
+        else:
+            marg_p1d=None
+
+        # figure out emulator covariance
+        if "old_emu_cov" in config:
+            old_emu_cov=config["old_emu_cov"]
+        else:
+            # old chains used old emulator covariance
+            old_emu_cov=True
+
+        # special likelihood settings
+        if "prior_only" in config:
+            prior_only=config["prior_only"]
+        else:
+            prior_only=False
+        if "ignore_chi2" in config:
+            ignore_chi2=config["ignore_chi2"]
+        else:
+            ignore_chi2=False
+
+        # set up likelihood
         self.like=likelihood.Likelihood(data=data,emulator=emulator,
                             free_param_names=free_param_names,
                             free_param_limits=free_param_limits,
                             verbose=False,
                             prior_Gauss_rms=config["prior_Gauss_rms"],
                             emu_cov_factor=config["emu_cov_factor"],
-                            pivot_scalar=pivot_scalar,
+                            old_emu_cov=old_emu_cov,
                             include_CMB=include_CMB,
-                            reduced_IGM=reduced_IGM)
+                            use_compression=use_compression,
+                            marg_p1d=marg_p1d,
+                            cosmo_fid_label=cosmo_fid_label,
+                            prior_only=prior_only,
+                            ignore_chi2=ignore_chi2)
 
         if self.verbose: print("Load sampler data")
 
@@ -561,14 +569,12 @@ class EmceeSampler(object):
                                         backend=self.backend)
 
         self.burnin_nsteps=config["burn_in"]
-
         self.chain=sampler.get_chain(flat=True,discard=self.burnin_nsteps)
         self.lnprob=sampler.get_log_prob(flat=True,discard=self.burnin_nsteps)
         self.blobs=sampler.get_blobs(flat=True,discard=self.burnin_nsteps)
 
         self.ndim=len(self.like.free_params)
         self.nwalkers=config["nwalkers"]
-        self.burnin_nsteps=config["burn_in"]
         self.autocorr=np.asarray(config["autocorr"])
 
         return
@@ -586,7 +592,7 @@ class EmceeSampler(object):
         if subfolder:
             ## If there is one, check if it exists
             ## if not, make it
-            if not os.path.isdir(chain_location+subfolder):
+            if not os.path.isdir(chain_location+"/"+subfolder):
                 os.mkdir(chain_location+"/"+subfolder)
             base_string=chain_location+"/"+subfolder+"/chain_"
         else:
@@ -594,13 +600,22 @@ class EmceeSampler(object):
         
         ## Create a new folder for this chain
         chain_count=1
-        sampler_directory=base_string+str(chain_count)
-        while os.path.isdir(sampler_directory):
-            chain_count+=1
+        while True:
             sampler_directory=base_string+str(chain_count)
-
-        os.mkdir(sampler_directory)
-        print("Made directory: ", sampler_directory)
+            if os.path.isdir(sampler_directory):
+                chain_count+=1
+                continue
+            else:
+                try:
+                    os.mkdir(sampler_directory)
+                    print('Created directory:',sampler_directory)
+                    break
+                except FileExistsError:
+                    print('Race condition for:',sampler_directory)
+                    # try again after one mili-second
+                    time.sleep(0.001)
+                    chain_count+=1
+                    continue
         self.save_directory=sampler_directory
 
         return 
@@ -621,6 +636,48 @@ class EmceeSampler(object):
         return
 
 
+    def write_kde(self,delta_lnprob_cut=50,N=40):
+        """Compute KDE for (Delta2_star,n_star) and save to file.
+            - delta_lnprob_cut: reject low-probability points
+            - N: number of points in 2D grid for KDE. """
+
+        fname='{}/kde.npz'.format(self.save_directory)
+        if self.verbose: print('will print KDE to',fname)
+
+        # get chain points and probabilities
+        chain,lnprob,blobs=self.get_chain(cube=False,
+                delta_lnprob_cut=delta_lnprob_cut)
+        # read compressed parameters and set range
+        x=blobs['Delta2_star']
+        y=blobs['n_star']
+        xmin = x.min()
+        xmax = x.max()
+        ymin = y.min()
+        ymax = y.max()
+        if self.verbose:
+            print('{:.3f} < Delta2_star < {:.3f}'.format(xmin,xmax))
+            print('{:.3f} < n_star < {:.3f}'.format(ymin,ymax))
+        if self.verbose:
+            # maximum likelihood points
+            max_lnprob=np.max(lnprob)
+            imax=np.where(lnprob==max_lnprob)
+            max_like_D2_star=x[imax][0]
+            max_like_n_star=y[imax][0]
+            print('Delta2_star (max like) = {:.3f}'.format(max_like_D2_star))
+            print('n_star (max like) = {:.3f}'.format(max_like_n_star))
+        # setup regular 2D grid for KDE
+        Nj=complex(0,N)
+        X, Y = np.mgrid[xmin:xmax:Nj, ymin:ymax:Nj]
+        positions = np.vstack([X.ravel(), Y.ravel()])
+        values = np.vstack([x, y])
+        kernel = scipy.stats.gaussian_kde(values,bw_method=None)
+        Z = np.reshape(kernel(positions).T, X.shape)
+        # store to file
+        np.savez(fname,Delta2_star=np.unique(X),n_star=np.unique(Y),density=Z)
+
+        return
+
+
     def get_best_fit(self,delta_lnprob_cut=None):
         """ Return an array of best fit values (mean) from the MCMC chain,
             in unit likelihood space.
@@ -634,23 +691,31 @@ class EmceeSampler(object):
         return mean_values
 
 
-    def write_chain_to_file(self,residuals=False,plot_nersc=False):
+    def write_chain_to_file(self,residuals=False,plot_nersc=False,
+                plot_delta_lnprob_cut=None):
         """Write flat chain to file"""
 
         saveDict={}
 
-        ## archive settings
-        saveDict["basedir"]=self.like.theory.emulator.archive.basedir
-        saveDict["skewers_label"]=self.like.theory.emulator.archive.skewers_label
-        saveDict["p1d_label"]=self.like.theory.emulator.archive.p1d_label
-        saveDict["drop_tau_rescalings"]=self.like.theory.emulator.archive.drop_tau_rescalings
-        saveDict["drop_temp_rescalings"]=self.like.theory.emulator.archive.drop_temp_rescalings
-        saveDict["nearest_tau"]=self.like.theory.emulator.archive.nearest_tau
-        saveDict["z_max"]=self.like.theory.emulator.archive.z_max
-        saveDict["undersample_cube"]=self.like.theory.emulator.archive.undersample_cube
-        saveDict["kp_Mpc"]=self.like.theory.emulator.archive.kp_Mpc
+        # we have not yet implemented book-keeping for extra P1D likelihood
+        if self.like.extra_p1d_like:
+            raise ValueError('implement book-keeping for extra_p1d_like')
 
-        ## Emulator settings
+        # identify Nyx archives
+        if hasattr(self.like.theory.emulator.archive,"fname"):
+            saveDict["nyx_fname"]=self.like.theory.emulator.archive.fname
+        else:
+            saveDict["basedir"]=self.like.theory.emulator.archive.basedir
+            saveDict["skewers_label"]=self.like.theory.emulator.archive.skewers_label
+            saveDict["p1d_label"]=self.like.theory.emulator.archive.p1d_label
+            saveDict["drop_tau_rescalings"]=self.like.theory.emulator.archive.drop_tau_rescalings
+            saveDict["drop_temp_rescalings"]=self.like.theory.emulator.archive.drop_temp_rescalings
+            saveDict["nearest_tau"]=self.like.theory.emulator.archive.nearest_tau
+            saveDict["z_max"]=self.like.theory.emulator.archive.z_max
+            saveDict["undersample_cube"]=self.like.theory.emulator.archive.undersample_cube
+
+        # Emulator settings
+        saveDict["kp_Mpc"]=self.like.theory.emulator.archive.kp_Mpc
         saveDict["paramList"]=self.like.theory.emulator.paramList
         saveDict["kmax_Mpc"]=self.like.theory.emulator.kmax_Mpc
 
@@ -679,21 +744,27 @@ class EmceeSampler(object):
         saveDict["prior_Gauss_rms"]=self.like.prior_Gauss_rms
         saveDict["z_list"]=self.like.theory.zs.tolist()
         saveDict["emu_cov_factor"]=self.like.emu_cov_factor
+        saveDict["old_emu_cov"]=self.like.old_emu_cov
         saveDict["data_basedir"]=self.like.data.basedir
         saveDict["data_sim_number"]=self.like.data.sim_label
         saveDict["data_cov_factor"]=self.like.data.data_cov_factor
         saveDict["data_year"]=self.like.data.data_cov_label
         saveDict["include_CMB"]=self.like.include_CMB
+        saveDict["prior_only"]=self.like.prior_only
+        saveDict["ignore_chi2"]=self.like.ignore_chi2
+        saveDict["cosmo_fid_label"]=self.like.cosmo_fid_label
         saveDict["use_compression"]=self.like.use_compression
-        saveDict["reduced_IGM"]=self.like.reduced_IGM
+        if self.like.use_compression==3:
+            if self.like.marg_p1d.grid_fname:
+                saveDict["grid_fname"]=self.like.marg_p1d.grid_fname
+            else:
+                saveDict["reduced_IGM"]=self.like.marg_p1d.reduced_IGM
 
-        ## If we are sampling primordial power, save the pivot scale
-        ## used to define As, ns
-        if hasattr(self.like.theory,"true_camb_model"):
-            pivot_scalar=self.like.theory.true_camb_model.cosmo.InitPower.pivot_scalar
-        else:
-            pivot_scalar=0.05
-        saveDict["pivot_scalar"]=pivot_scalar
+        # Make sure (As,ns,nrun) were defined in standard pivot_scalar
+        if hasattr(self.like.theory,"cosmo_model_fid"):
+            cosmo_fid=self.like.theory.cosmo_model_fid.cosmo
+            pivot_scalar=cosmo_fid.InitPower.pivot_scalar
+            assert pivot_scalar==0.05,"non-standard pivot_scalar"
 
         free_params_save=[]
         free_param_limits=[]
@@ -717,13 +788,18 @@ class EmceeSampler(object):
         with open(self.save_directory+"/config.json", "w") as json_file:
             json.dump(saveDict,json_file)
 
+        # save config info in plain text as well
         self._write_dict_to_text(saveDict)
+
+        # save KDE for (Delta2_star,n_star), to use as marginalised P1D
+        self.write_kde()
 
         ## Save plots
         ## Using try as have latex issues when running on compute
         ## nodes on some clusters
         try:
-            self.plot_best_fit(residuals=residuals)
+            self.plot_best_fit(residuals=residuals,
+                    delta_lnprob_cut=plot_delta_lnprob_cut)
         except:
             print("Can't plot best fit")
         try:
@@ -735,7 +811,8 @@ class EmceeSampler(object):
         except:
             print("Can't plot autocorrelation time")
         try:
-            self.plot_corner(usetex=(not plot_nersc),serif=(not plot_nersc))
+            self.plot_corner(usetex=(not plot_nersc),serif=(not plot_nersc),
+                    delta_lnprob_cut=plot_delta_lnprob_cut)
         except:
             print("Can't plot corner")
 
@@ -800,7 +877,6 @@ class EmceeSampler(object):
         else:
             ## Plot params passed as argument
             params_to_plot=plot_params
-
 
         if cmb_prior==True:
             ## Only plot the parameters that are varied in the chain
@@ -909,6 +985,7 @@ cosmo_params=["Delta2_star","n_star","alpha_star",
 
 ## list of strings for blobs
 blob_strings=["$\Delta^2_\star$","$n_\star$","$f_\star$","$g_\star$","$\\alpha_\star$","$H_0$"]
+
 
 def compare_corners(chain_files,labels,plot_params=None,save_string=None,
                     rootdir=None,subfolder=None,delta_lnprob_cut=None,

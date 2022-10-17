@@ -8,7 +8,7 @@ from lace_manager.likelihood import likelihood_parameter
 class CAMBModel(object):
     """ Interface between CAMB object and FullTheory """
 
-    def __init__(self,zs,cosmo=None,pivot_scalar=0.05,theta_MC=True):
+    def __init__(self,zs,cosmo=None,theta_MC=True):
         """Setup from CAMB object and list of redshifts.
           - theta_MC will determine whether we use 100theta_MC
             as a likelihood parameter, or H0 in the case that
@@ -19,7 +19,7 @@ class CAMBModel(object):
         
         # setup CAMB cosmology object
         if cosmo is None:
-            self.cosmo=camb_cosmo.get_cosmology(pivot_scalar=pivot_scalar)
+            self.cosmo=camb_cosmo.get_cosmology()
         else:
             self.cosmo=cosmo
 
@@ -48,16 +48,16 @@ class CAMBModel(object):
 
         params=[]
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='ombh2',min_value=0.019,max_value=0.025,
+                        name='ombh2',min_value=0.018,max_value=0.026,
                         value=self.cosmo.ombh2))
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='omch2',min_value=0.10,max_value=0.15,
+                        name='omch2',min_value=0.10,max_value=0.14,
                         value=self.cosmo.omch2))
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='As',min_value=1.0e-09,max_value=3.0e-09,
+                        name='As',min_value=1.0e-09,max_value=3.2e-09,
                         value=self.cosmo.InitPower.As))
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='ns',min_value=0.90,max_value=1.05,
+                        name='ns',min_value=0.89,max_value=1.05,
                         value=self.cosmo.InitPower.ns))
         params.append(likelihood_parameter.LikelihoodParameter(
                         name='mnu',min_value=0.0,max_value=1.0,
@@ -71,11 +71,11 @@ class CAMBModel(object):
                 camb_results = self.get_camb_results()
             theta_MC=self.cached_camb_results.cosmomc_theta()
             params.append(likelihood_parameter.LikelihoodParameter(
-                        name='cosmomc_theta',min_value=0.0140,max_value=0.0142,
+                        name='cosmomc_theta',min_value=0.0099,max_value=0.0109,
                         value=theta_MC))
         else:
             params.append(likelihood_parameter.LikelihoodParameter(
-                        name='H0',min_value=63,max_value=77,
+                        name='H0',min_value=50,max_value=100,
                         value=self.cosmo.H0))
 
         return params

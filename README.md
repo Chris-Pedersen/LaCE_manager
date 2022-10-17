@@ -5,9 +5,9 @@ https://arxiv.org/abs/2011.15127.
 
 ## Installation
 
-1. Set environment variables: `export LACE_MANAGER_REPO=/path/to/repo/LaCE_Manager` and `export LACE_REPO=/path/to/repo/LaCE`. Best to set this in a `.bashrc` or similar.
-2. Ensure the python dependencies below are installed
-3. Run `git submodule init && git submodule update` in the `LaCE_manager` repo
+1. Run `git submodule init && git submodule update` in the `LaCE_manager` repo
+2. Set environment variables: `export LACE_MANAGER_REPO=/path/to/repo/LaCE_Manager` and `export LACE_REPO=/path/to/repo/LaCE`. Best to set this in a `.bashrc` or similar.
+3. Ensure the python dependencies below are installed
 4. `cd LaCE` and run `python3 setup.py install --user`
 5. `cd ..` and run `python3 setup.py install --user`
 

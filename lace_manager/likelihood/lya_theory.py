@@ -123,11 +123,13 @@ class LyaTheory(object):
 
 
     def get_p1d_kms(self,k_kms,like_params=[],return_covar=False,
-                    camb_evaluation=None,return_blob=False):
+                    camb_evaluation=None,return_blob=False,
+                    old_emu_cov=False):
         """Emulate P1D in velocity units, for all redshift bins,
             as a function of input likelihood parameters.
             It might also return a covariance from the emulator,
-            or a blob with extra information for the emcee_sampler."""
+            or a blob with extra information for the emcee_sampler.
+            old_emu_cov to use old (wrong) emulator covariance."""
 
         if self.emulator is None:
             raise ValueError('no emulator in LyaTheory')
@@ -158,12 +160,10 @@ class LyaTheory(object):
             k_Mpc = k_kms * dkms_dMpc
             if return_covar:
                 p1d_Mpc, cov_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        return_covar=True,
-                                                        z=z)
+                            return_covar=True,z=z,old_cov=old_emu_cov)
             else:
                 p1d_Mpc = self.emulator.emulate_p1d_Mpc(model,k_Mpc,
-                                                        return_covar=False,
-                                                        z=z)
+                            return_covar=False,z=z)
             if p1d_Mpc is None:
                 if self.verbose: print('emulator did not provide P1D')
                 p1d_kms.append(None)

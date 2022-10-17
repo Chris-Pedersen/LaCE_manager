@@ -68,10 +68,10 @@ class LinearPowerModel(object):
 
         params=[]
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='g_star',min_value=0.95,max_value=0.99,
+                        name='g_star',min_value=0.90,max_value=1.0,
                         value=self.linP_params['g_star']))
         params.append(likelihood_parameter.LikelihoodParameter(
-                        name='f_star',min_value=0.95,max_value=0.99,
+                        name='f_star',min_value=0.90,max_value=1.0,
                         value=self.linP_params['f_star']))
         params.append(likelihood_parameter.LikelihoodParameter(
                         name='Delta2_star',min_value=0.25,max_value=0.45,

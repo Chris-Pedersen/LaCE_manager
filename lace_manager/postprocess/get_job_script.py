@@ -3,18 +3,29 @@ import os
 from lace_manager.setup_simulations import read_gadget
 from lace_manager.postprocess import flux_real_genpk
 
-def get_job_script(name,postprocess_script,options,time,output_files):
+def get_job_script(name,postprocess_script,options,time,output_files,
+            machine="hypatia",**machine_kwargs):
     """ Return a job script
      - name: job name
      - postprocess_script: which postprocessing script to run
      - options: arguments to be passed to the executable
      - time: job time limit
-     - output_files: name and path to save job log files """
+     - output_files: name and path to save job log files
+     - machine: specify machine (hypatia, cori) 
+     - machine_kwargs: specific options for a machine"""
 
-    return get_hypatia_script(name,postprocess_script,options,time,output_files)
+    if machine=="hypatia":
+        return get_hypatia_script(name,postprocess_script,options,time,
+                output_files,**machine_kwargs)
+    elif machine=="cori":
+        return get_cori_script(name,postprocess_script,options,time,
+                output_files,**machine_kwargs)
+    else:
+        raise ValueError("unknown machine "+machine)
 
 
-def get_hypatia_script(name,postprocess_script,options,time,output_files):
+def get_hypatia_script(name,postprocess_script,options,time,
+            output_files,**machine_kwargs):
     submit_string='''#!/bin/bash
 #!
 #! Example SLURM job script for Peta4-Skylake (Skylake CPUs, OPA)
@@ -34,7 +45,7 @@ mpi_tasks_per_node=$(echo "$SLURM_TASKS_PER_NODE" | sed -e  's/^\([0-9][0-9]*\).
 ## Load modules
 module load python/3.6.4
 module load hdf5/1.10.1
-#! Full path to application executable: 
+#! Full path to application executable:
 lya_scripts="/home/chrisp/Codes/lace_manager/lace/postprocess/single_sim_scripts"
 application="python3 $lya_scripts/%s"
 # setup options 
@@ -73,6 +84,56 @@ $CMD
 "
 eval $CMD'''%(name,output_files,output_files,time,postprocess_script,options)
     return submit_string
+
+
+def get_cori_script(name,postprocess_script,options,time,
+            output_files,**machine_kwargs):
+
+    print('machine_kwargs options in get_cori_script')
+    for key,value in machine_kwargs.items():
+        print(key,value)
+
+    if 'queue' in machine_kwargs:
+        queue=machine_kwargs['queue']
+    else:
+        queue='debug'
+
+    submit_string='''#!/bin/bash
+#SBATCH -C haswell
+#SBATCH --partition={}
+#SBATCH --account=desi
+#SBATCH --nodes=1
+#SBATCH --time={}
+#SBATCH -J {}
+#SBATCH -o {}-%j.out
+#SBATCH -e {}-%j.err
+
+## Load modules
+module load python
+module load gsl
+source activate lace_pp
+
+export HDF5_USE_FILE_LOCKING=FALSE
+export OMP_NUM_THREADS=1
+
+#! Full path to application executable:
+lya_scripts="/global/cfs/cdirs/desi/users/font/LaCE_pp/lace_manager/postprocess/single_sim_scripts"
+application="python $lya_scripts/{}"
+
+# setup options
+options="{}"
+
+CMD="$application $options"
+echo -e "
+Executing command:
+==================
+$CMD
+"
+eval $CMD'''.format(queue,time,name,output_files,output_files,
+                    postprocess_script,options)
+
+    return submit_string
+
 
 ###################################################
 ## Scripts for other machines can be added below ##

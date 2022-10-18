@@ -1,10 +1,9 @@
-chains/*
 build/*
 dist/*
-all_setup.sh
-*/files_setup.txt
-*/backend.h5
+lace_manager.egg-info/
 notebooks/.ipynb_checkpoints/
 notebooks/development/.ipynb_checkpoints/
-lace/sampler/chains
-lace/sampler/logs
+lace_manager/sampler/chains
+lace_manager/sampler/logs
+lace_manager/__pycache__/
+lace_manager/*/__pycache__/

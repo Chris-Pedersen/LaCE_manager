@@ -6,8 +6,13 @@ import fake_spectra.tempdens as tdr
 import fake_spectra.griddedspectra as grid_spec 
 # our modules
 from lace_manager.setup_simulations import read_gadget
-from lace.cosmo import camb_cosmo
 from lace_manager.nuisance import thermal_model
+try:
+    from lace.cosmo import camb_cosmo
+    use_camb=True
+except:
+    print('will not be able to use CAMB')
+    use_camb=False
 
 def get_skewers_filename(num,n_skewers,width_Mpc,scale_T0=None,
             scale_gamma=None):
@@ -40,10 +45,21 @@ def dkms_dMpc_z(raw_dir,num):
     z=zs[num]
     # read cosmology information from Gadget file
     cosmo_params=read_gadget.camb_from_gadget(paramfile)
-    # setup CAMB object from dictionary with parameters
-    cosmo=camb_cosmo.get_cosmology_from_dictionary(cosmo_params)
-    # convert kms to Mpc (should be around 75 km/s/Mpc at z=3)
-    dkms_dMpc = camb_cosmo.dkms_dMpc(cosmo,z=z)
+    if use_camb:
+        # setup CAMB object from dictionary with parameters
+        cosmo=camb_cosmo.get_cosmology_from_dictionary(cosmo_params)
+        # convert kms to Mpc (should be around 75 km/s/Mpc at z=3)
+        dkms_dMpc=camb_cosmo.dkms_dMpc(cosmo,z=z)
+    else:
+        # read from cosmo dictionary
+        H0=cosmo_params['H0']
+        # for now can not handle neutrinos
+        assert cosmo_params['mnu'] ==0, 'implement neutrinos'
+        Om=(cosmo_params['omch2']+cosmo_params['ombh2'])/(H0/100)**2
+        Hz=H0*np.sqrt(Om*(1+z)**3+(1-Om))
+        dkms_dMpc=Hz/(1+z)
+        print(z,'; H(z) =',Hz,'; dv/dX =',dkms_dMpc)
+
     return dkms_dMpc,z
 
  
@@ -137,8 +153,6 @@ def rescale_write_skewers_z(raw_dir,post_dir,num,n_skewers=50,
     json_file = open(skewers_dir+'/'+snapshot_filename,"w")
     json.dump(sim_info,json_file)
     json_file.close()
-
-    print('done')
 
     return sim_info
 

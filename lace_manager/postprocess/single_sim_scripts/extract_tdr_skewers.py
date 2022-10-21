@@ -1,11 +1,6 @@
-import matplotlib
-matplotlib.use("Agg")
-import numpy as np
 import argparse
-import json
 # our modules below
 from lace_manager.postprocess import extract_skewers
-from lace_manager.setup_simulations import read_gadget
 
 """ Extract skewers for a given snapshot, using different temperatures. """
 

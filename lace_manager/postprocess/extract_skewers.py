@@ -4,6 +4,7 @@ import os
 import json
 import fake_spectra.tempdens as tdr
 import fake_spectra.griddedspectra as grid_spec 
+import time
 # our modules
 from lace_manager.setup_simulations import read_gadget
 from lace_manager.nuisance import thermal_model
@@ -87,8 +88,12 @@ def rescale_write_skewers_z(raw_dir,post_dir,num,n_skewers=50,
     # fake_spectra wants to know H(z) in km/s/Mpc
     Hz = dkms_dMpc * (1+z)
 
+
     # figure out temperature-density before scalings
+    t0=time.time()
     T0_ini, gamma_ini = tdr.fit_td_rel_plot(num,raw_dir+'/output/',plot=False)
+    t1=time.time()
+    print('measured temp-dens relation in in {} seconds'.format(t1-t0))
 
     sim_info={'raw_dir':raw_dir, 'post_dir':post_dir,
                 'z':z, 'snap_num':num, 'n_skewers':n_skewers, 
@@ -128,8 +133,12 @@ def rescale_write_skewers_z(raw_dir,post_dir,num,n_skewers=50,
                             skewers_filename=sk_filename,Hz=Hz)
 
             # call mean flux, so that the skewers are really computed
+            t0=time.time()
             mf=skewers.get_mean_flux()
+            t1=time.time()
+            print('extracted skewers in {} seconds'.format(t1-t0))
             skewers.save_file()
+
             sim_mf.append(mf)
             # store temperature information
             sim_T0.append(T0)

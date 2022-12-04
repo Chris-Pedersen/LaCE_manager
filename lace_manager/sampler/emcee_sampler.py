@@ -524,6 +524,18 @@ class EmceeSampler(object):
         else:
             marg_p1d=None
 
+        # figure out whether to set extra P1D data (from HIRES)
+        if "extra_p1d_label" in config:
+            extra_p1d_data=data_MPGADGET.P1D_MPGADGET(basedir=config["basedir"],
+                                    sim_label=config["data_sim_number"],
+                                    skewers_label=config["skewers_label"],
+                                    zmax=config["extra_p1d_zmax"],
+                                    data_cov_factor=1.0,
+                                    data_cov_label=config["extra_p1d_label"],
+                                    polyfit=(config["emu_type"]=="polyfit"))
+        else:
+            extra_p1d_data=None
+
         # figure out emulator covariance
         if "old_emu_cov" in config:
             old_emu_cov=config["old_emu_cov"]
@@ -554,7 +566,8 @@ class EmceeSampler(object):
                             marg_p1d=marg_p1d,
                             cosmo_fid_label=cosmo_fid_label,
                             prior_only=prior_only,
-                            ignore_chi2=ignore_chi2)
+                            ignore_chi2=ignore_chi2,
+                            extra_p1d_data=extra_p1d_data)
 
         if self.verbose: print("Load sampler data")
 
@@ -697,10 +710,6 @@ class EmceeSampler(object):
 
         saveDict={}
 
-        # we have not yet implemented book-keeping for extra P1D likelihood
-        if self.like.extra_p1d_like:
-            raise ValueError('implement book-keeping for extra_p1d_like')
-
         # identify Nyx archives
         if hasattr(self.like.theory.emulator.archive,"fname"):
             saveDict["nyx_fname"]=self.like.theory.emulator.archive.fname
@@ -759,6 +768,14 @@ class EmceeSampler(object):
                 saveDict["grid_fname"]=self.like.marg_p1d.grid_fname
             else:
                 saveDict["reduced_IGM"]=self.like.marg_p1d.reduced_IGM
+
+        # Add information about the extra-p1d data (high-resolution P1D)
+        if self.like.extra_p1d_like:
+            extra_p1d_data=self.like.extra_p1d_like.data
+            saveDict["extra_p1d_label"]=extra_p1d_data.data_cov_label
+            saveDict["extra_p1d_zmax"]=max(extra_p1d_data.z)
+        else:
+            print("did not have extra P1D likelihood")
 
         # Make sure (As,ns,nrun) were defined in standard pivot_scalar
         if hasattr(self.like.theory,"cosmo_model_fid"):
